@@ -9,7 +9,7 @@ __pycache__/
 # Custom
 saved_models/
 *.ipynb
-.DS_Store
+*.DS_Store
 
 # Distribution / packaging
 .Python
