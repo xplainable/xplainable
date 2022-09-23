@@ -1,89 +1,132 @@
 import json
 from getpass import getpass
 import requests
-import webbrowser
-from datetime import datetime
-from IPython.display import display, HTML
+from urllib3.exceptions import HTTPError
 
 __session__ = requests.Session()
 
 
 class Client:
+    """ Client for interfacing with the xplainable web api.
+    """
 
     def __init__(self, hostname):
         self.hostname = hostname
 
-    def create_account(self):
-        webbrowser.open(self.hostname)
 
-    def login(self, email):
-
-        body = {
-            'username': email,
-            'password': getpass()
-        }
+    def login(self, email=None, token=None):
+        """ Login to xplainable with token or email and password.
         
-        response = __session__.post(
-            url=f'{self.hostname}/login',
-            data=body
-        )
+            Email address or an active bearer token is required
+            to login. 
+
+        Args:
+            email (str): Email of account holder
+            token (str): Bearer token
+
+        Raises:
+            HTTPError: If user not authenticated
+            ValueError: If no email or token specified
+        """
+
+        # Check if user already logged in
+        response = __session__.get(
+                url=f'{self.hostname}/get-user-data'
+            )
 
         if response.status_code == 200:
-            content = json.loads(response.content)
-            __session__.headers['authorization'] = f'''Bearer {
-                content['access_token']}'''
+            user = json.loads(response.content)['email']
 
-            print("Login successful")
-            return self
+            print(f"Already logged in as {user}")
+
+        # Add token to session headers
+        elif token:
+            __session__.headers['authorization'] = f'Bearer {token}'
+
+            response = __session__.get(
+                url=f'{self.hostname}/get-user-data'
+            )
+
+            if response.status_code == 200:
+
+                user = json.loads(response.content)['email']
+                
+                print(f"logged in as {user}")
+
+            elif response.status_code == 401:
+                raise HTTPError("401 Invalid access token")
+
+            else:
+                raise HTTPError(response)
+
+        # login manually if no token specified
+        elif email:
+            body = {
+                'username': email,
+                'password': getpass()
+            }
+            
+            response = __session__.post(
+                url=f'{self.hostname}/login',
+                data=body
+            )
+
+            if response.status_code == 200:
+                content = json.loads(response.content)
+                __session__.headers['authorization'] = f'''Bearer {
+                    content['access_token']}'''
+
+                print(f"logged in as {email}")
+
+            elif response.status_code == 401:
+                raise HTTPError("401 Invalid credentials")
+
+            else:
+                raise HTTPError(response)
 
         else:
-            return json.loads(response.content)
+            raise ValueError(
+                "You must login with a valid email address or access token")
 
-    def reset_password(self):
-
-        body = {
-            'old_password': getpass('Old password: '),
-            'new_password': getpass('New password: '),
-            'confirm_new_password': getpass('Confirm new password: ')
-        }
-
-        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        
-        response = __session__.post(
-            url=f'{self.hostname}/reset-password',
-            data=body,
-            headers=headers
-        )
-
-        return json.loads(response.content)
 
     def list_models(self):
+        """ Lists models of active user.
+
+        Returns:
+            dict: Dictionary of trained models.
+        """
 
         response = __session__.get(
             url=f'{self.hostname}/models'
             )
 
-        if response.status_code != 200:
-            try:
-                return json.loads(response.content)
-            except Exception as e:
-                return response.content
-
-        else:
+        if response.status_code == 200:
             return json.loads(response.content)
 
+        elif response.status_code == 401:
+            raise HTTPError(f"401 Unauthorised")
+
+        else:
+            raise HTTPError(response)
+
+        
     def load_model(self, model_name):
+        """ Loads a model by model_name
+
+        Args:
+            model_name (str): A valid model name
+
+        Returns:
+            xplainable.model: The loaded xplainable model
+        """
+
+
         response = __session__.get(
             url=f'{self.hostname}/models/{model_name}'
             )
 
-        if response.status_code != 200:
-            try:
-                return json.loads(response.content)
-            except Exception as e:
-                return response.content
+        if response.status_code == 200:
 
-        else:
             data = json.loads(response.content)
             model_name = data['model_name']
             model_type = data['model_type']
@@ -92,30 +135,42 @@ class Client:
             model = None
             if model_type == 'binary_classification':
                 from .models.classification import XClassifier
-
-                model = XClassifier(model_name, self.hostname)
-                model._load_metadata(meta_data)
+                model = XClassifier(
+                    model_name=model_name, hostname=self.hostname)
 
             elif model_type == 'regression':
                 from .models.regression import XRegressor
-                model = XRegressor(model_name, self.hostname)
-                model._load_metadata(meta_data)
+                model = XRegressor(
+                    model_name=model_name, hostname=self.hostname)
+            
+            model._load_metadata(meta_data)
 
             return model
 
-
-    def get_user_data(self):
-        
-        response = __session__.get(
-            url=f'{self.hostname}/get-user-data'
-            )
-
-        if response.status_code != 200:
-            try:
-                return json.loads(response.content)
-            except Exception as e:
-                return response.content
+        elif response.status_code == 401:
+            raise HTTPError(f"401 Unauthorised")
 
         else:
+            raise HTTPError(response)
+
+
+    def get_user_data(self):
+        """ Retrieves the user data for the active user.
+
+        Returns:
+            dict: User data
+        """
+        
+        response = __session__.get(
+        url=f'{self.hostname}/get-user-data'
+        )
+
+        if response.status_code == 200:
             user_details = json.loads(response.content)
             return user_details
+
+        elif response.status_code == 401:
+            raise HTTPError(f"401 Unauthorised")
+
+        else:
+            raise HTTPError(response)
