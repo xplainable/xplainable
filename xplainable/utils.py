@@ -2,6 +2,8 @@ from itertools import cycle
 from shutil import get_terminal_size
 from threading import Thread
 from time import sleep
+from traitlets import traitlets
+import ipywidgets as widgets
 
 
 class Loader:
@@ -33,15 +35,20 @@ class Loader:
             print(f"\r{self.desc} {c}", flush=True, end="")
             sleep(self.timeout)
 
-    def __enter__(self):
-        self.start()
-
     def stop(self):
         self.done = True
         cols = get_terminal_size((80, 20)).columns
         print("\r" + " " * cols, end="", flush=True)
         print(f"\r{self.end}", flush=True)
 
-    def __exit__(self, exc_type, exc_value, tb):
-        # handle exceptions with those variables ^
-        self.stop()
+
+class TrainButton(widgets.Button):
+    """ Button that stores model state
+
+    Args:
+        model: xplainable model
+    """
+
+    def __init__(self, model=None, *args, **kwargs):
+        super(TrainButton, self).__init__(*args, **kwargs)
+        self.add_traits(model=traitlets.Any(model))
