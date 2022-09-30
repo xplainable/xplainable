@@ -14,7 +14,7 @@ class Client:
         self.hostname = hostname
 
 
-    def login(self, email=None, token=None):
+    def authenticate(self, token=None):
         """ Login to xplainable with token or email and password.
         
             Email address or an active bearer token is required
@@ -28,65 +28,24 @@ class Client:
             HTTPError: If user not authenticated
             ValueError: If no email or token specified
         """
+        # Add token to session headers
+        __session__.headers['authorization'] = f'Bearer {token}'
 
-        # Check if user already logged in
         response = __session__.get(
-                url=f'{self.hostname}/get-user-data'
-            )
+            url=f'{self.hostname}/api/user'
+        )
 
         if response.status_code == 200:
+
             user = json.loads(response.content)['email']
-
-            print(f"Already logged in as {user}")
-
-        # Add token to session headers
-        elif token:
-            __session__.headers['authorization'] = f'Bearer {token}'
-
-            response = __session__.get(
-                url=f'{self.hostname}/get-user-data'
-            )
-
-            if response.status_code == 200:
-
-                user = json.loads(response.content)['email']
-                
-                print(f"logged in as {user}")
-
-            elif response.status_code == 401:
-                raise HTTPError("401 Invalid access token")
-
-            else:
-                raise HTTPError(response)
-
-        # login manually if no token specified
-        elif email:
-            body = {
-                'username': email,
-                'password': getpass()
-            }
             
-            response = __session__.post(
-                url=f'{self.hostname}/login',
-                data=body
-            )
+            print(f"Authenticated as user {user}")
 
-            if response.status_code == 200:
-                content = json.loads(response.content)
-                __session__.headers['authorization'] = f'''Bearer {
-                    content['access_token']}'''
-
-                print(f"logged in as {email}")
-
-            elif response.status_code == 401:
-                raise HTTPError("401 Invalid credentials")
-
-            else:
-                raise HTTPError(response)
+        elif response.status_code == 401:
+            raise HTTPError("401 Invalid access token")
 
         else:
-            raise ValueError(
-                "You must login with a valid email address or access token")
+            raise HTTPError(response)
 
 
     def list_models(self):
@@ -162,7 +121,7 @@ class Client:
         """
         
         response = __session__.get(
-        url=f'{self.hostname}/get-user-data'
+        url=f'{self.hostname}/api/user'
         )
 
         if response.status_code == 200:
