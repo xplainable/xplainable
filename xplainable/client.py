@@ -1,7 +1,7 @@
 import json
-from getpass import getpass
 import requests
 from urllib3.exceptions import HTTPError
+from authlib.jose import jwt
 
 __session__ = requests.Session()
 
@@ -10,36 +10,39 @@ class Client:
     """ Client for interfacing with the xplainable web api.
     """
 
-    def __init__(self, hostname):
-        self.hostname = hostname
+    def __init__(self, token):
+        self.token = token
+        self.hostname = None
+
+        self.init()
 
 
-    def authenticate(self, token=None):
-        """ Login to xplainable with token or email and password.
+    def init(self):
+        """ Authorize access to xplainable API.
         
-            Email address or an active bearer token is required
-            to login. 
-
-        Args:
-            email (str): Email of account holder
-            token (str): Bearer token
+            Active bearer token is required for authorization. 
 
         Raises:
-            HTTPError: If user not authenticated
-            ValueError: If no email or token specified
+            HTTPError: If user not authorized.
         """
         # Add token to session headers
-        __session__.headers['authorization'] = f'Bearer {token}'
+        __session__.headers['authorization'] = f'Bearer {self.token}'
 
         response = __session__.get(
-            url=f'{self.hostname}/api/user'
-        )
+            url='https://dev-k-xn6t1r.us.auth0.com/.well-known/jwks.json')
 
         if response.status_code == 200:
-
-            user = json.loads(response.content)['email']
             
-            print(f"Authenticated as user {user}")
+            try:
+                jwks = json.loads(response.content)
+                key = f'''-----BEGIN CERTIFICATE-----\n{jwks["keys"][0]["x5c"][0]}\n-----END CERTIFICATE-----'''
+                claims = jwt.decode(self.token, key=key)
+                vmip = claims['https://www.xplainable.io/app_metadata']['vm_ip'][0]
+                self.hostname = f"http://{vmip}"
+                print(f"Initialised")
+
+            except Exception as e:
+                raise HTTPError(f"401 Invalid access token. {e}")
 
         elif response.status_code == 401:
             raise HTTPError("401 Invalid access token")
@@ -69,11 +72,11 @@ class Client:
             raise HTTPError(response)
 
         
-    def load_model(self, model_name):
-        """ Loads a model by model_name
+    def load_model(self, model_id):
+        """ Loads a model by model_id
 
         Args:
-            model_name (str): A valid model name
+            model_id (str): A valid model_id
 
         Returns:
             xplainable.model: The loaded xplainable model
@@ -81,7 +84,7 @@ class Client:
 
 
         response = __session__.get(
-            url=f'{self.hostname}/models/{model_name}'
+            url=f'{self.hostname}/models/{model_id}'
             )
 
         if response.status_code == 200:
