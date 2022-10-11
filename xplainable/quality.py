@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import copy
 
-class QScan:
+class XScan:
     """ Data quality scanner
     """
 
@@ -261,7 +261,7 @@ class QScan:
 
         return sub_profile
 
-    @ staticmethod
+    @staticmethod
     def _vif(X, max_categories: int = 10):
 
         X = X.copy()
@@ -305,6 +305,12 @@ class QScan:
         return vif_report
 
     def scan(self, df, target=None):
+
+        if target:
+            if target not in df.columns:
+                raise ValueError(f"{target} not in df")
+
+            df = df.drop(columns=[target])
         
         for col in df.columns:
             ser = df[col]
@@ -322,8 +328,8 @@ class QScan:
 
             self.profile[col] = sub_profile
 
-        if target:
-            # Add variance inflation factor 
-            pass
+        vif = self._vif(df)
+        for i, v in vif.items():
+            self.profile[i].update({'vif': v})
 
         return self
