@@ -52,3 +52,29 @@ class TrainButton(widgets.Button):
     def __init__(self, model=None, *args, **kwargs):
         super(TrainButton, self).__init__(*args, **kwargs)
         self.add_traits(model=traitlets.Any(model))
+
+
+class TransformerButton(widgets.Button):
+    """ Button that stores model state
+
+    Args:
+        model: xplainable model
+    """
+
+    def __init__(self, transformer=None, df=None, *args, **kwargs):
+        super(TransformerButton, self).__init__(*args, **kwargs)
+        self.add_traits(
+            transformer=traitlets.Any(transformer),
+            df=traitlets.Any(df)
+            )
+
+class TransformerDropdown(widgets.Dropdown):
+    """ Button that stores model state
+
+    Args:
+        model: xplainable model
+    """
+
+    def __init__(self, transformer=None, *args, **kwargs):
+        super(TransformerDropdown, self).__init__(*args, **kwargs)
+        self.add_traits(transformer=traitlets.Any(transformer))
