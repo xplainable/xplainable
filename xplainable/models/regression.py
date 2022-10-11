@@ -85,7 +85,7 @@ class XRegressor(BaseModel):
         loader = Loader("Training", "Training completed").start()
 
         response = self.__session.post(
-            f'{self.hostname}/models/regression/train',
+            f'{self.hostname}/train/regression',
             params=params,
             files={'data': df.to_csv(index=False)}
             )
@@ -114,7 +114,7 @@ class XRegressor(BaseModel):
             str: URL
         """
 
-        return f'https://api.xplainable.io/models/{self.model_name}'
+        return f'https://app.xplainable.io/models/{self.model_name}'
 
     def predict(self, x):
         """ Predicts the y value of a given set of x variables.

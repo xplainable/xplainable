@@ -88,7 +88,7 @@ class XClassifier(BaseModel):
         loader = Loader("Training", "Training completed").start()
 
         response = self.__session.post(
-            f'{self.hostname}/models/classification/train',
+            f'{self.hostname}/train/binary',
             params=params,
             files={'data': df.to_csv(index=False)}
             )
@@ -117,7 +117,7 @@ class XClassifier(BaseModel):
             str: URL
         """
 
-        return f'https://api.xplainable.io/models/{self.model_name}'
+        return f'https://app.xplainable.io/models/{self.model_name}'
 
     def predict_score(self, x):
         """ Scores an observation's propensity to fall in the positive class.
@@ -216,3 +216,4 @@ class XClassifier(BaseModel):
         }
 
         return evaluation
+    
