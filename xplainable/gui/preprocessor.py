@@ -75,29 +75,30 @@ class Preprocessor:
             f'<hr class="solid">', layout=widgets.Layout(height='auto'))
 
         # HEADER
-
-        logo = open('xplainable/_img/Preprocessor.png', 'rb').read()
+        logo = open('xplainable/_img/logo.png', 'rb').read()
         logo_display = widgets.Image(
-            value=logo, format='png')
+            value=logo, format='png', width=50, height=50)
+        
+        label = open('xplainable/_img/label_preprocessor.png', 'rb').read()
+        label_display = widgets.Image(value=label, format='png')
 
-        header = widgets.VBox(
-            [widgets.HBox([widgets.VBox([logo_display])],
-            layout=widgets.Layout(height='auto'))])
-        header.layout = widgets.Layout(margin = ' 0 0 25px 0 ')
+        header = widgets.HBox([logo_display, label_display])
+        header.layout = widgets.Layout(margin = ' 5px 0 15px 25px ')
 
         def reset_charts():
             v = charts.children[0].children[0].value
             charts.children[0].children[0].value = None
-            sleep(0.01)
+            #sleep(0.01)
             charts.children[0].children[0].value = v
 
         def dataset_changed():
             df_display.df = self._df_trans
-            feature.options = self._df_trans.columns
+            feature.options = list(self._df_trans.columns)
             chart_a_feature.options = list(self._df_trans.columns)+[None]
             chart_b_feature1.options = self._df_trans.columns
             chart_b_feature2.options = self._df_trans.columns
             chart_hue.options = [None]+list(self._df_trans.columns)
+            
             w.children[0].value = False
             w.children[0].value = True
             reset_charts()
@@ -141,21 +142,18 @@ class Preprocessor:
             return widgets.VBox([controls, output])
 
         def selected_col(_):
-            typ = "numeric" if is_numeric_dtype(df[feature.value]) else "categorical"
+            typ = "numeric" if is_numeric_dtype(self._df_trans[feature.value]) else "categorical"
             feature_transformers.options = [""]+[c[0] for c in clsmembers if "supported_types" in c[1].__dict__ and typ in c[1].__dict__['supported_types']]
 
         def feature_selected(d):
             if feature_transformers.value:
                 t = [c[1] for c in clsmembers if c[0] == feature_transformers.value][0]()
                 feature_transformers.transformer = t
-
                 params = feature_transformers.transformer(df_display.df[feature.value])
-
                 adder.children = transformer_title,
                 if params:
                     adder.children += params.children
                 
-                adder.children += divider,
                 adder.children += add_button,
 
             else:
@@ -166,12 +164,11 @@ class Preprocessor:
                 t = [c[1] for c in clsmembers if c[0] == dataset_transformers.value][0]()
                 dataset_transformers.transformer = t
                 params = dataset_transformers.transformer(df_display.df)
-
+                
                 adder.children = transformer_title,
                 if params:
                     adder.children += params.children
-                
-                adder.children += divider,
+        
                 adder.children += add_button,
 
             else:
@@ -281,7 +278,12 @@ class Preprocessor:
         transformer_title.layout = widgets.Layout(align_items='center', height='auto')
 
         adder = widgets.VBox([transformer_title, params])
-        adder.layout = widgets.Layout(min_width='350px', align_items="center", border='1px solid #7287a8', margin = ' 0 25px 0 25px ')
+        adder.layout = widgets.Layout(
+            min_width='350px',
+            align_items="center",
+            border='1px solid #7287a8',
+            margin = ' 0 25px 0 25px '
+            )
 
         pipeline_title = widgets.HTML(
             f"<h4>Pipeline</h4>", layout=widgets.Layout(height='auto'))
@@ -310,12 +312,17 @@ class Preprocessor:
         done.layout = widgets.Layout(margin=' 0 0 10px 25px')
         done.on_click(close_button_clicked)
 
-        save = widgets.Button(description='Save')
-        save.style.button_color = '#12b980'
-        save.layout = widgets.Layout(margin=' 0 0 10px 10px', font_color='white')
-        save.on_click(close_button_clicked)
+        save_pp = widgets.Button(description='Save Preprocessor')
+        save_pp.style.button_color = '#12b980'
+        save_pp.layout = widgets.Layout(margin=' 0 0 10px 10px')
+        save_pp.on_click(close_button_clicked)
 
-        footer = widgets.HBox([done, save])
+        save_df = widgets.Button(description='Save Dataframe')
+        save_df.style.button_color = '#12b980'
+        save_df.layout = widgets.Layout(margin=' 0 0 10px 10px')
+        save_df.on_click(close_button_clicked)
+
+        footer = widgets.HBox([done, save_pp, save_df])
 
         # Data
         w = df_display()
