@@ -2,18 +2,10 @@ import json
 import requests
 from urllib3.exceptions import HTTPError
 from authlib.jose import jwt
+from xplainable.utils import get_response_content
 
 __session__ = requests.Session()
 
-def get_response_content(response):
-    if response.status_code == 200:
-        return json.loads(response.content)
-
-    elif response.status_code == 401:
-        raise HTTPError(f"401 Unauthorised")
-
-    else:
-        raise HTTPError(response)
 
 class Client:
     """ Client for interfacing with the xplainable web api.

@@ -4,7 +4,19 @@ from threading import Thread
 from time import sleep
 from traitlets import traitlets
 import ipywidgets as widgets
+from urllib3.exceptions import HTTPError
+import json
 
+
+def get_response_content(response):
+    if response.status_code == 200:
+        return json.loads(response.content)
+
+    elif response.status_code == 401:
+        raise HTTPError(f"401 Unauthorised")
+
+    else:
+        raise HTTPError(response)
 
 class Loader:
     def __init__(self, desc="Loading...", end="Done", timeout=0.1):
