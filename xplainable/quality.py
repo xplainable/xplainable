@@ -286,7 +286,8 @@ class XScan:
         vif = {X.columns[i]: variance_inflation_factor(
             X.values, i) for i in range(X.shape[1])}
 
-        vif.pop('const')
+        if 'const' in vif:
+            vif.pop('const')
 
         vif_report = {}
 
