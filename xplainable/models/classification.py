@@ -6,6 +6,7 @@ from xplainable.models._base_model import BaseModel
 import numpy as np
 import sklearn.metrics as skm
 from urllib3.exceptions import HTTPError
+from xplainable.utils import get_response_content
 
 
 class XClassifier(BaseModel):
@@ -19,10 +20,12 @@ class XClassifier(BaseModel):
         optimise (bool): Optimises the model parameters during training.
         n_trials (int): Number of optimisation trials to run
         early_stopping (int): Stop optimisation early if no improvement as n trials.
+        validation_size (float): pct of data to hold for validation.
     """
 
     def __init__(self, max_depth=12, min_leaf_size=0.015, min_info_gain=0.015,\
-        bin_alpha=0.05, optimise=False, n_trials=30, early_stopping=15, *args, **kwargs):
+        bin_alpha=0.05, optimise=False, n_trials=30, early_stopping=15, validation_size=0.2,
+        *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
@@ -35,7 +38,6 @@ class XClassifier(BaseModel):
         self._base_value = None
         self._categorical_columns = None
         self._numeric_columns = None
-        self._params = None
 
         self.max_depth = max_depth
         self.min_leaf_size = min_leaf_size
@@ -44,6 +46,7 @@ class XClassifier(BaseModel):
         self.optimise = optimise
         self.n_trials = n_trials
         self.early_stopping = early_stopping
+        self.validation_size = validation_size
 
     def _load_metadata(self, data: dict):
         """ Loads model metadata into model object attrs
@@ -57,7 +60,16 @@ class XClassifier(BaseModel):
         self._base_value = data['base_value']
         self._categorical_columns = data['categorical_columns']
         self._numeric_columns = data['numeric_columns']
-        self._params = data['parameters']
+
+        params = data['parameters']
+        self.max_depth = params['max_depth']
+        self.min_leaf_size = params['min_leaf_size']
+        self.min_info_gain = params['min_info_gain']
+        self.bin_alpha = params['bin_alpha']
+        self.validation_size = params['validation_size']
+        self.optimise = params['optimise']
+        self.n_trials = params['n_trials']
+        self.early_stopping = params['early_stopping']
 
     def fit(self, X, y, id_columns=[]):
         """ Fits training dataset to the model.
@@ -74,6 +86,7 @@ class XClassifier(BaseModel):
 
         params = {
             "model_name": self.model_name,
+            "model_description": self.model_description,
             "target": target,
             "id_columns": id_columns,
             "max_depth": self.max_depth,
@@ -82,7 +95,8 @@ class XClassifier(BaseModel):
             "bin_alpha": self.bin_alpha,
             "optimise": self.optimise,
             "n_trials": self.n_trials,
-            "early_stopping": self.early_stopping
+            "early_stopping": self.early_stopping,
+            "validation_size": self.validation_size,
         }
 
         loader = Loader("Training", "Training completed").start()
@@ -93,22 +107,15 @@ class XClassifier(BaseModel):
             files={'data': df.to_csv(index=False)}
             )
 
-        if response.status_code == 200:
-            content = json.loads(response.content)
+        try:
+            content = get_response_content(response)
             self._load_metadata(content["data"])
 
-            loader.stop()
+        except Exception as e:
+            raise e
 
-            return self
-
-        elif response.status_code == 401:
+        finally:
             loader.stop()
-            raise HTTPError(f"401 Unauthorised")
-
-        else:
-            loader.end = response.content
-            loader.stop()
-            raise HTTPError(f'{response} {response.content}') 
 
     def explain(self):
         """ Generates a model explanation URL
