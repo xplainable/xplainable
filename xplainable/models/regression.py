@@ -17,11 +17,12 @@ class XRegressor(BaseModel):
         bin_alpha (float): Set the number of possible splits for each decision.
         min_info_gain (float): Minimum pct diff from base value for splits.
         tail_sensitivity (int): Amplifies values for high and low predictions.
-        prediction_range (tuple/str): Sets upper and lower prediction range or autodetects.
+        prediction_range (list/str): Sets upper and lower prediction range or autodetects.
+        validation_size (float): pct of data to hold for validation.
     """
 
     def __init__(self, max_depth=20, min_leaf_size=0.002, min_info_gain=0.01,\
-        bin_alpha=0.05, tail_sensitivity=1, prediction_range='auto', *args, **kwargs):
+        bin_alpha=0.05, tail_sensitivity=1, prediction_range=None, validation_size=0.2, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
@@ -41,6 +42,9 @@ class XRegressor(BaseModel):
         self.bin_alpha = bin_alpha
         self.tail_sensitivity = tail_sensitivity
         self.prediction_range = prediction_range
+        self.validation_size = validation_size
+        self.min_prediction = None
+        self.max_prediction = None
 
     def _load_metadata(self, data):
         """ Loads model metadata into model object attrs
@@ -55,6 +59,32 @@ class XRegressor(BaseModel):
         self._numeric_columns = data['numeric_columns']
         self._params = data['parameters']
         self._layers = data['layers']
+        self.prediction_range = data['parameters']['prediction_range']
+        self.min_prediction = data['parameters']['min_prediction']
+        self.max_prediction = data['parameters']['max_prediction']
+
+    def _set_prediction_range(self):
+        """ Sets the prection range as parameterised.
+        """
+
+        if self.prediction_range is None:
+            self.min_prediction = -np.inf
+            self.max_prediction = np.inf
+
+        elif type(self.prediction_range) == list and len(self.prediction_range) == 2:
+
+            if self.prediction_range[0] is not None:
+                self.min_prediction = self.prediction_range[0]
+            else:
+                self.min_prediction = -np.inf
+
+            if self.prediction_range[1] is not None:
+                self.max_prediction = self.prediction_range[1]
+            else:
+                self.max_prediction = np.inf
+
+        else:
+            raise ValueError("Prediction range must be list of length 2 or None")
 
     def fit(self, X, y, id_columns=[]):
         """ Fits training dataset to the model.
@@ -69,8 +99,11 @@ class XRegressor(BaseModel):
         target = y.name if y.name else 'target'
         df[target] = y.values
 
+        self._set_prediction_range()
+
         params = {
             "model_name": self.model_name,
+            "model_description": self.model_description,
             "target": target,
             "id_columns": id_columns,
             "max_depth": self.max_depth,
@@ -79,6 +112,7 @@ class XRegressor(BaseModel):
             "bin_alpha": self.bin_alpha,
             "tail_sensitivity": self.tail_sensitivity,
             "prediction_range": self.prediction_range,
+            "validation_size": self.validation_size,
             "layers": self._layers
         }
 
@@ -132,7 +166,12 @@ class XRegressor(BaseModel):
         x = self._transform(x)
 
         # Add base value to the sum of all scores
-        return np.array(x.sum(axis=1) + self._base_value)
+        y_pred = np.array(x.sum(axis=1) + self._base_value)
+
+        # clip predictions
+        y_pred = np.clip(y_pred, self.min_prediction, self.max_prediction)
+        
+        return y_pred
 
     def evaluate(self, X, y):
         """ Evaluates the model metrics
