@@ -5,6 +5,15 @@ from authlib.jose import jwt
 
 __session__ = requests.Session()
 
+def get_response_content(response):
+    if response.status_code == 200:
+        return json.loads(response.content)
+
+    elif response.status_code == 401:
+        raise HTTPError(f"401 Unauthorised")
+
+    else:
+        raise HTTPError(response)
 
 class Client:
     """ Client for interfacing with the xplainable web api.
@@ -31,25 +40,18 @@ class Client:
         response = __session__.get(
             url='https://dev-k-xn6t1r.us.auth0.com/.well-known/jwks.json')
 
-        if response.status_code == 200:
+        # get response data
+        jwks = get_response_content(response)
             
-            try:
-                jwks = json.loads(response.content)
-                key = f'''-----BEGIN CERTIFICATE-----\n{jwks["keys"][0]["x5c"][0]}\n-----END CERTIFICATE-----'''
-                claims = jwt.decode(self.token, key=key)
-                vmip = claims['https://www.xplainable.io/app_metadata']['vm_ip'][0]
-                self.hostname = f"http://{vmip}"
-                print(f"Initialised")
+        try:
+            key = f'''-----BEGIN CERTIFICATE-----\n{jwks["keys"][0]["x5c"][0]}\n-----END CERTIFICATE-----'''
+            claims = jwt.decode(self.token, key=key)
+            vmip = claims['https://www.xplainable.io/app_metadata']['vm_ip'][0]
+            self.hostname = f"http://{vmip}"
+            print(f"Initialised")
 
-            except Exception as e:
-                raise HTTPError(f"401 Invalid access token. {e}")
-
-        elif response.status_code == 401:
-            raise HTTPError("401 Invalid access token")
-
-        else:
-            raise HTTPError(response)
-
+        except Exception as e:
+            raise HTTPError(f"401 Invalid access token. {e}")
 
     def list_models(self):
         """ Lists models of active user.
@@ -62,17 +64,22 @@ class Client:
             url=f'{self.hostname}/models'
             )
 
-        if response.status_code == 200:
-            return json.loads(response.content)
+        return get_response_content(response)
 
-        elif response.status_code == 401:
-            raise HTTPError(f"401 Unauthorised")
+    def list_perspectives(self, model_id):
+        """ Lists models of active user.
 
-        else:
-            raise HTTPError(response)
+        Returns:
+            dict: Dictionary of trained models.
+        """
 
+        response = __session__.get(
+            url=f'{self.hostname}/models/{model_id}/perspectives'
+            )
+
+        return get_response_content(response)
         
-    def load_model(self, model_id):
+    def load_model(self, model_id, perspective_id='latest'):
         """ Loads a model by model_id
 
         Args:
@@ -82,39 +89,39 @@ class Client:
             xplainable.model: The loaded xplainable model
         """
 
-
-        response = __session__.get(
+        model_response = __session__.get(
             url=f'{self.hostname}/models/{model_id}'
             )
 
-        if response.status_code == 200:
+        model_data = get_response_content(model_response)
 
-            data = json.loads(response.content)
-            model_name = data['model_name']
-            model_type = data['model_type']
-            meta_data = data['data']['data']
-
-            model = None
-            if model_type == 'binary_classification':
-                from .models.classification import XClassifier
-                model = XClassifier(
-                    model_name=model_name, hostname=self.hostname)
-
-            elif model_type == 'regression':
-                from .models.regression import XRegressor
-                model = XRegressor(
-                    model_name=model_name, hostname=self.hostname)
+        if model_data is None:
+            raise ValueError(f'Model with ID {model_id} does not exist')
             
-            model._load_metadata(meta_data)
+        model_name = model_data['model_name']
+        model_type = model_data['model_type']
 
-            return model
+        response = __session__.get(
+            url=f'{self.hostname}/models/{model_id}/perspectives/{perspective_id}'
+            )
 
-        elif response.status_code == 401:
-            raise HTTPError(f"401 Unauthorised")
+        data = get_response_content(response)
+        meta_data = data['data']['data']
 
-        else:
-            raise HTTPError(response)
+        model = None
+        if model_type == 'binary_classification':
+            from .models.classification import XClassifier
+            model = XClassifier(
+                model_name=model_name, hostname=self.hostname)
 
+        elif model_type == 'regression':
+            from .models.regression import XRegressor
+            model = XRegressor(
+                model_name=model_name, hostname=self.hostname)
+        
+        model._load_metadata(meta_data)
+
+        return model
 
     def get_user_data(self):
         """ Retrieves the user data for the active user.
