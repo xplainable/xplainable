@@ -10,6 +10,7 @@ __pycache__/
 saved_models/
 *.ipynb
 *.DS_Store
+/datasets
 
 # Distribution / packaging
 .Python
