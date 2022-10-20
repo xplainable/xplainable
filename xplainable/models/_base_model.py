@@ -10,11 +10,10 @@ from sklearn.metrics import *
 
 class BaseModel:
 
-    def __init__(self, model_name, hostname, model_description=None):
+    def __init__(self, model_name, model_description=None):
 
         self.model_name = model_name
         self.model_description = model_description
-        self.hostname = hostname
         self.__session = client.__session__
         
     @staticmethod

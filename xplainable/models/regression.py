@@ -1,12 +1,14 @@
-import pandas as pd
 import json
 from .. import client
-from xplainable.utils import Loader
 import numpy as np
 import sklearn.metrics as skm
 from xplainable.models._base_model import BaseModel
-from urllib3.exceptions import HTTPError
-
+from ..utils import get_response_content
+from IPython.display import display, clear_output
+import ipywidgets as widgets
+from xplainable.client import __session__
+import time
+import xplainable
 
 class XRegressor(BaseModel):
     """ xplainable regression model.
@@ -86,6 +88,74 @@ class XRegressor(BaseModel):
         else:
             raise ValueError("Prediction range must be list of length 2 or None")
 
+    def __get_progress(self):
+
+        user_id = xplainable.__client__.get_user_data()['sub']
+
+        current_output = None
+        current_stage = "Initialising..."
+        progress_instantiated = False
+
+        stage = widgets.HTML(value=f'<p>{current_stage}</p>')
+        stage.layout = widgets.Layout(margin='0 0 0 25px')
+
+
+        bars = widgets.VBox([])
+
+        screen = widgets.VBox([
+            bars,
+            widgets.HTML(f'<hr class="solid">', layout=widgets.Layout(margin='15px 0 0 0')),
+            stage
+        ])
+        display(screen)
+
+        while True:
+            
+            data = json.loads(__session__.get(f'{xplainable.__client__.hostname}/progress/{user_id}').content)
+
+            if data is None:
+                time.sleep(0.1)
+                continue
+
+            if data['stage'] != current_stage:
+                stage.value = f'<p>{data["stage"]}</p>'
+                current_stage = data['stage']
+
+            if current_stage in ['done', 'failed']:
+                if type(data['data']) == str:
+                    return eval(data['data'])
+                else:
+                    return data['data']
+
+            elif current_stage == 'optimising...':
+                pipeline = data['pipeline']
+                if not progress_instantiated:
+                    iterations = [i['iterations'] for i in pipeline.values()]
+                    bars.children = [
+                        widgets.HBox([
+                            widgets.IntProgress(
+                                description=f"{i} ({v['type']})",
+                                value=0,
+                                min=0,
+                                max=v['iterations']),
+                            widgets.HTML(
+                                value=f'0/{iterations[int(i)-1]}')]
+                                ) for i, v in pipeline.items()]
+
+                    #display(bars)
+                    progress_instantiated = True
+
+                if pipeline != current_output:
+                    for i, v in pipeline.items():
+                        bars.children[int(i)-1].children[0].value = v['progress']
+                        mae = "-" if v['metric'] == "-" else round(float(v['metric']), 2)
+                        bars.children[int(i)-1].children[1].value = f"{v['progress']}/{iterations[int(i)-1]} (mae: {mae})"
+
+                        if v['status']:
+                            bars.children[int(i)-1].children[0].bar_style = 'success'
+                    current_output = pipeline
+                time.sleep(0.1)
+
     def fit(self, X, y, id_columns=[]):
         """ Fits training dataset to the model.
         
@@ -116,31 +186,19 @@ class XRegressor(BaseModel):
             "layers": self._layers
         }
 
-        loader = Loader("Training", "Training completed").start()
-
         response = self.__session.post(
-            f'{self.hostname}/train/regression',
+            f'{xplainable.__client__.hostname}/train/regression',
             params=params,
             files={'data': df.to_csv(index=False)}
             )
 
-        if response.status_code == 200:
-            content = json.loads(response.content)
-            self._load_metadata(content["data"])
+        content = get_response_content(response)
 
-            loader.stop()
+        if content:
+            model_data = self.__get_progress()
+            if model_data:
+                self._load_metadata(model_data["data"])
 
-            return self
-
-        elif response.status_code == 401:
-            loader.stop()
-            raise HTTPError(f"401 Unauthorised")
-
-        else:
-            loader.end = response.content
-            loader.stop()
-            raise HTTPError(f'{response} {response.content}') 
-             
     def explain(self):
         """ Generates a model explanation URL
 

@@ -5,15 +5,14 @@ from xplainable.utils import TrainButton
 from pandas.api.types import is_numeric_dtype
 from xplainable.exceptions import *
 from xplainable.quality import XScan
+import xplainable
 
-
-def train_regressor(df, model_name, hostname, model_description=''):
+def train_regressor(df, model_name, model_description=''):
     """ Trains an xplainable regressor via a simple GUI.
 
     Args:
         df (pandas.DataFrame): Training data including target
         model_name (str): A unique name for the model
-        hostname (str): Base url of host machine
 
     Raises:
         RuntimeError: When model fails to fit
@@ -33,7 +32,6 @@ def train_regressor(df, model_name, hostname, model_description=''):
     output = widgets.Output()
     model = XRegressor(
         model_name=model_name,
-        hostname=hostname,
         model_description=model_description)
 
     # HEADER
@@ -330,12 +328,10 @@ def train_regressor(df, model_name, hostname, model_description=''):
 
         with output:
 
-            header.close()
             body.close()
             footer.close()
 
             try:
-                clear_output()
                 X, y = df.drop(
                     columns=[target.value]), df[target.value]
                 id_vals = [i for i in list(id_columns.value) if i is not None]
@@ -345,8 +341,7 @@ def train_regressor(df, model_name, hostname, model_description=''):
                 clear_output()
                 raise RuntimeError(e)
 
-    divider = widgets.HTML(
-        f'<hr class="solid">', layout=widgets.Layout(height='auto'))
+    divider = widgets.HTML(f'<hr class="solid">')
 
     #  Create buttons and listen for clicks
     train_button = TrainButton(description="Train", icon='bolt', model=model, disabled=True)

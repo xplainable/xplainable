@@ -3,6 +3,7 @@ import requests
 from urllib3.exceptions import HTTPError
 from authlib.jose import jwt
 from xplainable.utils import get_response_content
+import xplainable
 
 __session__ = requests.Session()
 
@@ -40,6 +41,7 @@ class Client:
             claims = jwt.decode(self.token, key=key)
             vmip = claims['https://www.xplainable.io/app_metadata']['vm_ip'][0]
             self.hostname = f"http://{vmip}"
+            xplainable.__client__ = self
             print(f"Initialised")
 
         except Exception as e:
