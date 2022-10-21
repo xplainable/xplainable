@@ -105,13 +105,11 @@ class Client:
         model = None
         if model_type == 'binary_classification':
             from .models.classification import XClassifier
-            model = XClassifier(
-                model_name=model_name, hostname=self.hostname)
+            model = XClassifier(model_name=model_name)
 
         elif model_type == 'regression':
             from .models.regression import XRegressor
-            model = XRegressor(
-                model_name=model_name, hostname=self.hostname)
+            model = XRegressor(model_name=model_name)
         
         model._load_metadata(meta_data)
 
@@ -128,12 +126,4 @@ class Client:
         url=f'{self.hostname}/api/user'
         )
 
-        if response.status_code == 200:
-            user_details = json.loads(response.content)
-            return user_details
-
-        elif response.status_code == 401:
-            raise HTTPError(f"401 Unauthorised")
-
-        else:
-            raise HTTPError(response)
+        return get_response_content(response)
