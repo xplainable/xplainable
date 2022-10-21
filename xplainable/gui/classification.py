@@ -5,7 +5,7 @@ from xplainable.utils import TrainButton
 from xplainable.quality import XScan
 
 
-def train_classifier(df, model_name, hostname, model_description=''):
+def train_classifier(df, model_name, model_description=''):
     """ Trains an xplainable classifier via a simple GUI.
 
     Args:
@@ -29,7 +29,6 @@ def train_classifier(df, model_name, hostname, model_description=''):
     # Instantiate the model
     model = XClassifier(
         model_name=model_name,
-        hostname=hostname,
         model_description=model_description)
 
     # HEADER
@@ -189,7 +188,9 @@ def train_classifier(df, model_name, hostname, model_description=''):
             model.validation_size = validation_size.value
 
             try:
-                close()
+                body.close()
+                footer.close()
+                
                 X, y = df.drop(
                     columns=[target.value]), df[target.value]
 
