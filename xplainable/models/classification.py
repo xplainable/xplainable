@@ -6,7 +6,13 @@ from xplainable.models._base_model import BaseModel
 import numpy as np
 import sklearn.metrics as skm
 from urllib3.exceptions import HTTPError
+import xplainable
+from xplainable.client import __session__
 from xplainable.utils import get_response_content
+import ipywidgets as widgets
+import time
+import warnings
+warnings.filterwarnings('ignore')
 
 
 class XClassifier(BaseModel):
@@ -71,6 +77,110 @@ class XClassifier(BaseModel):
         self.n_trials = params['n_trials']
         self.early_stopping = params['early_stopping']
 
+    def __get_progress(self):
+
+        current_output = None
+        current_stage = "Initialising..."
+        optimisation_instantiated = False
+        train_complete = False
+
+        stage = widgets.HTML(value=f'<p>{current_stage}</p>')
+
+        stage_display = widgets.HBox([
+            widgets.HTML(value=f'<p>STATUS: </p>'),
+            stage
+        ])
+
+        stage_display.layout = widgets.Layout(margin='0 0 0 25px')
+
+        train_bar = widgets.IntProgress(
+            description=f"Fitting: ",
+            value=0,
+            min=0,
+            max=100
+            )
+
+        pipeline_title = widgets.HTML(
+            "<h3>Training</h3>",
+            layout=widgets.Layout(margin='0 0 0 25px'))
+
+        train_pct = widgets.HTML(value=f'0%')
+        train_display = widgets.HBox([train_bar, train_pct])
+
+        colA = widgets.VBox([
+            pipeline_title,
+            train_display
+        ])
+
+        colA.layout = widgets.Layout(
+            min_width='420px'
+        )
+
+        hyperparameters_title = widgets.HTML(
+            "<h3>Hyperparameters</h3>",
+            layout=widgets.Layout(margin='0 0 0 25px'))
+
+        hyperparameters = widgets.Box([
+                widgets.HTML(f"""<h4>
+                max_depth: {self.max_depth}<br>
+                min_leaf_size: {self.min_leaf_size}<br>
+                min_info_gain: {self.min_info_gain}<br>
+                bin_alpha: {self.bin_alpha}
+                </h4>""")])
+
+        hyperparameters.layout = widgets.Layout(
+            margin='0 0 0 25px',
+            border='solid 1px',
+            min_width='250px',
+            padding='0 0 0 15px'
+            )
+
+        colB = widgets.VBox([
+            hyperparameters_title,
+            hyperparameters
+        ])
+
+        screen = widgets.VBox([
+            widgets.HBox([colA, colB]),
+            widgets.HTML(f'<hr class="solid">', layout=widgets.Layout(margin='15px 0 0 0')),
+            stage_display
+            ])
+
+        display(screen)
+
+        while True:
+            
+            data = json.loads(__session__.get(f'{xplainable.__client__.hostname}/progress').content)
+        
+            if data is None:
+                time.sleep(0.1)
+                continue
+
+            if data['stage'] != current_stage:
+                current_stage = data['stage']
+                stage.value = f'<p>{current_stage}</p>'
+
+            if current_stage == 'failed':
+                return
+
+            if current_stage == 'initialising...':
+                time.sleep(0.1)
+                continue
+
+            if not train_complete:
+                p = data["train"]["progress"] / data["train"]["iterations"]
+                v = int(p*100)
+                train_bar.value = v
+                train_pct.value = f'{v}%'
+
+                if p == 1:
+                    train_complete = True
+                    train_bar.bar_style = 'success'
+            
+            elif current_stage == 'done':
+                return json.loads(data['data'])
+
+
     def fit(self, X, y, id_columns=[]):
         """ Fits training dataset to the model.
         
@@ -99,23 +209,18 @@ class XClassifier(BaseModel):
             "validation_size": self.validation_size,
         }
 
-        loader = Loader("Training", "Training completed").start()
-
         response = self.__session.post(
-            f'{self.hostname}/train/binary',
+            f'{xplainable.__client__.hostname}/train/binary',
             params=params,
             files={'data': df.to_csv(index=False)}
             )
 
-        try:
-            content = get_response_content(response)
-            self._load_metadata(content["data"])
+        content = get_response_content(response)
 
-        except Exception as e:
-            raise e
-
-        finally:
-            loader.stop()
+        if content:
+            model_data = self.__get_progress()
+            if model_data:
+                self._load_metadata(model_data["data"])
 
     def explain(self):
         """ Generates a model explanation URL

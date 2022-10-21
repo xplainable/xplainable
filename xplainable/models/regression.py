@@ -9,6 +9,8 @@ import ipywidgets as widgets
 from xplainable.client import __session__
 import time
 import xplainable
+import warnings
+warnings.filterwarnings('ignore')
 
 class XRegressor(BaseModel):
     """ xplainable regression model.
@@ -90,71 +92,143 @@ class XRegressor(BaseModel):
 
     def __get_progress(self):
 
-        user_id = xplainable.__client__.get_user_data()['sub']
-
         current_output = None
         current_stage = "Initialising..."
-        progress_instantiated = False
+        optimisation_instantiated = False
+        train_complete = False
 
         stage = widgets.HTML(value=f'<p>{current_stage}</p>')
-        stage.layout = widgets.Layout(margin='0 0 0 25px')
 
-
-        bars = widgets.VBox([])
-
-        screen = widgets.VBox([
-            bars,
-            widgets.HTML(f'<hr class="solid">', layout=widgets.Layout(margin='15px 0 0 0')),
+        stage_display = widgets.HBox([
+            widgets.HTML(value=f'<p>STATUS: </p>'),
             stage
         ])
+
+        stage_display.layout = widgets.Layout(margin='0 0 0 25px')
+
+        train_bar = widgets.IntProgress(
+            description=f"Fitting: ",
+            value=0,
+            min=0,
+            max=100
+            )
+
+        pipeline_title = widgets.HTML(
+            "<h3>Pipeline</h3>",
+            layout=widgets.Layout(margin='0 0 0 25px'))
+
+        train_pct = widgets.HTML(value=f'0%')
+        train_display = widgets.HBox([train_bar, train_pct])
+        opt_bars = widgets.VBox([])
+
+        colA = widgets.VBox([
+            pipeline_title,
+            train_display,
+            opt_bars
+        ])
+
+        colA.layout = widgets.Layout(
+            min_width='420px'
+        )
+
+        hyperparameters_title = widgets.HTML(
+            "<h3>Hyperparameters</h3>",
+            layout=widgets.Layout(margin='0 0 0 25px'))
+
+        hyperparameters = widgets.Box([
+                widgets.HTML(f"""<h4>
+                max_depth: {self.max_depth}<br>
+                min_leaf_size: {self.min_leaf_size}<br>
+                min_info_gain: {self.min_info_gain}<br>
+                bin_alpha: {self.bin_alpha}<br>
+                tail_sensitivity: {self.tail_sensitivity}
+                </h4>""")])
+
+        hyperparameters.layout = widgets.Layout(
+            margin='0 0 0 25px',
+            border='solid 1px',
+            min_width='250px',
+            padding='0 0 0 15px'
+            )
+
+        colB = widgets.VBox([
+            hyperparameters_title,
+            hyperparameters
+        ])
+
+        screen = widgets.VBox([
+            widgets.HBox([colA, colB]),
+            widgets.HTML(f'<hr class="solid">', layout=widgets.Layout(margin='15px 0 0 0')),
+            stage_display
+            ])
+
         display(screen)
 
         while True:
             
-            data = json.loads(__session__.get(f'{xplainable.__client__.hostname}/progress/{user_id}').content)
-
+            data = json.loads(__session__.get(f'{xplainable.__client__.hostname}/progress').content)
+        
             if data is None:
                 time.sleep(0.1)
                 continue
 
             if data['stage'] != current_stage:
-                stage.value = f'<p>{data["stage"]}</p>'
                 current_stage = data['stage']
+                stage.value = f'<p>{current_stage}</p>'
 
-            if current_stage in ['done', 'failed']:
-                if type(data['data']) == str:
-                    return eval(data['data'])
-                else:
-                    return data['data']
+            if current_stage == 'failed':
+                return
 
-            elif current_stage == 'optimising...':
-                pipeline = data['pipeline']
-                if not progress_instantiated:
-                    iterations = [i['iterations'] for i in pipeline.values()]
-                    bars.children = [
-                        widgets.HBox([
-                            widgets.IntProgress(
-                                description=f"{i} ({v['type']})",
-                                value=0,
-                                min=0,
-                                max=v['iterations']),
-                            widgets.HTML(
-                                value=f'0/{iterations[int(i)-1]}')]
-                                ) for i, v in pipeline.items()]
-
-                    #display(bars)
-                    progress_instantiated = True
-
-                if pipeline != current_output:
-                    for i, v in pipeline.items():
-                        bars.children[int(i)-1].children[0].value = v['progress']
-                        mae = "-" if v['metric'] == "-" else round(float(v['metric']), 2)
-                        bars.children[int(i)-1].children[1].value = f"{v['progress']}/{iterations[int(i)-1]} (mae: {mae})"
-
-                        if v['status']:
-                            bars.children[int(i)-1].children[0].bar_style = 'success'
-                    current_output = pipeline
+            if current_stage == 'initialising...':
                 time.sleep(0.1)
+                continue
+
+            if not train_complete:
+                p = data["train"]["progress"] / data["train"]["iterations"]
+                v = int(p*100)
+                train_bar.value = v
+                train_pct.value = f'{v}%'
+
+                if p == 1:
+                    train_complete = True
+                    train_bar.bar_style = 'success'
+
+                continue
+            
+            pipeline = data['optimise']['pipeline']
+            if not optimisation_instantiated:
+                iterations = [i['iterations'] for i in pipeline.values()]
+                opt_bars.children = [
+                    widgets.HBox([
+                        widgets.IntProgress(
+                            description=f"{i} ({v['type']})",
+                            value=0,
+                            min=0,
+                            max=v['iterations']),
+                        widgets.HTML(
+                            value=f'0/{iterations[int(i)-1]}')]
+                            ) for i, v in pipeline.items()]
+
+                optimisation_instantiated = True
+
+            if pipeline != current_output:
+                for i, v in pipeline.items():
+                    opt_bars.children[int(i)-1].children[0].value = v['progress']
+                    mae = "-" if v['metric'] == "-" else round(float(v['metric']), 2)
+                    opt_bars.children[int(i)-1].children[1].value = f"{v['progress']}/{iterations[int(i)-1]} (mae: {mae})"
+
+                    if v['status'] == 'stopped early':
+                        opt_bars.children[int(i)-1].children[0].bar_style = 'warning'
+
+                    elif v['status'] == 1:
+                        opt_bars.children[int(i)-1].children[0].bar_style = 'success'
+
+                current_output = pipeline
+            time.sleep(0.1)
+
+            if current_stage == 'done':
+                return json.loads(data['data'])
+                    
 
     def fit(self, X, y, id_columns=[]):
         """ Fits training dataset to the model.
