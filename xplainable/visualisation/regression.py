@@ -3,17 +3,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_error(model, x, y):
+def plot_error(model, x, y, alpha=0.5):
     fig = plt.figure(figsize=(12, 8))
 
     y_pred = model.predict(x)
 
     mae = mean_absolute_error(y, y_pred)
-    errors = abs(y - y_pred)
+    #errors = abs(y - y_pred)
 
     print('Error: ', mae)
 
-    plt.scatter(y, y_pred, c=errors)
+    plt.scatter(y, y_pred, alpha=alpha)
 
     plt.plot(np.linspace(0, np.maximum(y, y_pred).max(), 2), \
         np.linspace(0, np.maximum(y, y_pred).max(), 2))
