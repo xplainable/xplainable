@@ -5,7 +5,7 @@ from xplainable.utils import TrainButton
 from xplainable.quality import XScan
 
 
-def train_classifier(df, model_name, model_description=''):
+def classifier(df, model_name, model_description=''):
     """ Trains an xplainable classifier via a simple GUI.
 
     Args:
@@ -54,11 +54,18 @@ def train_classifier(df, model_name, model_description=''):
 
     possible_targets = [None] + [i for i in df.columns if df[i].nunique() < 20]
     
-    target = widgets.Dropdown(options=possible_targets)
+    target = widgets.Dropdown(
+        options=possible_targets,
+        layout = widgets.Layout(width='200px')
+        )
 
     # get all cols with cardinality of 1
     potential_id_cols = [None] + [col for col in df.columns if XScan._cardinality(df[col]) == 1]
-    id_columns = widgets.SelectMultiple(options=potential_id_cols, style=style)
+    id_columns = widgets.SelectMultiple(
+        options=potential_id_cols,
+        style=style,
+        layout = widgets.Layout(width='200px')
+        )
 
     colA = widgets.VBox([col1a, target, id_title, id_columns])
     colA.layout = widgets.Layout(margin='0 0 0 15px')
@@ -72,17 +79,13 @@ def train_classifier(df, model_name, model_description=''):
     }
 
     # Change view on optimisation button change
-    def on_change(_):
+    def optimise_changed(_):
         vala = optimise.value
         valb = not vala
 
-        n_trials.layout.display = options[vala]
-        early_stopping.layout.display = options[vala]
-
-        max_depth.layout.display = options[valb]
-        min_leaf_size.layout.display = options[valb]
-        min_info_gain.layout.display = options[valb]
-        bin_alpha.layout.display = options[valb]
+        opt_params.layout.display = options[vala]
+        std_params.layout.display = options[valb]
+        optimise_metric.layout.display = options[vala]
 
     def target_changed(_):
 
@@ -91,15 +94,35 @@ def train_classifier(df, model_name, model_description=''):
         else:
             train_button.disabled = False
 
-    # Select display from optimise dropdown
-    col2 = widgets.HTML(
-        f"<h4>Hyperparameters</h4>", layout=widgets.Layout(height='auto'))
-
     optimise = widgets.Dropdown(
         value=False, options=[True, False],
-        description='optimise:', style=style)
+        description='optimise:', style=style,
+        layout = widgets.Layout(max_width='200px'))
 
-    optimise.observe(on_change)
+    optimise_metrics = [
+        'weighted-f1',
+        'macro-f1',
+        'accuracy',
+        'recall',
+        'precision'
+    ]
+
+    optimise_metric = widgets.Dropdown(
+        value='weighted-f1',
+        options=optimise_metrics,
+        description='metric:',
+        style=style,
+        layout = widgets.Layout(max_width='200px', margin='0 0 0 10px'))
+
+    # Hide on instantiation
+    optimise_metric.layout.display = 'none'
+
+    optimise_display = widgets.HBox([
+        optimise,
+        optimise_metric
+    ])
+
+    optimise.observe(optimise_changed, names=['value'])
     target.observe(target_changed, names=['value'])
 
     # Param pickers
@@ -115,10 +138,6 @@ def train_classifier(df, model_name, model_description=''):
         value=0.015, min=0.001, max=0.2, step=0.001, readout_format='.3f',
         description='min_info_gain:', style=style)
     
-    bin_alpha = widgets.FloatSlider(
-        value=0.05, min=0.01, max=0.5, step=0.01, description='bin_alpha:',
-        style=style)
-    
     # Optimise param pickers
     n_trials = widgets.IntSlider(
         value=30, min=5, max=150, step=5, description='n_trials:',
@@ -128,30 +147,110 @@ def train_classifier(df, model_name, model_description=''):
         value=15, min=5, max=50, step=5, description='early_stopping:',
         style=style)
 
-    # Set initial optimise widgets to no display
-    n_trials.layout.display = 'none'
-    early_stopping.layout.display = 'none'
+    # SEARCH SPACE – MAX_DEPTH
+    max_depth_space = widgets.IntRangeSlider(
+        value=[4, 22],
+        min=2,
+        max=100,
+        step=1,
+        description="max_depth:",
+        style={'description_width': 'initial'},
+        layout = widgets.Layout(min_width='350px')
+    )
 
-    colBParams = widgets.VBox(
-        [col2, optimise, max_depth, min_leaf_size, min_info_gain,
-        bin_alpha, n_trials, early_stopping])
+    max_depth_step = widgets.Dropdown(
+        options=[1, 2, 5],
+        layout = widgets.Layout(max_width='75px')
+    )
 
+    max_depth_space_display = widgets.HBox([max_depth_space, max_depth_step])
+
+    # SEARCH SPACE – MIN_LEAF_SIZE
+    min_leaf_size_space = widgets.FloatRangeSlider(
+        value=[0.005, 0.08],
+        min=0.005,
+        max=0.2,
+        step=0.005,
+        description="min_leaf_size:",
+        style={'description_width': 'initial'},
+        readout_format='.3f',
+        layout = widgets.Layout(min_width='350px')
+    )
+
+    min_leaf_size_step = widgets.Dropdown(
+        options=[0.005, 0.01, 0.02],
+        layout = widgets.Layout(max_width='75px')
+    )
+
+    min_leaf_size_display = widgets.HBox([min_leaf_size_space, min_leaf_size_step])
+
+    # SEARCH SPACE – MIN_LEAF_SIZE
+    min_info_gain_space = widgets.FloatRangeSlider(
+        value=[0.005, 0.08],
+        min=0.005,
+        max=0.2,
+        step=0.005,
+        description="min_info_gain:",
+        style={'description_width': 'initial'},
+        readout_format='.3f',
+        layout = widgets.Layout(min_width='350px')
+    )
+
+    min_info_gain_step = widgets.Dropdown(
+        options=[0.005, 0.01, 0.02],
+        layout = widgets.Layout(max_width='75px')
+    )
+
+    min_info_gain_display = widgets.HBox([min_info_gain_space, min_info_gain_step])
+
+    std_params = widgets.VBox([
+        widgets.HTML(f"<h4>Hyperparameters</h4>"),
+        max_depth,
+        min_leaf_size,
+        min_info_gain
+    ])
+
+    opt_params = widgets.VBox([
+        widgets.HTML(f"<h4>Trials</h4>"),
+        n_trials,
+        early_stopping,
+        widgets.HTML(f"<h4>Search Space</h4>"),
+        max_depth_space_display,
+        min_leaf_size_display,
+        min_info_gain_display
+    ])
+
+     # Set initial optimise widgets to no display
+    opt_params.layout.display = 'none'
+
+    colBParams = widgets.VBox([
+        optimise_display,
+        std_params,
+        opt_params
+        ])
+
+    bin_alpha_header = widgets.HTML(f"<h4>Bin Alpha</h4>")
+    bin_alpha = widgets.FloatSlider(value=0.05, min=0.01, max=0.5, step=0.01)
 
     validation_size_header = widgets.HTML(f"<h4>Validation Size</h4>")
     validation_size = widgets.FloatSlider(value=0.2, min=0.05, max=0.5, step=0.01)
 
-    colBSettings = widgets.VBox([validation_size_header, validation_size])
+    colBSettings = widgets.VBox([bin_alpha_header, bin_alpha, validation_size_header, validation_size])
 
     colB = widgets.Tab([colBParams, colBSettings])
     colB.set_title(0, 'Parameters')
     colB.set_title(1, 'Settings')
-    colB.layout = widgets.Layout(margin='0 0 0 15px')
+    colB.layout = widgets.Layout(margin='0 0 0 15px', min_width='400px')
     
     body = widgets.HBox([colA, colB])
 
     # FOOTER
     train_button = TrainButton(description='Train Model', model=model, icon='bolt', disabled=True)
     close_button = widgets.Button(description='Close')
+
+    train_button.layout = widgets.Layout(margin=' 10px 0 10px 20px')
+    close_button.layout = widgets.Layout(margin=' 10px 0 10px 10px')
+
     footer = widgets.VBox(
         [divider, widgets.HBox([train_button, close_button])])
 
@@ -178,14 +277,18 @@ def train_classifier(df, model_name, model_description=''):
         with outt:
         
             model = b.model         
-            model.max_depth = max_depth.value,
-            model.min_leaf_size = min_leaf_size.value,
-            model.min_info_gain = min_info_gain.value,
-            model.bin_alpha = bin_alpha.value,
-            model.optimise = optimise.value,
-            model.n_trials = n_trials.value,
+            model.max_depth = max_depth.value
+            model.min_leaf_size = min_leaf_size.value
+            model.min_info_gain = min_info_gain.value
+            model.bin_alpha = bin_alpha.value
+            model.optimise = optimise.value
+            model.n_trials = n_trials.value
             model.early_stopping = early_stopping.value
             model.validation_size = validation_size.value
+            model.max_depth_space = list(max_depth_space.value) + [max_depth_step.value]
+            model.min_leaf_size_space = list(min_leaf_size_space.value) + [min_leaf_size_step.value]
+            model.min_info_gain_space = list(min_info_gain_space.value) + [min_info_gain_step.value]
+            model.opt_metric = optimise_metric.value
 
             try:
                 body.close()
