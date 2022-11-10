@@ -242,6 +242,11 @@ class Preprocessor:
                     adder_params.children = params.children
 
                 add_button.layout.visibility = 'visible'
+                docs_text.value = get_tf_description(
+                    single_feature_transformers.value)
+            
+            else:
+                docs_text.value = ""
 
         def multi_feature_tf_selected(_):
             """ Listens to multi feature transformer selection"""
@@ -256,6 +261,11 @@ class Preprocessor:
                     adder_params.children = params.children
 
                 add_button.layout.visibility = 'visible'
+                docs_text.value = get_tf_description(
+                    multi_feature_transformers.value)
+            
+            else:
+                docs_text.value = ""
 
         # Get the difference in dataframes from dataset transformers
         def get_df_delta(df1, df2):
@@ -267,6 +277,16 @@ class Preprocessor:
                         col not in df1.columns]
             }
             return output
+
+        def get_tf_description(name):
+            """Retreives transformer function documentation (first line)"""
+            matches = [c for c in clsmembers if c[0] == name]
+
+            if len(matches) > 0:
+                return matches[0][1].__doc__.split("\n\n")[0].strip()
+
+            else:
+                return "No documentation"
 
         def refresh_params():
             """ instantiates param values when no selection required"""
@@ -714,7 +734,22 @@ class Preprocessor:
         selector_tabs.set_title(0, 'Single Feature')
         selector_tabs.set_title(1, 'Multi Feature')
 
-        selector = widgets.VBox([select_transformer_title, selector_tabs])
+        docs_text = widgets.HTML("")
+
+        docs_box = widgets.Box([docs_text])
+        docs_box.layout = widgets.Layout(
+            max_width='330px',
+            max_height='250px',
+            display='flex',
+            flex_flow='column wrap',
+            margin = '0 0 0 15px'
+            )
+
+        selector = widgets.VBox([
+            select_transformer_title,
+            selector_tabs,
+            docs_box
+            ])
 
         selector.layout = widgets.Layout(
             min_width='350px',

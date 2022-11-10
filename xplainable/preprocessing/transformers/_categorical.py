@@ -14,8 +14,10 @@ class TextRemove(XBaseTransformer):
         numbers (bool, optional): Removes numbers from string.
         characters (bool, optional): Removes characters from string.
         uppercase (bool, optional): Removes uppercase characters from string.
-        special (bool, optional): Removes lowercase characters from string.
+        lowercase (bool, optional): Removes lowercase characters from string.
+        special (bool, optional): Removes special characters from string.
         whitespace (bool, optional): Removes whitespace from string.
+        stopwords (bool, optional): Removes stopwords from string.
         text (str, optional): Removes specific text match from string.
         custom_regex (str, optional): Removes matching regex text from string.
     """
@@ -40,7 +42,9 @@ class TextRemove(XBaseTransformer):
     def __call__(self, *args, **kwargs):
         
         def _set_params(numbers=False, characters=False, uppercase=False, \
-        lowercase=False, special=False, whitespace=False, stopwords=False, text='', regex=''):
+        lowercase=False, special=False, whitespace=False, stopwords=False, \
+            text='', regex=''):
+
             self.numbers = numbers
             self.characters = characters
             self.uppercase = uppercase
@@ -60,8 +64,8 @@ class TextRemove(XBaseTransformer):
         w = interactive(_set_params)
         checkboxes_a = widgets.VBox(w.children[:4])
         checkboxes_b = widgets.VBox(w.children[4:7])
-        checkboxes_a.layout = widgets.Layout(margin='0 0 0 -50px')
-        checkboxes_b.layout = widgets.Layout(margin='0 0 0 -150px')
+        checkboxes_a.layout = widgets.Layout(margin='0 0 0 -20px')
+        checkboxes_b.layout = widgets.Layout(margin='0 0 0 -140px')
 
         checkboxes = widgets.HBox([checkboxes_a, checkboxes_b])
 
@@ -113,9 +117,6 @@ class ChangeCase(XBaseTransformer):
 
     Args:
         case (str): 'upper' or 'lower'
-
-    Attributes:
-        case (str): The case the string will convert to.
     """
 
     # Attributes for ipywidgets
@@ -144,14 +145,10 @@ class ChangeCase(XBaseTransformer):
 
 
 class DetectCategories(XBaseTransformer):
-    """ Detects categories from a string columns.
+    """Detects categories from a string column.
 
     Args:
         max_categories (int): The maximum number of categories to extract.
-
-    Attributes:
-        max_categories (str): The maximum number of categories to extract.
-        category_list (list): The fitted category list.
     """
 
     supported_types = ['categorical']
@@ -208,10 +205,6 @@ class Condense(XBaseTransformer):
 
     Args:
         pct (int): The minumum pct of observations the categories should cover.
-
-    Attributes:
-        pct (str): The minumum pct of observations the categories should cover.
-        categories (list): The calculated category list.
     """
 
     supported_types = ['categorical']
@@ -271,10 +264,8 @@ class MergeCategories(XBaseTransformer):
     """ Merges specified categories in a series into one category.
 
     Args:
-        categories (list): The list of categories. First category is target.
-
-    Attributes:
-        categories (list): The list of categories. First category is target.
+        merge_from (list): List of categories to merge from.
+        merge_to (str): The category to merge to.
     """
 
     supported_types = ['categorical']
@@ -302,12 +293,11 @@ class MergeCategories(XBaseTransformer):
 
 
 class ReplaceCategory(XBaseTransformer):
-    """ Replaces values in a series with specified values.
+    """ Replaces a category in a series with specified value.
 
     Args:
         target: The target value to replace.
-        replace_with: The value to insert in place
-
+        replace_with: The value to insert in place.
     """
 
     supported_types = ['categorical']
@@ -335,11 +325,7 @@ class FillMissingCategorical(XBaseTransformer):
     """ Fills missing values with a specified value.
 
     Args:
-        fill_with (str): ['mean', 'median', 'mode'] or raw text.
-
-    Attributes:
-        fill_with (str): The selected fill instruction.
-        fill_value (): The calculated fill value.
+        fill_with (str): Text to fill with.
     """
 
     supported_types = ['categorical']
@@ -363,8 +349,7 @@ class FillMissingCategorical(XBaseTransformer):
 
 
 class MapCategories(XBaseTransformer):
-    """ Changes names of columns in a dataset
-    """
+    """ Maps all categories of a string column to new values"""
 
     # Attributes for ipywidgets
     supported_types = ['categorical']
@@ -389,10 +374,11 @@ class MapCategories(XBaseTransformer):
 
 
 class TextContains(XBaseTransformer):
-    """ Remove specified values from string.
+    """ Flags series values that contain, start with, or end with a value.
 
     Args:
-        numbers (bool, optional): Removes numbers from string.
+        selector (str): The type of search to make.
+        value (str): The value to search.
 
     """
 
@@ -407,9 +393,10 @@ class TextContains(XBaseTransformer):
     def __call__(self, *args, **kwargs):
         
         def _set_params(
-            selector = widgets.Dropdown(options=["starts with", "ends with", "contains"]),
-            value = ''
-        ):
+            selector = widgets.Dropdown(
+                options=["starts with", "ends with", "contains"]),
+            value = ''):
+
             self.selector = selector
             self.value = value
 
@@ -428,11 +415,12 @@ class TextContains(XBaseTransformer):
 
 
 class TextTrim(XBaseTransformer):
-    """ Remove specified values from string.
+    """ Drops or keeps first/last n characters of a categorical column.
 
     Args:
-        numbers (bool, optional): Removes numbers from string.
-        characters (bool, optional): Removes characters from string.
+        selector (str): [first, last].
+        n (int): Number of characters to identify.
+        action (str): [keep, drop] the identified characters.
     """
 
     # Attributes for ipywidgets
@@ -474,11 +462,12 @@ class TextTrim(XBaseTransformer):
 
 
 class TextSlice(XBaseTransformer):
-    """ Remove specified values from string.
+    """ Selects slice from categorical column string.
 
     Args:
-        numbers (bool, optional): Removes numbers from string.
-        characters (bool, optional): Removes characters from string.
+        start (int): Starting character.
+        end (int): Ending character.
+        action (str): [keep, drop] selected slice.
     """
 
     # Attributes for ipywidgets
@@ -509,4 +498,3 @@ class TextSlice(XBaseTransformer):
             return ser.str[self.start:self.end]
         else:
             return ser.str[:self.start] + ser.str[self.end:]
-

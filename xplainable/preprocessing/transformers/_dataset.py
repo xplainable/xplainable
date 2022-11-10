@@ -8,13 +8,10 @@ import ipywidgets as widgets
 
 
 class DropCols(XBaseTransformer):
-    """ Drops a specified column from a dataset.
+    """Drops specified columns from a dataset.
 
     Args:
-        column (str): The column to be dropped.
-
-    Attributes:
-        column (str): The column to be dropped.
+        columns (str): The columns to be dropped.
     """
 
     supported_types = ['dataset']
@@ -23,9 +20,9 @@ class DropCols(XBaseTransformer):
         super().__init__()
         self.columns = columns
 
-    def __call__(self, dataset, *args, **kwargs):
+    def __call__(self, df, *args, **kwargs):
         
-        def _set_params(columns=widgets.SelectMultiple(options=dataset.columns)):
+        def _set_params(columns=widgets.SelectMultiple(options=df.columns)):
 
             self.columns = list(columns)
 
@@ -43,24 +40,38 @@ class DropCols(XBaseTransformer):
         return df
 
 class DropNaNs(XBaseTransformer):
-    """ Drops nan rows from a dataset.
+    """Drops nan rows from a dataset.
+
+    Args:
+        subset (list, optional): A subset of columns to apply the transfomer.
     """
 
     supported_types = ['dataset']
 
-    def __init__(self):
+    def __init__(self, subset=None):
         super().__init__()
+        self.subset = subset
+
+    def __call__(self, df, *args, **kwargs):
+        
+        def _set_params(
+            subset=widgets.SelectMultiple(options=[None]+list(df.columns))):
+
+            self.subset = list(subset)
+
+        return interactive(_set_params)
 
     def _operations(self, df):
 
-        return df.copy().dropna()
-
+        return df.copy().dropna(subset=self.subset)
 
 class AddCols(XBaseTransformer):
-    """ Adds multiple numeric columns into single feature.
+    """Adds multiple numeric columns into single feature.
 
     Args:
-        columns (list): column names to join
+        columns (list): Column names to add.
+        alias (str): Name of newly created column.
+        drop (bool): Drops original columns if True
     """
     
     # Attributes for ipywidgets
@@ -99,10 +110,12 @@ class AddCols(XBaseTransformer):
         return df
 
 class MultiplyCols(XBaseTransformer):
-    """ Multiplies multiple numeric columns into single feature.
+    """Multiplies multiple numeric columns into single feature.
 
     Args:
-        columns (list): column names to join
+        columns (list): Column names to multiply
+        alias (str): Name of newly created column.
+        drop (bool): Drops original columns if True
     """
 
     supported_types = ['dataset']
@@ -140,10 +153,12 @@ class MultiplyCols(XBaseTransformer):
         return df
 
 class ConcatCols(XBaseTransformer):
-    """ Concatenates multiple numeric columns into single feature.
+    """Concatenates multiple columns into single feature.
 
     Args:
-        columns (list): column names to join
+        columns (list): column names to join.
+        alias (str): Name of newly created column.
+        drop (bool): Drops original columns if True.
     """
 
     supported_types = ['dataset']
@@ -183,8 +198,7 @@ class ConcatCols(XBaseTransformer):
 
 
 class ChangeNames(XBaseTransformer):
-    """ Changes names of columns in a dataset
-    """
+    """Changes names of columns in a dataset"""
 
     # Attributes for ipywidgets
     supported_types = ['dataset']
@@ -209,7 +223,11 @@ class ChangeNames(XBaseTransformer):
 
 
 class OrderBy(XBaseTransformer):
-    """ Changes names of columns in a dataset
+    """ Orders the dataset by the values of a given series.
+
+    Args:
+        order_by (str): The series to order by.
+        ascending (bool): Orders in ascending order if True.
     """
 
     # Attributes for ipywidgets
@@ -223,9 +241,10 @@ class OrderBy(XBaseTransformer):
     def __call__(self, df, *args, **kwargs):
       
         def _set_params(
-            order_by = widgets.SelectMultiple(description='Order by: ', options=[None]+list(df.columns)),
-            direction = widgets.ToggleButtons(options=['ascending', 'descending'])
-        ):
+            order_by = widgets.SelectMultiple(
+                description='Order by: ', options=[None]+list(df.columns)),
+            direction = widgets.ToggleButtons(
+                options=['ascending', 'descending'])):
 
             self.order_by = list(order_by)
             self.ascending = True if direction == 'ascending' else False
@@ -238,19 +257,23 @@ class OrderBy(XBaseTransformer):
 
 
 class GroupbyShift(XBaseTransformer):
-    """ Shifts a series up of down n steps
+    """ Shifts a series up or down n steps within specified group.
 
     Args:
-        case (str): 'upper' or 'lower'
-
-    Attributes:
-        case (str): The case the string will convert to.
+        target (str): The target feature to shift.
+        step (int): The number of steps to shift.
+        as_new (bool): Creates new column if True.
+        group_by (str): The column to group by.
+        order_by (str): The column to order by.
+        descending (bool): Orders the value descending if True.
     """
 
     # Attributes for ipywidgets
     supported_types = ['dataset']
 
-    def __init__(self, target=None, step=0, as_new=None, group_by=None, order_by=None, descending=None):
+    def __init__(self, target=None, step=0, as_new=None, group_by=None,\
+        order_by=None, descending=None):
+
         super().__init__()
         self.target = target
         self.step = step
@@ -309,8 +332,7 @@ class GroupbyShift(XBaseTransformer):
 
 
 class FillMissing(XBaseTransformer):
-    """ Changes names of columns in a dataset
-    """
+    """Fills missing values of all columns with a specified value/strategy."""
 
     # Attributes for ipywidgets
     supported_types = ['dataset']
@@ -375,8 +397,7 @@ class FillMissing(XBaseTransformer):
 
 
 class SetDTypes(XBaseTransformer):
-    """ Changes names of columns in a dataset
-    """
+    """Sets the data type of all columns in the dataset."""
 
     # Attributes for ipywidgets
     supported_types = ['dataset']
@@ -440,11 +461,12 @@ class SetDTypes(XBaseTransformer):
 
 
 class TextSplit(XBaseTransformer):
-    """ Remove specified values from string.
+    """ Splits a string column into multiple columns on a specified separator.
 
     Args:
-        numbers (bool, optional): Removes numbers from string.
-        characters (bool, optional): Removes characters from string.
+        target (str): The columns to split.
+        separator (str): The separator to split on.
+        max_splits (int): The maximum number of splits to make.
     """
 
     # Attributes for ipywidgets
@@ -459,10 +481,12 @@ class TextSplit(XBaseTransformer):
     def __call__(self, df, *args, **kwargs):
         
         def _set_params(
-            target=widgets.Dropdown(options=[None]+[i for i in df.columns if pdtypes.is_string_dtype(df[i])]),
-            separator = widgets.Text(value=""),
-            max_splits = widgets.IntText(range=[0,10])
-        ):
+            target=widgets.Dropdown(
+                options=[None]+[i for i in df.columns if \
+                    pdtypes.is_string_dtype(df[i])]),
+                separator = widgets.Text(value=""),
+                max_splits = widgets.IntText(range=[0,10])):
+
             self.target = target
             self.separator = separator
             self.max_splits = max([max_splits, 0])
@@ -480,13 +504,11 @@ class TextSplit(XBaseTransformer):
 
 
 class ChangeCases(XBaseTransformer):
-    """ Changes the case of a string.
+    """ Changes the case of all specified categorical columns.
 
     Args:
-        case (str): 'upper' or 'lower'
-
-    Attributes:
-        case (str): The case the string will convert to.
+        columns (list): The to apply the case change.
+        case (str): 'upper' or 'lower'.
     """
 
     # Attributes for ipywidgets

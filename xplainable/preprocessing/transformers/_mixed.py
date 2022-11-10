@@ -6,8 +6,7 @@ import pandas as pd
 import ipywidgets as widgets
 
 class SetDType(XBaseTransformer):
-    """ Changes names of columns in a dataset
-    """
+    """Changes the data type of a specified column."""
 
     # Attributes for ipywidgets
     supported_types = ['numeric', 'categorical']
@@ -58,17 +57,14 @@ class SetDType(XBaseTransformer):
             'string': str
         }
             
-        return ser.astype(mapp[self.to_type])
+        return ser.astype(mapp[self.to_type]) 
 
 
 class Shift(XBaseTransformer):
-    """ Shifts a series up of down n steps
+    """ Shifts a series up or down n steps.
 
     Args:
-        case (str): 'upper' or 'lower'
-
-    Attributes:
-        case (str): The case the string will convert to.
+        step (str): The number of steps to shift.
     """
 
     # Attributes for ipywidgets
