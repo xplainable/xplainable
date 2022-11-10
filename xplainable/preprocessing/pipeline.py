@@ -78,6 +78,7 @@ class XPipeline:
         for stage in self.stages[start:]:
 
             if stage['feature'] == '__dataset__':
+                stage['transformer'].fit(X)
                 X = stage['transformer'].transform(X)
                 continue
 

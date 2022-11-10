@@ -1,0 +1,3 @@
+
+class MissingValueError(Exception):
+    pass

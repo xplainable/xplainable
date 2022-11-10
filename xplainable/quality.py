@@ -4,6 +4,8 @@ from statsmodels.tools.tools import add_constant
 import pandas as pd
 import numpy as np
 import copy
+import ipywidgets as widgets
+from IPython.display import display
 
 class XScan:
     """ Data quality scanner
@@ -50,8 +52,8 @@ class XScan:
                 bool: True if the string is mixed else False.
             """
 
-            is_mixed = any(char.isupper() for char in str(s)) and \
-                not all(char.isupper() for char in str(s))
+            is_mixed = any(char.isupper() for char in str(s).strip()) and \
+                not all(char.isupper() for char in str(s).strip())
 
             return is_mixed
 
@@ -81,8 +83,8 @@ class XScan:
                 bool: True if the string is mixed else False.
             """
 
-            is_mixed = any(char.isdigit() for char in str(s)) and \
-                not all(char.isdigit() for char in str(s))
+            is_mixed = any(char.isdigit() for char in str(s).strip()) and \
+                not all(char.isdigit() for char in str(s).strip())
 
             return is_mixed
         
@@ -218,41 +220,93 @@ class XScan:
         else:
             return 'categorical'
 
+    def _series_is_empty(self, ser):
+        if ser.isna().sum() / len(ser) == 1:
+            return True
+        else:
+            return False
+
     def _scan_numeric_feature(self, ser):
+
+        if self._series_is_empty(ser):
+            return {
+                'type': 'empty',
+                'missing_pct': 1
+                }
 
         ser_type = self._detect_type(ser)
         if ser_type == 'id':
-            return {'type': ser_type}
+            return {
+                'type': ser_type,
+                'missing_pct': 0
+                }
 
         sub_profile = {
             'type': ser_type,
+            'missing_pct': self._is_missing(ser),
+            'min': np.nanmin(ser),
+            '25%': ser.quantile(0.25),
+            'mean': np.nanmean(ser),
+            'median': np.nanmedian(ser),
+            '75%': ser.quantile(0.75),
+            'max': np.nanmax(ser),
+            'std': ser.std(),
             'skewness': self._skewness_score(ser),
             'kurtosis': self._kurtosis_score(ser),
-            'variance': self._variance_score(ser),
-            'missing_pct': self._is_missing(ser)
+            'variance': self._variance_score(ser)
+        }
+
+        return sub_profile
+
+    def _scan_nlp_feature(self, ser):
+
+        sub_profile = {
+            'type': 'nlp',
+            'missing_pct': self._is_missing(ser),
+            'mixed_case': self._is_mixed_case(ser),
+            'mixed_type': self._mixed_char_num(ser)
         }
 
         return sub_profile
 
     def _scan_categorical_feature(self, ser):
 
+        if self._series_is_empty(ser):
+            return {
+                'type': 'empty',
+                'missing_pct': 1
+                }
+
         ser_type = self._detect_type(ser)
         if ser_type == 'id':
-            return {'type': ser_type}
+            return {
+                'type': ser_type,
+                'missing_pct': 0
+                }
+
+        elif ser_type == 'nlp':
+            return self._scan_nlp_feature(ser)
 
         sub_profile = {
             'type': ser_type,
+            'missing_pct': self._is_missing(ser),
             'nunique': self._unique_values(ser),
+            'mode': ser.mode().values[0],
             'cardinality': self._cardinality(ser),
             'mixed_case': self._is_mixed_case(ser),
             'mixed_type': self._mixed_char_num(ser),
-            'missing_pct': self._is_missing(ser),
             'category_imbalance': self._category_imbalance(ser)
         }
 
         return sub_profile
 
     def _scan_date_feature(self, ser):
+
+        if self._series_is_empty(ser):
+            return {
+                'type': 'empty',
+                'missing_pct': 1
+                }
 
         sub_profile = {
             'type': self._detect_type(ser),
@@ -286,7 +340,8 @@ class XScan:
         vif = {X.columns[i]: variance_inflation_factor(
             X.values, i) for i in range(X.shape[1])}
 
-        vif.pop('const')
+        if 'const' in vif:
+            vif.pop('const')
 
         vif_report = {}
 
@@ -304,6 +359,21 @@ class XScan:
 
         return vif_report
 
+    def _scan_feature(self, ser):
+        if is_numeric_dtype(ser):
+                sub_profile = self._scan_numeric_feature(ser)
+                
+        elif is_string_dtype(ser):
+            sub_profile = self._scan_categorical_feature(ser)
+
+        elif is_datetime64_dtype(ser):
+            sub_profile = self._scan_date_feature(ser)
+
+        else:
+            raise TypeError(f"Feature {ser.name} has unknown type")
+
+        return sub_profile
+
     def scan(self, df, target=None):
 
         if target:
@@ -312,24 +382,26 @@ class XScan:
 
             df = df.drop(columns=[target])
         
-        for col in df.columns:
-            ser = df[col]
-            if is_numeric_dtype(ser):
-                sub_profile = self._scan_numeric_feature(ser)
-                
-            elif is_string_dtype(ser):
-                sub_profile = self._scan_categorical_feature(ser)
+        progress_bar = widgets.IntProgress(
+            description="scanning data: ",
+            value=0,
+            max=df.shape[1],
+            style={'description_width': 'initial'})
 
-            elif is_datetime64_dtype(ser):
-                sub_profile = self._scan_date_feature(ser)
+        current_feature = widgets.HTML("")
+        display(widgets.HBox([progress_bar, current_feature]))
 
-            else:
-                raise TypeError(f"Feature {col} has unknown type")
+        for i, col in enumerate(df.columns):
 
-            self.profile[col] = sub_profile
+            progress_bar.value = i
+            current_feature.value = col
 
-        vif = self._vif(df)
-        for i, v in vif.items():
-            self.profile[i].update({'vif': v})
+            self.profile[col] = self._scan_feature(df[col])
 
-        return self
+        #current_feature.value = 'Calculating VIF'
+        #vif = self._vif(df)
+        #for i, v in vif.items():
+        #    self.profile[i].update({'vif': v})
+
+        current_feature.close()
+        progress_bar.close()
