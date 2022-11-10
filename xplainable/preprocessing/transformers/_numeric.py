@@ -6,13 +6,7 @@ import numpy as np
 
 
 class MinMaxScale(XBaseTransformer):
-    """ Scales a series between 0 and 1.
-
-    Attributes:
-        min (float): The minimum values from the fitted series.
-        max (float): The maximum values from the fitted series.
-
-    """
+    """Scales a numeric series between 0 and 1."""
 
     # Attributes for ipywidgets
     supported_types = ['numeric']
@@ -43,8 +37,7 @@ class MinMaxScale(XBaseTransformer):
         return self
 
 class LogTransform(XBaseTransformer):
-    """ Log transforms a given series.
-    """
+    """ Log transforms a given numeric series."""
 
     # Attributes for ipywidgets
     supported_types = ['numeric']
@@ -60,10 +53,10 @@ class LogTransform(XBaseTransformer):
 
 
 class Clip(XBaseTransformer):
-    """ Clips numeric values to a specified range
+    """ Clips numeric values to a specified range.
 
     Args:
-        lower (float): The lower threshold.
+        lower (float): The lower threshold value.
         upper (float): The upper threshold value.
 
     """
@@ -96,14 +89,10 @@ class Clip(XBaseTransformer):
 
 
 class FillMissingNumeric(XBaseTransformer):
-    """ Fills missing values with a specified value.
+    """ Fills missing values with a specified strategy.
 
     Args:
-        fill_with (str): ['mean', 'median', 'mode'] or raw text.
-
-    Attributes:
-        fill_with (str): The selected fill instruction.
-        fill_value (): The calculated fill value.
+        fill_with (str): The strategy ['mean', 'median', 'mode'].
     """
 
     supported_types = ['numeric']
