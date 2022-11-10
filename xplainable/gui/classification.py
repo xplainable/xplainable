@@ -1,8 +1,9 @@
 from IPython.display import display, clear_output
 import ipywidgets as widgets
 from xplainable.models.classification import XClassifier
-from xplainable.utils import TrainButton
+from xplainable.utils import TrainButton, ping_server
 from xplainable.quality import XScan
+import xplainable
 
 
 def classifier(df, model_name, model_description=''):
@@ -37,14 +38,17 @@ def classifier(df, model_name, model_description=''):
         value=logo, format='png', width=50, height=50)
     logo_display.layout = widgets.Layout(margin='15px 25px 15px 15px')
 
-    header_title = widgets.HTML(f"<h2>Model: {model_name}</h2>")
+    header_title = widgets.HTML(f"<h2>Model: {model_name}&nbsp&nbsp</h2>")
     header_title.layout = widgets.Layout(margin='10px 0 0 0')
 
     divider = widgets.HTML(
         f'<hr class="solid">', layout=widgets.Layout(height='auto'))
 
+    connection_status = widgets.HTML(f"<h4><font color='red'>[offline]</h4>")
+    connection_status.layout = widgets.Layout(margin='10px 0 0 0')
+
     header = widgets.VBox(
-        [widgets.HBox([widgets.VBox([logo_display]), header_title])])
+        [widgets.HBox([widgets.VBox([logo_display]), header_title, connection_status])])
 
     # COLUMN 1
     col1a = widgets.HTML(
@@ -314,6 +318,13 @@ def classifier(df, model_name, model_description=''):
 
     # Display screen
     display(screen)
+
+    # Ping server to check for connection
+    try:
+        if ping_server(xplainable.__client__.compute_hostname):
+            connection_status.value = f"<h4><font color='green'>[connected]</h4>"
+    except:
+        pass
 
     # Need to return empty model first
     return model

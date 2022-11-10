@@ -3,13 +3,16 @@ from .. import client
 import numpy as np
 import sklearn.metrics as skm
 from xplainable.models._base_model import BaseModel
-from ..utils import get_response_content
+from ..utils.api import get_response_content
 from IPython.display import display, clear_output
 import ipywidgets as widgets
 from xplainable.client import __session__
 import time
 import xplainable
 import warnings
+import pickle
+import zlib
+
 warnings.filterwarnings('ignore')
 
 class XRegressor(BaseModel):
@@ -37,7 +40,6 @@ class XRegressor(BaseModel):
         self._base_value = None
         self._categorical_columns = None
         self._numeric_columns = None
-        self._params = None
         self._layers = None
 
         self.max_depth = max_depth
@@ -61,11 +63,17 @@ class XRegressor(BaseModel):
         self._base_value = data['base_value']
         self._categorical_columns = data['categorical_columns']
         self._numeric_columns = data['numeric_columns']
-        self._params = data['parameters']
         self._layers = data['layers']
-        self.prediction_range = data['parameters']['prediction_range']
-        self.min_prediction = data['parameters']['min_prediction']
-        self.max_prediction = data['parameters']['max_prediction']
+        
+        params = data['parameters']
+        self.prediction_range = params['prediction_range']
+        self.min_prediction = params['min_prediction']
+        self.max_prediction = params['max_prediction']
+        self.max_depth = params['max_depth']
+        self.min_leaf_size = params['min_leaf_size']
+        self.min_info_gain = params['min_info_gain']
+        self.bin_alpha = params['bin_alpha']
+        self.validation_size = params['validation_size']
 
     def _set_prediction_range(self):
         """ Sets the prection range as parameterised.
@@ -166,7 +174,7 @@ class XRegressor(BaseModel):
 
         while True:
             
-            data = json.loads(__session__.get(f'{xplainable.__client__.hostname}/progress').content)
+            data = json.loads(__session__.get(f'{xplainable.__client__.compute_hostname}/progress').content)
         
             if data is None:
                 time.sleep(0.1)
@@ -260,13 +268,20 @@ class XRegressor(BaseModel):
             "layers": self._layers
         }
 
+        bts = pickle.dumps(df)
+        compressed_bytes = zlib.compress(bts)
+
+        uploading_text = widgets.HTML("Uploading Data...")
+        display(uploading_text)
+
         response = self.__session.post(
-            f'{xplainable.__client__.hostname}/train/regression',
+            f'{xplainable.__client__.compute_hostname}/train/regression',
             params=params,
-            files={'data': df.to_csv(index=False)}
+            files={'data': compressed_bytes}
             )
 
         content = get_response_content(response)
+        uploading_text.close()
 
         if content:
             model_data = self.__get_progress()

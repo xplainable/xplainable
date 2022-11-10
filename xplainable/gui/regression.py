@@ -1,13 +1,14 @@
 from IPython.display import display, clear_output
 import ipywidgets as widgets
 from xplainable.models.regression import XRegressor
-from xplainable.utils import TrainButton
+from xplainable.utils import TrainButton, ping_server
 from pandas.api.types import is_numeric_dtype
 from xplainable.exceptions import *
 from xplainable.quality import XScan
 import xplainable
+import json
 
-def train_regressor(df, model_name, model_description=''):
+def regressor(df, model_name, model_description=''):
     """ Trains an xplainable regressor via a simple GUI.
 
     Args:
@@ -40,11 +41,14 @@ def train_regressor(df, model_name, model_description=''):
         value=logo, format='png', width=50, height=50)
     logo_display.layout = widgets.Layout(margin='15px 25px 15px 15px')
 
-    header_title = widgets.HTML(f"<h2>Model: {model_name}</h2>")
+    header_title = widgets.HTML(f"<h2>Model: {model_name}&nbsp&nbsp</h2>")
     header_title.layout = widgets.Layout(margin='10px 0 0 0')
 
+    connection_status = widgets.HTML(f"<h4><font color='red'>[offline]</h4>")
+    connection_status.layout = widgets.Layout(margin='10px 0 0 0')
+
     header = widgets.VBox(
-        [widgets.HBox([widgets.VBox([logo_display]), header_title])])
+        [widgets.HBox([widgets.VBox([logo_display]), header_title, connection_status])])
 
     # TAB 1
     # Column A
@@ -351,6 +355,9 @@ def train_regressor(df, model_name, model_description=''):
     close_button = widgets.Button(description='Close')
     close_button.on_click(close_button_clicked)
 
+    train_button.layout = widgets.Layout(margin=' 10px 0 10px 20px')
+    close_button.layout = widgets.Layout(margin=' 10px 0 10px 10px')
+
     # Build footer
     footer = widgets.VBox([divider, widgets.HBox([train_button, close_button])])
 
@@ -359,6 +366,13 @@ def train_regressor(df, model_name, model_description=''):
 
     # Display the GUI
     display(screen)
+
+    # Ping server to check for connection
+    try:
+        if ping_server(xplainable.__client__.compute_hostname):
+            connection_status.value = f"<h4><font color='green'>[connected]</h4>"
+    except:
+        pass
 
     # Return blank model await training
     return model

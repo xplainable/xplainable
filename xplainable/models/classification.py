@@ -8,10 +8,13 @@ import sklearn.metrics as skm
 from urllib3.exceptions import HTTPError
 import xplainable
 from xplainable.client import __session__
-from xplainable.utils import get_response_content
+from xplainable.utils.api import get_response_content
 import ipywidgets as widgets
 import time
 import warnings
+import pickle
+import zlib
+
 warnings.filterwarnings('ignore')
 
 
@@ -306,7 +309,7 @@ class XClassifier(BaseModel):
 
         while True:
             
-            data = json.loads(__session__.get(f'{xplainable.__client__.hostname}/progress').content)
+            data = json.loads(__session__.get(f'{xplainable.__client__.compute_hostname}/progress').content)
         
             if data is None:
                 time.sleep(0.1)
@@ -400,10 +403,14 @@ class XClassifier(BaseModel):
             "opt_metric": self.opt_metric
         }
 
+        bts = pickle.dumps(df)
+        compressed_bytes = zlib.compress(bts)
+
+        url = f'{xplainable.__client__.compute_hostname}/train/binary'
         response = self.__session.post(
-            f'{xplainable.__client__.hostname}/train/binary',
+            url=url,
             params=params,
-            files={'data': df.to_csv(index=False)}
+            files={'data': compressed_bytes}
             )
 
         content = get_response_content(response)

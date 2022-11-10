@@ -2,7 +2,7 @@ import json
 import requests
 from urllib3.exceptions import HTTPError
 from authlib.jose import jwt
-from xplainable.utils import get_response_content
+from xplainable.utils.api import get_response_content
 import xplainable
 
 __session__ = requests.Session()
@@ -14,7 +14,8 @@ class Client:
 
     def __init__(self, token):
         self.token = token
-        self.hostname = None
+        self.compute_hostname = None
+        self.api_hostname = 'https://api.xplainable.io'
 
         self.init()
 
@@ -30,22 +31,14 @@ class Client:
         # Add token to session headers
         __session__.headers['authorization'] = f'Bearer {self.token}'
 
-        response = __session__.get(
-            url='https://dev-k-xn6t1r.us.auth0.com/.well-known/jwks.json')
-
         # get response data
-        jwks = get_response_content(response)
-            
-        try:
-            key = f'''-----BEGIN CERTIFICATE-----\n{jwks["keys"][0]["x5c"][0]}\n-----END CERTIFICATE-----'''
-            claims = jwt.decode(self.token, key=key)
-            vmip = claims['https://www.xplainable.io/app_metadata']['vm_ip'][0]
-            self.hostname = f"http://{vmip}"
-            xplainable.__client__ = self
-            print(f"Initialised")
+        response = __session__.get(f'{self.api_hostname}/get-organisation-machine')
+        machine_ip = get_response_content(response)
 
-        except Exception as e:
-            raise HTTPError(f"401 Invalid access token. {e}")
+        self.compute_hostname = f'http://{machine_ip}'
+        xplainable.__client__ = self
+
+        print("initialised")
 
     def list_models(self):
         """ Lists models of active user.
@@ -55,12 +48,12 @@ class Client:
         """
 
         response = __session__.get(
-            url=f'{self.hostname}/models'
+            url=f'{self.api_hostname}/models'
             )
 
         return get_response_content(response)
 
-    def list_perspectives(self, model_id):
+    def list_versions(self, model_id):
         """ Lists models of active user.
 
         Returns:
@@ -68,12 +61,12 @@ class Client:
         """
 
         response = __session__.get(
-            url=f'{self.hostname}/models/{model_id}/perspectives'
+            url=f'{self.api_hostname}/models/{model_id}/versions'
             )
 
         return get_response_content(response)
         
-    def load_model(self, model_id, perspective_id='latest'):
+    def load_model(self, model_id, version_id='latest'):
         """ Loads a model by model_id
 
         Args:
@@ -84,7 +77,7 @@ class Client:
         """
 
         model_response = __session__.get(
-            url=f'{self.hostname}/models/{model_id}'
+            url=f'{self.api_hostname}/models/{model_id}'
             )
 
         model_data = get_response_content(model_response)
@@ -96,7 +89,7 @@ class Client:
         model_type = model_data['model_type']
 
         response = __session__.get(
-            url=f'{self.hostname}/models/{model_id}/perspectives/{perspective_id}'
+            url=f'{self.api_hostname}/models/{model_id}/versions/{version_id}'
             )
 
         data = get_response_content(response)
@@ -123,7 +116,7 @@ class Client:
         """
         
         response = __session__.get(
-        url=f'{self.hostname}/api/user'
+        url=f'{self.api_hostname}/api/user'
         )
 
         return get_response_content(response)

@@ -11,6 +11,7 @@ saved_models/
 *.ipynb
 *.DS_Store
 /datasets
+.vscode
 
 # Distribution / packaging
 .Python
