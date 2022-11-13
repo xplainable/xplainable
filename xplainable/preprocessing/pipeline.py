@@ -54,7 +54,8 @@ class XPipeline:
                 continue
 
             # Check for features that have appeared before
-            prev_feature_transformers = [s for s in self.stages[:i] if s['feature'] == stage["feature"]]
+            prev_feature_transformers = [
+                s for s in self.stages[:i] if s['feature'] == stage["feature"]]
             
             # Apply previous transformation if appeared before (for chaining)
             if len(prev_feature_transformers) > 0:
@@ -80,13 +81,15 @@ class XPipeline:
             if stage['feature'] == '__dataset__':
                 stage['transformer'].fit(X)
                 X = stage['transformer'].transform(X)
+
                 continue
 
             # Fit data to transformer
             stage['transformer'].fit(X[stage['feature']])
 
             # Apply transformation for chaining
-            X[stage['feature']] = stage['transformer'].transform(X[stage['feature']])
+            X[stage['feature']] = stage['transformer'].transform(
+                X[stage['feature']])
 
         return X
 
@@ -106,7 +109,8 @@ class XPipeline:
                 X = stage['transformer'].transform(X)
                 continue
             
-            X[stage['feature']] = stage['transformer'].transform(X[stage['feature']])
+            X[stage['feature']] = stage['transformer'].transform(
+                X[stage['feature']])
 
         return X
 

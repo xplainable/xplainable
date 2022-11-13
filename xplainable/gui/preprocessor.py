@@ -122,7 +122,6 @@ class Preprocessor:
             """Updates elements on dataset change"""
             refresh_dataset()
             refresh_dropdown_options()
-            reset_charts()
 
             if save_pp.disabled:
                 save_pp.description = "Save Preprocessor"
@@ -144,8 +143,8 @@ class Preprocessor:
                 if Feature == None:
                     return
                 ser = self._df_trans[Feature].dropna().copy()
-                #if len(ser) > 10000:
-                #   ser = ser.sample(10000)
+                if len(ser) > 10000:
+                   ser = ser.sample(10000)
                 if pdtypes.is_string_dtype(ser):
                     ser = ser.apply(lambda x: str(x))
                     if ser.nunique() > 20:
@@ -167,8 +166,8 @@ class Preprocessor:
                 if x is None or y is None:
                     return
                 samp = self._df_trans[[x, y]]
-                #if samp.shape[0] > 10000:
-                 #   samp = samp.sample(10000)
+                if samp.shape[0] > 10000:
+                    samp = samp.sample(10000)
 
                 try:
                 
@@ -209,10 +208,11 @@ class Preprocessor:
             
             widget = interactive(_plot)
             controls = widgets.HBox(
-                widget.children[:-1], layout = widgets.Layout(flex_flow='row'))
+                widget.children[:-1],
+                layout = widgets.Layout(flex_flow='row', width='100%'))
 
             output = widget.children[-1]
-            output.layout = widgets.Layout(margin='0 0 0 50px')
+            output.layout = widgets.Layout(margin='0 0 0 25px')
             return widgets.VBox([controls, output])
 
         def feature_dropdown_selected(_):
@@ -299,6 +299,7 @@ class Preprocessor:
                     pass
 
         def clear_param_zone():
+            """Hides elements in the adder parameters sections"""
             adder_params.children = []
             add_button.layout.visibility = 'hidden'
 
@@ -380,7 +381,11 @@ class Preprocessor:
         # Drop selected stage
         def drop_button_clicked(_):
             """ This is applied when the drop button is clicked"""
+            
+            # Find the indicies of the dropped
             idx = pipeline_list.index
+            pipeline_features = [
+                self.pipeline.stages[i]['feature'] for i in idx]
 
             if not idx:
                 return
@@ -398,6 +403,11 @@ class Preprocessor:
             #rescan data
             if always_rescan_dataset.value:
                 scan_data(None)
+
+            elif always_rescan_feature.value:
+                update_scan_on_drop(pipeline_features)
+
+            reset_charts()
 
         def close_button_clicked(_):
             """Clears all output on close"""
@@ -507,9 +517,8 @@ class Preprocessor:
                     profile_df['type'] == 'numeric'].dropna(axis=1, how='all')
 
                 if sub_df.shape[0] == 0:
-                    report_table_zone_1.layout.visibility = 'hidden'
                     return
-
+                
                 sub_df = sub_df.drop(columns=['type'])
                 display(sub_df)
 
@@ -519,7 +528,6 @@ class Preprocessor:
                     axis=1, how='all')
 
                 if sub_df.shape[0] == 0:
-                    report_table_zone_2.layout.visibility = 'hidden'
                     return
 
                 sub_df = sub_df.drop(columns=['type'])
@@ -531,7 +539,6 @@ class Preprocessor:
                     axis=1, how='all')
 
                 if sub_df.shape[0] == 0:
-                    report_table_zone_3.layout.visibility = 'hidden'
                     return
 
                 sub_df = sub_df.drop(columns=['type'])
@@ -542,17 +549,17 @@ class Preprocessor:
             scan_all_button.description = 'Scanning...'
             scan_all_button.disabled = True
             report_table_tabs.layout.visibility = 'hidden'
-            report_table_loading_zone.layout.display = 'flex'
+            report_table_loading_zone.layout.visibility = 'visible'
 
             with report_table_loading_zone:
                 clear_output()
                 self.scan = self._scan_df(self._df_trans)
 
-            report_table_loading_zone.layout.display = 'none'
+            report_table_loading_zone.layout.visibility = 'hidden'
             report_table_tabs.layout.visibility = 'visible'
             update_report_tables()
             
-            scan_all_button.description = 'Re-scan Data'
+            scan_all_button.description = 'Re-scan'
             scan_all_button.disabled = False
             
             reset_value()
@@ -569,10 +576,34 @@ class Preprocessor:
             self.scan[selected_feature] = self._scan_feature(
                 self._df_trans[selected_feature])
 
-            if scan_all_button.description != 'Scan Dataset':
+            if scan_all_button.description != 'Scan':
                 update_report_tables()
 
-            scan_feature_button.description = 'Re-scan Feature'
+            scan_feature_button.description = 'Re-scan'
+            scan_feature_button.disabled = False
+
+            reset_value()
+
+        def update_scan_on_drop(features):
+            """ Scans a selected group of feature"""
+
+            if len(features) is None:
+                return
+
+            scan_feature_button.description = 'Scanning...'
+            scan_feature_button.disabled = True
+
+            if '__dataset__' in features:
+                scan_data(None)
+
+            else:
+                for f in features:
+                    self.scan[f] = self._scan_feature(self._df_trans[f])
+
+            if scan_all_button.description != 'Scan':
+                update_report_tables()
+
+            scan_feature_button.description = 'Re-scan'
             scan_feature_button.disabled = False
 
             reset_value()
@@ -586,6 +617,40 @@ class Preprocessor:
             else:
                 return 'danger'
 
+        def get_skewness_summary(s):
+            if abs(s) < 0.5:
+                style= 'success'
+                status = '(Not skewed)'
+
+            elif abs(s) < 1:
+                style = 'warning'
+                status = '(Moderately skewed)'
+            else:
+                style = 'danger'
+                status = '(Highly skewed)'
+            
+            return style, status
+
+        def get_kurtosis_summary(s):
+            if abs(s) < 3:
+                style= 'success'
+                status = '(Acceptable Kurtosis)'
+
+            elif abs(s) < 10:
+                style = 'warning'
+                if s < 0:
+                    status = '(Moderate negative kurtosis)'
+                else:
+                    status = '(Moderate positive kurtosis)'
+            else:
+                style = 'danger'
+                if s < 0:
+                    status = '(High negative kurtosis)'
+                else:
+                    status = '(High positive kurtosis)'
+            
+            return style, status
+
         def summary_report(_):
             """ Constructs the summary report tables"""
             if len(self.scan) == 0:
@@ -594,11 +659,8 @@ class Preprocessor:
             feature = dist_plot_feature.value
 
             def hide_output():
-                metrics = [
-                    'missing_pct', 'cardinality', 'mixed_case', 'mixed_type']
-
-                for i in metrics:
-                    components[i].layout.visibility = 'hidden'
+                for i in summary_metrics:
+                    components[i].layout.display = 'none'
 
                 report_table_output.layout.visibility = 'hidden'
 
@@ -607,56 +669,106 @@ class Preprocessor:
                 return
 
             if feature not in self.scan:
-                scan_feature_button.description = 'Scan Feature'
-                scan_all_button.description = 'Scan Dataset'
+                scan_feature_button.description = 'Scan'
+                scan_all_button.description = 'Scan'
+                feature_summary.layout.visibility = 'hidden'
                 hide_output()
                 return
 
             else:
-                scan_feature_button.description = 'Re-scan Feature'
+                scan_feature_button.description = 'Re-scan'
+                feature_summary.layout.visibility = 'visible'
 
             report_table_output.layout.visibility = 'visible'
 
             table = pd.DataFrame(
                 {i: {feature: v} for i, v in self.scan[feature].items()}).T
 
+            # Categorical Features
             if table.loc['type'].values[0] == 'categorical':
                 metrics = [
                     'missing_pct', 'cardinality', 'mixed_case', 'mixed_type']
 
-                for i in metrics:
-                    components[i].layout.visibility = 'visible'
+                for i in summary_metrics:
+                    if i in metrics:
+                        components[i].layout.display = 'flex'
 
+                        val = round(self.scan[feature][i]*100, 2)
+                        bar_widgets[i].value = val
+                        label_widgets[i].value = f'{val}%'
+                        bar_widgets[i].bar_style = change_progress_colour(
+                            val, 5, 40)
+
+                    else:
+                        components[i].layout.display = 'none'
+
+            # Numeric features
             elif table.loc['type'].values[0] == 'numeric':
 
-                for i in ['cardinality', 'mixed_case', 'mixed_type']:
-                    components[i].layout.visibility = 'hidden'
+                metrics = ['missing_pct', 'skewness', 'kurtosis']
+                for i in summary_metrics:
+                    if i == 'missing_pct':
+                        components[i].layout.display = 'flex'
+                        val = round(self.scan[feature][i]*100, 2)
+                        bar_widgets[i].value = val
+                        label_widgets[i].value = f'{val}%'
+                        bar_widgets[i].bar_style = change_progress_colour(
+                            val, 5, 40)
+                    elif i == 'skewness':
+                        components[i].layout.display = 'flex'
+                        val = self.scan[feature][i]
+                        bar_widgets[i].value = abs(val)
 
-                components['missing_pct'].layout.visibility = 'visible' 
+                        style, status = get_skewness_summary(val)
+                        bar_widgets[i].bar_style = style
+                        label_widgets[i].value = status
+
+                    elif i == 'kurtosis':
+                        components[i].layout.display = 'flex'
+                        val = self.scan[feature][i]
+                        bar_widgets[i].value = abs(val)
+
+                        style, status = get_kurtosis_summary(val)
+                        bar_widgets[i].bar_style = style
+                        label_widgets[i].value = status
+
+                    else:
+                        components[i].layout.display = 'none'
+
+            # NLP Feature
+            elif table.loc['type'].values[0] == 'nlp':
+                metrics = [
+                    'missing_pct', 'mixed_case', 'mixed_type']
+
+                for i in summary_metrics:
+                    if i in metrics:
+                        components[i].layout.display = 'flex'
+                        val = round(self.scan[feature][i]*100, 2)
+                        bar_widgets[i].value = val
+                        label_widgets[i].value = f'{val}%'
+                        bar_widgets[i].bar_style = change_progress_colour(
+                            val, 5, 40)
+                    else:
+                        components[i].layout.display = 'none'
+
+                # NLP Feature
+            elif table.loc['type'].values[0] == 'id':
                 metrics = ['missing_pct']
 
-            elif table.loc['type'].values[0] == 'nlp':
-                components['cardinality'].layout.visibility = 'hidden'
-                metrics = ['missing_pct', 'mixed_case', 'mixed_type']
-
-                for i in metrics:
-                    components[i].layout.visibility = 'visible'
+                for i in summary_metrics:
+                    if i in metrics:
+                        components[i].layout.display = 'flex'
+                        val = round(self.scan[feature][i]*100, 2)
+                        bar_widgets[i].value = val
+                        label_widgets[i].value = f'{val}%'
+                        bar_widgets[i].bar_style = change_progress_colour(
+                            val, 5, 40)
+                    else:
+                        components[i].layout.display = 'none'
 
             else:
-                metrics = [
-                    'missing_pct', 'cardinality', 'mixed_case', 'mixed_type']
-
-                for i in metrics:
-                    components[i].layout.visibility = 'hidden'
-
+                hide_output()
                 metrics = []
-
-            for metric in metrics:
-                val = round(self.scan[feature][metric]*100,2)
-                bar_widgets[metric].value = val
-                label_widgets[metric].value = f'{val}%'
-                bar_widgets[metric].bar_style = change_progress_colour(
-                    val, 5, 40)  
 
             with report_table_output:
                 clear_output(wait=True)
@@ -703,24 +815,37 @@ class Preprocessor:
         # //------- BODY (SELECTOR) -------//
         # Select Transformer Title
         select_transformer_title = widgets.HTML(f"<h4>Transformer</h4>")
+
+        selector_layout = widgets.Layout(
+            max_width='180px'
+            )
         
         # Instantiate Feature select dropdown
-        feature = widgets.Dropdown(options=[None]+list(self._df_trans.columns))
+        feature = widgets.Dropdown(
+            options=[None]+list(self._df_trans.columns),
+            layout=selector_layout
+            )
         feature.observe(sync_feature_dropdowns_a, names=['value'])
         feature.observe(feature_dropdown_selected, names=['value'])
+        
 
         # Instantiate transformer selection
-        single_feature_transformers = TransformerDropdown()
+        single_feature_transformers = TransformerDropdown(
+            layout=selector_layout)
+
         single_feature_transformers.observe(
             single_feature_tf_selected, names=['value'])
 
         single_feature_selector = widgets.VBox(
             [feature, single_feature_transformers])
 
-        multi_feature_transformers = TransformerDropdown(
-            options= [""]+[c[0] for c in clsmembers if "supported_types" in \
+        # Get transformer options for multi-features
+        multi_ops = [c[0] for c in clsmembers if "supported_types" in \
                 c[1].__dict__ and 'dataset' in c[1].__dict__['supported_types']]
-                )
+
+        multi_feature_transformers = TransformerDropdown(
+            options= [""]+multi_ops,
+            layout=selector_layout)
 
         multi_feature_transformers.observe(
             multi_feature_tf_selected, names=['value'])
@@ -731,6 +856,10 @@ class Preprocessor:
         selector_tabs = widgets.Tab(
             [single_feature_selector, multi_feature_selector])
 
+        selector_tabs.layout = widgets.Layout(
+            max_width='230px'
+            )
+
         selector_tabs.set_title(0, 'Single Feature')
         selector_tabs.set_title(1, 'Multi Feature')
 
@@ -738,11 +867,11 @@ class Preprocessor:
 
         docs_box = widgets.Box([docs_text])
         docs_box.layout = widgets.Layout(
-            max_width='330px',
+            max_width='200px',
             max_height='250px',
             display='flex',
             flex_flow='column wrap',
-            margin = '0 0 0 15px'
+            margin = '0 0 0 20px'
             )
 
         selector = widgets.VBox([
@@ -752,7 +881,7 @@ class Preprocessor:
             ])
 
         selector.layout = widgets.Layout(
-            min_width='350px',
+            min_width='250px',
             align_items='center',
             border='1px solid #7287a8'
             )
@@ -775,7 +904,11 @@ class Preprocessor:
         add_button.layout.visibility = 'hidden'
 
         adder_params = widgets.VBox([])
-        adder_params.layout = widgets.Layout(max_height='250px')
+        adder_params.layout = widgets.Layout(
+            max_height='250px',
+            align_items="center"
+            #overflow='scroll hidden'
+            )
 
         # Instantiate VBox
         adder = widgets.VBox([
@@ -785,7 +918,7 @@ class Preprocessor:
             ])
 
         adder.layout = widgets.Layout(
-            min_width='400px',
+            width='330px',
             align_items="center",
             border='1px solid #7287a8',
             margin=' 0 25px 0 25px '
@@ -807,15 +940,20 @@ class Preprocessor:
         else:
             pipeline_list = widgets.SelectMultiple(options=[""])
 
-        pipeline_list.layout = widgets.Layout(min_width='250px', height='150px')
+        pipeline_list.layout = widgets.Layout(
+            width='270px',
+            height='150px')
 
         # Instantiate Drop button
         drop_button = widgets.Button(
             description="Drop Stage(s)",
             icon='times',
-            layout=widgets.Layout(margin=' 10px 0 10px 0'))
-
-        drop_button.style.button_color = '#e14067'
+            layout=widgets.Layout(margin=' 10px 0 10px 0')
+            )
+        drop_button.style = {
+            "button_color": '#e14067',
+            "text_color": 'white'
+            }
         drop_button.on_click(drop_button_clicked)
 
         # Compile pipeline display
@@ -823,7 +961,7 @@ class Preprocessor:
             [pipeline_title, pipeline_list, drop_button])
 
         pipeline_display.layout = widgets.Layout(
-            min_width='350px',
+            width='300px',
             align_items='center',
             border='1px solid #7287a8'
             )
@@ -861,10 +999,11 @@ class Preprocessor:
         dist_plot_feature.observe(sync_feature_dropdowns_b, names=['value'])
         dist_plot_feature.observe(summary_report, names=['value'])
 
-        multi_plot_x = widgets.Dropdown(options = self._df_trans.columns)
-        multi_plot_y = widgets.Dropdown(options = self._df_trans.columns)
+        multi_layout = widgets.Layout(width='100%')
+        multi_plot_x = widgets.Dropdown(options = self._df_trans.columns, layout=multi_layout)
+        multi_plot_y = widgets.Dropdown(options = self._df_trans.columns, layout=multi_layout)
         multi_plot_hue = widgets.Dropdown(
-            options = [None]+list(self._df_trans.columns))
+            options = [None]+list(self._df_trans.columns), layout=multi_layout)
 
         # Display charts
         visuals = widgets.Output()
@@ -880,17 +1019,33 @@ class Preprocessor:
         # //------- OUTPUT (SUMMARY STATS) -------//
         # Instantiate summary metrics
         summary_metrics = [
-            'missing_pct', 'cardinality', 'mixed_case', 'mixed_type']
+            'missing_pct',
+            'cardinality',
+            'mixed_case',
+            'mixed_type',
+            'skewness',
+            'kurtosis'
+            ]
 
         # Progress bars for scan visualisations
         bar_widgets = {
-            i: widgets.FloatProgress(
-                description = f"{i}: ", value=0) for i in summary_metrics
+            'missing_pct': widgets.FloatProgress(
+                description = "Missing: ", value=0, max=100),
+            'cardinality': widgets.FloatProgress(
+                description = "Cardinality: ", value=0, max=100),
+            'mixed_case': widgets.FloatProgress(
+                description = "Mixed Cases: ", value=0, max=100),
+            'mixed_type': widgets.FloatProgress(
+                description = "Mixed Types: ", value=0, max=100),
+            'skewness': widgets.FloatProgress(
+                description = "Skewness: ", value=0, max=1.5),
+            'kurtosis': widgets.FloatProgress(
+                description = "Kurtosis: ", value=0, max=10)
         }
 
         # Labels for progress bars
         label_widgets = {
-            i: widgets.HTML(f"0%") for i in summary_metrics
+            i: widgets.HTML(f"") for i in summary_metrics
         }
 
         # Join bars and labels
@@ -901,69 +1056,93 @@ class Preprocessor:
 
         # Hide components until feature selected
         for i in summary_metrics:
-            components[i].layout.visibility = 'hidden' 
+            components[i].layout.display = 'none' 
+            components[i].style = {'description_width': 'initial'}
 
         # Compile bars
         health_bars = widgets.VBox([
+            widgets.HTML("<b>Overview</b>"),
+            widgets.HTML('<hr class="solid">'),
             components['missing_pct'],
             components['mixed_case'],
             components['mixed_type'],
-            components['cardinality']
+            components['cardinality'],
+            components['skewness'],
+            components['kurtosis']
         ])
 
-        health_bars.layout = widgets.Layout(margin='0 0 0 25px')
+        health_bars.layout = widgets.Layout(margin='30px 0 0 50px')
 
         # Instantiate report table output (for single feature)
         report_table_output = widgets.Output()
+        report_table_box = widgets.VBox([
+            widgets.HTML("<b>Health Statistics</b>"),
+            report_table_output
+        ])
+
+        report_table_box.layout = widgets.Layout(margin='30px 0 0 0')
 
         # Join single feature report table and bars 
-        feature_summary = widgets.HBox([report_table_output, health_bars])
-        feature_summary.layout = widgets.Layout(margin='0 0 15px 15px')
+        feature_summary = widgets.HBox([report_table_box, health_bars])
+        feature_summary.layout = widgets.Layout(
+            margin='0 0 15px 15px',
+            visibility='hidden'
+            )
 
         # Set feature summary heading
-        feature_summary_heading = widgets.HTML("<h3>Feature Summary<h3>")
+        feature_summary_heading = widgets.HTML("<h4>Feature Summary<h4>")
         feature_summary_heading.layout = widgets.Layout(margin='0 0 0 25px')
 
         # Instantiate scan feature button (scans single feature)
-        scan_feature_button = widgets.Button(description='Scan Feature')
-        scan_feature_button.style.button_color = '#0080ea'
+        scan_feature_button = widgets.Button(description='Scan')
+        scan_feature_button.style = {
+            "button_color": '#0080ea',
+            "text_color": 'white'
+            }
         scan_feature_button.on_click(scan_feature)
 
         # If enabled, scans after ever single-feature transformer
-        always_rescan_feature = widgets.Checkbox(
-            value=True, description='always rescan')
-        always_rescan_feature.layout = widgets.Layout(margin='10px 0 0 -75px')
+        always_rescan_feature = widgets.ToggleButton(
+            value=True, description='always re-scan')
 
         # Reuse dist_plot_feature for each syncing
-        sub_header = widgets.HBox(
+        feature_summary_selector = widgets.HBox(
             [dist_plot_feature, scan_feature_button, always_rescan_feature])
 
         # Compile feature summary body
         feature_summary_body = widgets.VBox(
-            [sub_header, feature_summary_heading, feature_summary])
+            [feature_summary_heading, feature_summary_selector, feature_summary])
         feature_summary_body.layout = widgets.Layout(min_width='520px')
         
-        report_table_heading = widgets.HTML("<h3>Dataset Summary Report</h3>")
-        scan_all_button = widgets.Button(description='Scan Dataset')
-        scan_all_button.style.button_color = '#0080ea'
+        report_table_heading = widgets.HTML("<h4>Dataset Summary Report</h4>")
+
+        scan_all_button = widgets.Button(description='Scan')
+        scan_all_button.style = {
+            "button_color": '#0080ea',
+            "text_color": 'white'
+            }
         scan_all_button.on_click(scan_data)
-        scan_all_button.layout = widgets.Layout(margin='17px 0 0 10px')
         
         # If enabled, scans after ever multi-feature transformer
-        always_rescan_dataset = widgets.Checkbox(
-            value=False, description='always rescan')
+        always_rescan_dataset = widgets.ToggleButton(
+            value=False, description='always re-scan')
 
-        always_rescan_dataset.layout = widgets.Layout(margin='23px 0 0 -75px')
-        
         # Build report table heading
-        report_table_heading_box = widgets.HBox(
-            [report_table_heading, scan_all_button, always_rescan_dataset])
+        report_table_rescan_box = widgets.HBox(
+            [scan_all_button, always_rescan_dataset])
+
+
+        # Zone layout
+        zone_layout = widgets.Layout(
+                width='100%',
+                height='100%'
+            )
 
         # Instantiate output zone for report tables
         report_table_loading_zone = widgets.Output()
-        report_table_zone_1 = widgets.Output()
-        report_table_zone_2 = widgets.Output()
-        report_table_zone_3 = widgets.Output()
+        report_table_zone_1 = widgets.Output(layout=zone_layout)
+        report_table_zone_2 = widgets.Output(layout=zone_layout)
+        report_table_zone_3 = widgets.Output(layout=zone_layout)
 
         # Construct report table tabs
         report_table_tabs = widgets.Tab(
@@ -973,39 +1152,27 @@ class Preprocessor:
         report_table_tabs.set_title(1, 'Categorical')
         report_table_tabs.set_title(2, 'NLP')
 
-        report_table_tabs.layout = widgets.Layout(
-            max_height='350px'
-        )
-
         # Hide report tables on instantiation
         report_table_tabs.layout.visibility = 'hidden'
 
-        # Update zone layouts for h-scrollings tables
-        for zone in [
-            report_table_zone_1, report_table_zone_2, report_table_zone_3]:
-
-            zone.layout = widgets.Layout(
-                display='flex',
-                flex_flow='column wrap',
-                width='100%',
-                align_items='initial'
-            )
-
         # Build report table summary body
         report_summary = widgets.VBox([
-            report_table_heading_box,
+            report_table_heading,
+            report_table_rescan_box,
             report_table_loading_zone,
             report_table_tabs
             ])
 
-        report_summary.layout = widgets.Layout(
-            margin='0 0 0 50px',
-            width='100%',
-            height='100%'
-            )
+        report_summary.layout = widgets.Layout(margin='0 0 0 25px')
 
         # Compile summary statistics output
-        summary_body = widgets.HBox([feature_summary_body, report_summary])
+        summary_body = widgets.Tab([feature_summary_body, report_summary])
+        summary_body.set_title(0, 'Feature')
+        summary_body.set_title(1, 'Dataset')
+
+        summary_body.layout = widgets.Layout(
+            height='450px'
+            )
 
         # //---------------------------------//
 
@@ -1013,14 +1180,17 @@ class Preprocessor:
         display_tabs = widgets.Tab([data_block, visuals, summary_body])
         display_tabs.set_title(0, 'Data')
         display_tabs.set_title(1, 'Plots')
-        display_tabs.set_title(2, 'Summary Stats')
+        display_tabs.set_title(2, 'Summary Statistics')
         display_tabs.layout = widgets.Layout(margin = ' 25px 25px 25px 25px ')
         # //---------------------------------//
 
 
         # //------- FOOTER -------//
         done = widgets.Button(description='Done')
-        done.style.button_color = '#0080ea'
+        done.style = {
+            "button_color": '#0080ea',
+            "text_color": 'white'
+            }
         done.layout = widgets.Layout(margin=' 0 0 10px 25px')
         done.on_click(close_button_clicked)
 

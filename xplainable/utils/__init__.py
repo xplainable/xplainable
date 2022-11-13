@@ -1,3 +1,3 @@
 from .api import *
 from .collections import *
-from .widgets import *
+from .xwidgets import *

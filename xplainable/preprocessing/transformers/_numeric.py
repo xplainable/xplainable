@@ -1,7 +1,7 @@
-from ._base import XBaseTransformer, TransformError
+from ._base import XBaseTransformer
 from ipywidgets import interactive
 import ipywidgets as widgets
-from pandas.api.types import is_numeric_dtype, is_string_dtype
+from pandas.api.types import is_numeric_dtype
 import numpy as np
 
 

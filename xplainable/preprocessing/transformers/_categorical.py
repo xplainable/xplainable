@@ -1,10 +1,10 @@
 from ._base import XBaseTransformer, TransformError
-from pandas.api.types import is_numeric_dtype, is_string_dtype
+from pandas.api.types import is_string_dtype
 from ipywidgets import interactive
 import re
 import numpy as np
 import ipywidgets as widgets
-from xplainable.utils import stopwords
+from xplainable.utils import stopwords, xwidgets
 
 
 class TextRemove(XBaseTransformer):
@@ -41,9 +41,17 @@ class TextRemove(XBaseTransformer):
 
     def __call__(self, *args, **kwargs):
         
-        def _set_params(numbers=False, characters=False, uppercase=False, \
-        lowercase=False, special=False, whitespace=False, stopwords=False, \
-            text='', regex=''):
+        def _set_params(
+        numbers=widgets.ToggleButton(value=False),
+        characters=widgets.ToggleButton(value=False),
+        uppercase=widgets.ToggleButton(value=False),
+        lowercase=widgets.ToggleButton(value=False),
+        special=widgets.ToggleButton(value=False),
+        whitespace=widgets.ToggleButton(value=False),
+        stopwords=widgets.ToggleButton(value=False),
+        text=xwidgets.Text(''),
+        regex=xwidgets.Text('')
+        ):
 
             self.numbers = numbers
             self.characters = characters
@@ -62,18 +70,15 @@ class TextRemove(XBaseTransformer):
                 self.custom_regex = regex
 
         w = interactive(_set_params)
-        checkboxes_a = widgets.VBox(w.children[:4])
-        checkboxes_b = widgets.VBox(w.children[4:7])
-        checkboxes_a.layout = widgets.Layout(margin='0 0 0 -20px')
-        checkboxes_b.layout = widgets.Layout(margin='0 0 0 -140px')
+        left = widgets.VBox(w.children[:4])
+        right = widgets.VBox(w.children[4:7])
+        buttons = widgets.HBox([left, right])
+        
+        text = widgets.VBox(w.children[7:], layout=widgets.Layout(margin='20px 0 0 0'))
+        
+        elements = widgets.VBox([buttons, text])
 
-        checkboxes = widgets.HBox([checkboxes_a, checkboxes_b])
-
-        textboxes = widgets.VBox(w.children[7:9])
-
-        box = widgets.VBox([checkboxes, textboxes])
-
-        return box
+        return elements
 
     def _operations(self, ser):
         matches = []

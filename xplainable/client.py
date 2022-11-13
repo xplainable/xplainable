@@ -1,7 +1,4 @@
-import json
 import requests
-from urllib3.exceptions import HTTPError
-from authlib.jose import jwt
 from xplainable.utils.api import get_response_content
 import xplainable
 
