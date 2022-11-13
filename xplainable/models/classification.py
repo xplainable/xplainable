@@ -1,11 +1,10 @@
 import pandas as pd
 import json
 from .. import client
-from IPython.display import display, clear_output
+from IPython.display import display
 from xplainable.models._base_model import BaseModel
 import numpy as np
 import sklearn.metrics as skm
-from urllib3.exceptions import HTTPError
 import xplainable
 from xplainable.client import __session__
 from xplainable.utils.api import get_response_content

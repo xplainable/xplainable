@@ -4,7 +4,7 @@ import numpy as np
 import sklearn.metrics as skm
 from xplainable.models._base_model import BaseModel
 from ..utils.api import get_response_content
-from IPython.display import display, clear_output
+from IPython.display import display
 import ipywidgets as widgets
 from xplainable.client import __session__
 import time

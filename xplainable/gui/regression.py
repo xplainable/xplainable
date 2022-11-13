@@ -6,7 +6,6 @@ from pandas.api.types import is_numeric_dtype
 from xplainable.exceptions import *
 from xplainable.quality import XScan
 import xplainable
-import json
 
 def regressor(df, model_name, model_description=''):
     """ Trains an xplainable regressor via a simple GUI.
