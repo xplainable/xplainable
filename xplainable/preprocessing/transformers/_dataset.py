@@ -1,10 +1,8 @@
-from ._base import XBaseTransformer, TransformError
+from ._base import XBaseTransformer
 import pandas.api.types as pdtypes
 from ipywidgets import interactive
-from IPython.display import display
-import re
+import xplainable.utils.xwidgets as xwidgets
 import numpy as np
-import ipywidgets as widgets
 
 
 class DropCols(XBaseTransformer):
@@ -22,7 +20,7 @@ class DropCols(XBaseTransformer):
 
     def __call__(self, df, *args, **kwargs):
         
-        def _set_params(columns=widgets.SelectMultiple(options=df.columns)):
+        def _set_params(columns=xwidgets.SelectMultiple(options=df.columns)):
 
             self.columns = list(columns)
 
@@ -55,7 +53,7 @@ class DropNaNs(XBaseTransformer):
     def __call__(self, df, *args, **kwargs):
         
         def _set_params(
-            subset=widgets.SelectMultiple(options=[None]+list(df.columns))):
+            subset=xwidgets.SelectMultiple(options=[None]+list(df.columns))):
 
             self.subset = list(subset)
 
@@ -74,7 +72,7 @@ class AddCols(XBaseTransformer):
         drop (bool): Drops original columns if True
     """
     
-    # Attributes for ipywidgets
+    # Attributes for ipyxwidgets
     supported_types = ['dataset']
 
     def __init__(self, columns=[], alias: str = None, drop: bool = False):
@@ -86,9 +84,11 @@ class AddCols(XBaseTransformer):
     def __call__(self, dataset, *args, **kwargs):
         
         def _set_params(
-            columns_to_add=widgets.SelectMultiple(options=dataset.columns),
-            alias='',
-            drop_columns=True):
+            columns_to_add=xwidgets.SelectMultiple(
+                description='Columns: ',
+                options=dataset.columns),
+            alias=xwidgets.Text(''),
+            drop_columns=xwidgets.Checkbox(value=True)):
 
             self.columns = list(columns_to_add)
             self.alias = alias
@@ -129,7 +129,9 @@ class MultiplyCols(XBaseTransformer):
     def __call__(self, dataset, *args, **kwargs):
         
         def _set_params(
-            columns_to_multiply=widgets.SelectMultiple(options=dataset.columns),
+            columns_to_multiply=xwidgets.SelectMultiple(
+                description='Columns: ',
+                options=dataset.columns),
             alias='',
             drop_columns=True):
 
@@ -172,7 +174,9 @@ class ConcatCols(XBaseTransformer):
     def __call__(self, dataset, *args, **kwargs):
         
         def _set_params(
-            columns_to_concat=widgets.SelectMultiple(options=dataset.columns),
+            columns_to_concat=xwidgets.SelectMultiple(
+                description='Columns: ',
+                options=dataset.columns),
             alias='',
             drop_columns=True):
 
@@ -200,7 +204,7 @@ class ConcatCols(XBaseTransformer):
 class ChangeNames(XBaseTransformer):
     """Changes names of columns in a dataset"""
 
-    # Attributes for ipywidgets
+    # Attributes for ipyxwidgets
     supported_types = ['dataset']
 
     def __init__(self, col_names={}):
@@ -213,7 +217,7 @@ class ChangeNames(XBaseTransformer):
             args = locals()
             self.col_names = dict(args)['kwargs']
 
-        col_names = {col: widgets.Text(col) for col in df.columns}  
+        col_names = {col: xwidgets.Text(col) for col in df.columns}  
 
         return interactive(_set_params, **col_names)
 
@@ -230,7 +234,7 @@ class OrderBy(XBaseTransformer):
         ascending (bool): Orders in ascending order if True.
     """
 
-    # Attributes for ipywidgets
+    # Attributes for ipyxwidgets
     supported_types = ['dataset']
 
     def __init__(self, order_by=None, ascending=True):
@@ -241,9 +245,10 @@ class OrderBy(XBaseTransformer):
     def __call__(self, df, *args, **kwargs):
       
         def _set_params(
-            order_by = widgets.SelectMultiple(
+            order_by = xwidgets.SelectMultiple(
                 description='Order by: ', options=[None]+list(df.columns)),
-            direction = widgets.ToggleButtons(
+            direction = xwidgets.ToggleButtons(
+                description='Direction: ',
                 options=['ascending', 'descending'])):
 
             self.order_by = list(order_by)
@@ -268,7 +273,7 @@ class GroupbyShift(XBaseTransformer):
         descending (bool): Orders the value descending if True.
     """
 
-    # Attributes for ipywidgets
+    # Attributes for ipyxwidgets
     supported_types = ['dataset']
 
     def __init__(self, target=None, step=0, as_new=None, group_by=None,\
@@ -286,12 +291,14 @@ class GroupbyShift(XBaseTransformer):
     def __call__(self, df, *args, **kwargs):
         
         def _set_params(
-            group_by = widgets.SelectMultiple(description='Group by: ', options=[None]+list(df.columns)),
-            order_by = widgets.SelectMultiple(description='Order by: ', options=[None]+list(df.columns)),
-            descending = widgets.Checkbox(value=False),
-            target=widgets.Dropdown(options=[None]+list(df.columns)),
-            step = widgets.IntText(value=0, min=-1000, max=1000),
-            as_new = widgets.Checkbox(value=False)
+            group_by = xwidgets.SelectMultiple(
+                description='Group by: ', options=[None]+list(df.columns)),
+            order_by = xwidgets.SelectMultiple(
+                description='Order by: ', options=[None]+list(df.columns)),
+            descending = xwidgets.Checkbox(value=False),
+            target=xwidgets.Dropdown(options=[None]+list(df.columns)),
+            step = xwidgets.IntText(value=0, min=-1000, max=1000),
+            as_new = xwidgets.Checkbox(value=False)
             ):
 
             self.target = target
@@ -334,7 +341,7 @@ class GroupbyShift(XBaseTransformer):
 class FillMissing(XBaseTransformer):
     """Fills missing values of all columns with a specified value/strategy."""
 
-    # Attributes for ipywidgets
+    # Attributes for ipyxwidgets
     supported_types = ['dataset']
 
     def __init__(self, fill_with={}, fill_values={}):
@@ -350,13 +357,13 @@ class FillMissing(XBaseTransformer):
 
         def get_widget(col):
             if pdtypes.is_numeric_dtype(df[col]):
-                return widgets.Dropdown(options=["mean", "median", "mode"])
+                return xwidgets.Dropdown(options=["mean", "median", "mode"])
             else:
-                return widgets.Text(value='missing')
+                return xwidgets.Text(value='missing')
 
-        col_widgets = {col: get_widget(col) for col in df.columns}  
+        col_xwidgets = {col: get_widget(col) for col in df.columns}  
 
-        return interactive(_set_params, **col_widgets)
+        return interactive(_set_params, **col_xwidgets)
 
     def _operations(self, df):
         
@@ -399,7 +406,7 @@ class FillMissing(XBaseTransformer):
 class SetDTypes(XBaseTransformer):
     """Sets the data type of all columns in the dataset."""
 
-    # Attributes for ipywidgets
+    # Attributes for ipyxwidgets
     supported_types = ['dataset']
 
     def __init__(self, types={}):
@@ -435,16 +442,17 @@ class SetDTypes(XBaseTransformer):
                 options = ["boolean", "string", "integer", "float"]
                 value = "boolean"
 
-            w = widgets.Dropdown(
+            w = xwidgets.Dropdown(
                 options=options,
                 value=value,
-                style={'description_width': 'initial'})
+                style={'description_width': 'initial'}
+                )
 
             return w
 
-        col_widgets = {col: get_widget(col) for col in df.columns}  
+        col_xwidgets = {col: get_widget(col) for col in df.columns}  
 
-        return interactive(_set_params, **col_widgets)
+        return interactive(_set_params, **col_xwidgets)
 
     def _operations(self, df):
 
@@ -469,7 +477,7 @@ class TextSplit(XBaseTransformer):
         max_splits (int): The maximum number of splits to make.
     """
 
-    # Attributes for ipywidgets
+    # Attributes for ipyxwidgets
     supported_types = ['dataset']
 
     def __init__(self, target=None, separator=None, max_splits=0):
@@ -481,11 +489,11 @@ class TextSplit(XBaseTransformer):
     def __call__(self, df, *args, **kwargs):
         
         def _set_params(
-            target=widgets.Dropdown(
+            target=xwidgets.Dropdown(
                 options=[None]+[i for i in df.columns if \
                     pdtypes.is_string_dtype(df[i])]),
-                separator = widgets.Text(value=""),
-                max_splits = widgets.IntText(range=[0,10])):
+                separator = xwidgets.Text(value=""),
+                max_splits = xwidgets.IntText(range=[0,10])):
 
             self.target = target
             self.separator = separator
@@ -511,7 +519,7 @@ class ChangeCases(XBaseTransformer):
         case (str): 'upper' or 'lower'.
     """
 
-    # Attributes for ipywidgets
+    # Attributes for ipyxwidgets
     supported_types = ['dataset']
 
     def __init__(self, columns=[], case='lower'):
@@ -522,8 +530,14 @@ class ChangeCases(XBaseTransformer):
     def __call__(self, df, *args, **kwargs):
         
         def _set_params(
-            columns = widgets.SelectMultiple(description='Columns: ', options=[None]+[i for i in df.columns if pdtypes.is_string_dtype(df[i])]),
-            case = ["lower", "upper"]):
+            columns = xwidgets.SelectMultiple(
+                description='Columns: ',
+                options=[None]+[i for i in df.columns if \
+                    pdtypes.is_string_dtype(df[i])]),
+
+            case = xwidgets.Dropdown(
+                description='Case: ',
+                options=["lower", "upper"])):
             
             self.columns = list(columns)
             self.case = case

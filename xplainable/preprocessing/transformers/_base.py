@@ -1,9 +1,4 @@
-import pandas as pd
-import numpy as np
-import re
-from ipywidgets import interactive
-import ipywidgets as widgets
-from pandas.api.types import is_numeric_dtype, is_string_dtype
+from ipywidgets import interactive, Layout
 
 
 class TransformError(Exception):

@@ -1,8 +1,6 @@
-from ._base import XBaseTransformer, TransformError
+from ._base import XBaseTransformer
 import pandas.api.types as pdtypes
 from ipywidgets import interactive
-import re
-import pandas as pd
 import ipywidgets as widgets
 
 class SetDType(XBaseTransformer):
