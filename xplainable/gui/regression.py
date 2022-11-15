@@ -40,21 +40,28 @@ def regressor(df, model_name, model_description=''):
         value=logo, format='png', width=50, height=50)
     logo_display.layout = widgets.Layout(margin='15px 25px 15px 15px')
 
-    header_title = widgets.HTML(f"<h2>Model: {model_name}&nbsp&nbsp</h2>")
+    header_title = widgets.HTML(f"<h3>Model: {model_name}&nbsp&nbsp</h3>")
     header_title.layout = widgets.Layout(margin='10px 0 0 0')
 
-    connection_status = widgets.HTML(f"<h4><font color='red'>[offline]</h4>")
+    connection_status = widgets.HTML(f"<h5><font color='red'>[offline]</h5>")
     connection_status.layout = widgets.Layout(margin='10px 0 0 0')
 
+    connection_status_button = widgets.Button(description="offline")
+    connection_status_button.layout = widgets.Layout(margin='10px 0 0 0')
+    connection_status_button.style = {
+            "button_color": 'red',
+            "text_color": 'white'
+            }
+
     header = widgets.VBox(
-        [widgets.HBox([widgets.VBox([logo_display]), header_title, connection_status])])
+        [widgets.HBox([widgets.VBox([logo_display]), header_title, connection_status_button])])
 
     # TAB 1
     # Column A
     title_a1 = widgets.HTML(
-        f"<h4>Target</h4>", layout=widgets.Layout(height='auto'))
+        f"<h5>Target</h5>", layout=widgets.Layout(height='auto'))
 
-    id_title = widgets.HTML(f"<h4>ID Column (0 selected)</h4>")
+    id_title = widgets.HTML(f"<h5>ID Column (0 selected)</h5>")
 
     numeric_columns = df.select_dtypes('number').columns
     if len(numeric_columns) == 0:
@@ -83,7 +90,7 @@ def regressor(df, model_name, model_description=''):
 
     # Column B
     title_b = widgets.HTML(
-        f"<h4>Hyperparameters</h4>",
+        f"<h5>Hyperparameters</h5>",
         layout=widgets.Layout(height='auto'))
 
     max_depth = widgets.IntSlider(
@@ -104,13 +111,13 @@ def regressor(df, model_name, model_description=''):
     tail_sensitivity = widgets.FloatSlider(value=1.1, min=1.0, max=1.5,
     step=0.01, description='tail_sensitivity:', style=style)
 
-    range_header = widgets.HTML(f"<h4>Prediction Range</h4>")
+    range_header = widgets.HTML(f"<h5>Prediction Range</h5>")
     range_header.layout.visibility = 'hidden'
 
     prediction_range_slider = widgets.FloatRangeSlider()
     prediction_range_slider.layout.visibility = 'hidden'
 
-    validation_size_header = widgets.HTML(f"<h4>Validation Size</h4>")
+    validation_size_header = widgets.HTML(f"<h5>Validation Size</h5>")
     validation_size = widgets.FloatSlider(value=0.2, min=0.05, max=0.5, step=0.01)
 
     colBParams = widgets.VBox([
@@ -191,7 +198,7 @@ def regressor(df, model_name, model_description=''):
 
     def id_cols_changed(_):
         id_vals = [i for i in list(id_columns.value) if i is not None]
-        id_title.value = f"<h4>ID Column ({len(id_vals)} selected)</h4>"
+        id_title.value = f"<h5>ID Column ({len(id_vals)} selected)</h5>"
 
     def target_changed(_):
 
@@ -220,13 +227,26 @@ def regressor(df, model_name, model_description=''):
 
         train_button.disabled = False
 
+    def _check_connection(_):
+        try:
+            if ping_server(xplainable.__client__.compute_hostname):
+                connection_status_button.description = "Connected"
+                connection_status_button.style.button_color = 'green'
+            else:
+                connection_status_button.description = "Offline"
+                connection_status_button.style.button_color = 'red'
+        except:
+            pass
+
+    connection_status_button.on_click(_check_connection)
+
     id_columns.observe(id_cols_changed, names=['value'])
     target.observe(target_changed, names=['value'])
 
     # Column 1
     html_style = widgets.Layout(flex_flow = 'row wrap', max_width = '300px')
     title_1 = widgets.HTML(
-        f"<h4>Evolve</h4><p>Optimises weights with evolutionary neural network</p>")
+        f"<h5>Evolve</h5><p>Optimises weights with evolutionary neural network</p>")
     title_1.layout = html_style
 
     mutations = widgets.IntSlider(
@@ -256,7 +276,7 @@ def regressor(df, model_name, model_description=''):
     #col1.layout = widgets.Layout(max_width = '200px')
 
     # Column 2
-    title_2 = widgets.HTML(f"<h4>Tighten</h4><p>Optimises weights with iterative error correction</p>")
+    title_2 = widgets.HTML(f"<h5>Tighten</h5><p>Optimises weights with iterative error correction</p>")
     title_2.layout = html_style
     add_button_tighten = widgets.Button(description="Add Stage", icon='plus')
     add_button_tighten.style.button_color = '#12b980'
@@ -286,7 +306,7 @@ def regressor(df, model_name, model_description=''):
 
     # PIPELINE
     title_3 = widgets.HTML(
-        f"<h4>Optimisation Pipeline</h4><p>Select from optimisation tab</p>",
+        f"<h5>Optimisation Pipeline</h5><p>Select from optimisation tab</p>",
         layout=widgets.Layout(height='auto'))
 
     pipeline = widgets.SelectMultiple(
@@ -367,11 +387,7 @@ def regressor(df, model_name, model_description=''):
     display(screen)
 
     # Ping server to check for connection
-    try:
-        if ping_server(xplainable.__client__.compute_hostname):
-            connection_status.value = f"<h4><font color='green'>[connected]</h4>"
-    except:
-        pass
+    _check_connection(None)
 
     # Return blank model await training
     return model

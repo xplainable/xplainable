@@ -38,23 +38,30 @@ def classifier(df, model_name, model_description=''):
         value=logo, format='png', width=50, height=50)
     logo_display.layout = widgets.Layout(margin='15px 25px 15px 15px')
 
-    header_title = widgets.HTML(f"<h2>Model: {model_name}&nbsp&nbsp</h2>")
+    header_title = widgets.HTML(f"<h3>Model: {model_name}&nbsp&nbsp</h3>")
     header_title.layout = widgets.Layout(margin='10px 0 0 0')
 
     divider = widgets.HTML(
         f'<hr class="solid">', layout=widgets.Layout(height='auto'))
 
-    connection_status = widgets.HTML(f"<h4><font color='red'>[offline]</h4>")
+    connection_status = widgets.HTML(f"<h5><font color='red'>[offline]</h5>")
     connection_status.layout = widgets.Layout(margin='10px 0 0 0')
 
+    connection_status_button = widgets.Button(description="offline")
+    connection_status_button.layout = widgets.Layout(margin='10px 0 0 0')
+    connection_status_button.style = {
+            "button_color": 'red',
+            "text_color": 'white'
+            }
+
     header = widgets.VBox(
-        [widgets.HBox([widgets.VBox([logo_display]), header_title, connection_status])])
+        [widgets.HBox([widgets.VBox([logo_display]), header_title, connection_status_button])])
 
     # COLUMN 1
     col1a = widgets.HTML(
-        f"<h4>Target</h4>", layout=widgets.Layout(height='auto'))
+        f"<h5>Target</h5>", layout=widgets.Layout(height='auto'))
 
-    id_title = widgets.HTML(f"<h4>ID Column (0 selected)</h4>")
+    id_title = widgets.HTML(f"<h5>ID Column (0 selected)</h5>")
 
     possible_targets = [None] + [i for i in df.columns if df[i].nunique() < 20]
     
@@ -208,17 +215,17 @@ def classifier(df, model_name, model_description=''):
     min_info_gain_display = widgets.HBox([min_info_gain_space, min_info_gain_step])
 
     std_params = widgets.VBox([
-        widgets.HTML(f"<h4>Hyperparameters</h4>"),
+        widgets.HTML(f"<h5>Hyperparameters</h5>"),
         max_depth,
         min_leaf_size,
         min_info_gain
     ])
 
     opt_params = widgets.VBox([
-        widgets.HTML(f"<h4>Trials</h4>"),
+        widgets.HTML(f"<h5>Trials</h5>"),
         n_trials,
         early_stopping,
-        widgets.HTML(f"<h4>Search Space</h4>"),
+        widgets.HTML(f"<h5>Search Space</h5>"),
         max_depth_space_display,
         min_leaf_size_display,
         min_info_gain_display
@@ -233,10 +240,10 @@ def classifier(df, model_name, model_description=''):
         opt_params
         ])
 
-    bin_alpha_header = widgets.HTML(f"<h4>Bin Alpha</h4>")
+    bin_alpha_header = widgets.HTML(f"<h5>Bin Alpha</h5>")
     bin_alpha = widgets.FloatSlider(value=0.05, min=0.01, max=0.5, step=0.01)
 
-    validation_size_header = widgets.HTML(f"<h4>Validation Size</h4>")
+    validation_size_header = widgets.HTML(f"<h5>Validation Size</h5>")
     validation_size = widgets.FloatSlider(value=0.2, min=0.05, max=0.5, step=0.01)
 
     colBSettings = widgets.VBox([bin_alpha_header, bin_alpha, validation_size_header, validation_size])
@@ -274,7 +281,20 @@ def classifier(df, model_name, model_description=''):
 
     def id_cols_changed(_):
         id_vals = [i for i in list(id_columns.value) if i is not None]
-        id_title.value = f"<h4>ID Column ({len(id_vals)} selected)</h4>"
+        id_title.value = f"<h5>ID Column ({len(id_vals)} selected)</h5>"
+
+    def _check_connection(_):
+        try:
+            if ping_server(xplainable.__client__.compute_hostname):
+                connection_status_button.description = "Connected"
+                connection_status_button.style.button_color = 'green'
+            else:
+                connection_status_button.description = "Offline"
+                connection_status_button.style.button_color = 'red'
+        except:
+            pass
+
+    connection_status_button.on_click(_check_connection)
 
     # Train model on click
     def train_button_clicked(b):
@@ -312,6 +332,7 @@ def classifier(df, model_name, model_description=''):
     train_button.on_click(train_button_clicked)
     train_button.style.button_color = '#0080ea'
     close_button.on_click(close_button_click)
+    connection_status_button.on_click(_check_connection)
 
     # Listen for changes
     id_columns.observe(id_cols_changed, names=['value'])
@@ -320,11 +341,7 @@ def classifier(df, model_name, model_description=''):
     display(screen)
 
     # Ping server to check for connection
-    try:
-        if ping_server(xplainable.__client__.compute_hostname):
-            connection_status.value = f"<h4><font color='green'>[connected]</h4>"
-    except:
-        pass
+    _check_connection(None)
 
     # Need to return empty model first
     return model

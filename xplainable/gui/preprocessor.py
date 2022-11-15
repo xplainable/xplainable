@@ -143,8 +143,8 @@ class Preprocessor:
                 if Feature == None:
                     return
                 ser = self._df_trans[Feature].dropna().copy()
-                if len(ser) > 10000:
-                   ser = ser.sample(10000)
+                if len(ser) > 1000:
+                   ser = ser.sample(1000)
                 if pdtypes.is_string_dtype(ser):
                     ser = ser.apply(lambda x: str(x))
                     if ser.nunique() > 20:
@@ -153,7 +153,7 @@ class Preprocessor:
 
                 elif pdtypes.is_bool_dtype(ser):
                     ser = ser.astype(str).lower()
-                sns.set(rc={'figure.figsize':(8,5)})
+                sns.set(rc={'figure.figsize':(10,4)})
                 sns.histplot(ser)
                 plt.show()
             
@@ -166,8 +166,8 @@ class Preprocessor:
                 if x is None or y is None:
                     return
                 samp = self._df_trans[[x, y]]
-                if samp.shape[0] > 10000:
-                    samp = samp.sample(10000)
+                if samp.shape[0] > 1000:
+                    samp = samp.sample(1000)
 
                 try:
                 
@@ -209,7 +209,7 @@ class Preprocessor:
             widget = interactive(_plot)
             controls = widgets.HBox(
                 widget.children[:-1],
-                layout = widgets.Layout(flex_flow='row', width='100%'))
+                layout = widgets.Layout(flex_flow='row wrap', width='100%'))
 
             output = widget.children[-1]
             output.layout = widgets.Layout(margin='0 0 0 25px')
@@ -999,7 +999,7 @@ class Preprocessor:
         dist_plot_feature.observe(sync_feature_dropdowns_b, names=['value'])
         dist_plot_feature.observe(summary_report, names=['value'])
 
-        multi_layout = widgets.Layout(width='100%')
+        multi_layout = widgets.Layout(width='250px')
         multi_plot_x = widgets.Dropdown(options = self._df_trans.columns, layout=multi_layout)
         multi_plot_y = widgets.Dropdown(options = self._df_trans.columns, layout=multi_layout)
         multi_plot_hue = widgets.Dropdown(
@@ -1010,7 +1010,9 @@ class Preprocessor:
         with visuals:
             chart_a = interactive(plot_distribution())
             chart_b = plot_multiple()
-            charts = widgets.HBox([chart_a, chart_b])
+            charts = widgets.Tab([chart_a, chart_b])
+            charts.set_title(0, 'Distribution')
+            charts.set_title(1, 'Interaction')
             display(charts)
 
         # //---------------------------------//
