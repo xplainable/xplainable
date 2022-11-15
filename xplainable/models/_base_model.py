@@ -6,6 +6,7 @@ import numpy as np
 import json
 from urllib3.exceptions import HTTPError
 from sklearn.metrics import *
+from xplainable.visualisation.explain import generate_explain_plots
 
 
 class BaseModel:
@@ -144,3 +145,7 @@ class BaseModel:
 
         with open(filepath, 'wb') as outp:
             dill.dump(self, outp)
+
+    def explain(self):
+        return generate_explain_plots(self)
+

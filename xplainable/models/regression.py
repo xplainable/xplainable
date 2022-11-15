@@ -288,15 +288,6 @@ class XRegressor(BaseModel):
             if model_data:
                 self._load_metadata(model_data["data"])
 
-    def explain(self):
-        """ Generates a model explanation URL
-
-        Returns:
-            str: URL
-        """
-
-        return f'https://app.xplainable.io/models/{self.model_name}'
-
     def predict(self, x):
         """ Predicts the y value of a given set of x variables.
 

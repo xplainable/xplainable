@@ -419,15 +419,6 @@ class XClassifier(BaseModel):
             if model_data:
                 self._load_metadata(model_data["data"])
 
-    def explain(self):
-        """ Generates a model explanation URL
-
-        Returns:
-            str: URL
-        """
-
-        return f'https://app.xplainable.io/models/{self.model_name}'
-
     def predict_score(self, x):
         """ Scores an observation's propensity to fall in the positive class.
         
