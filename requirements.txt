@@ -10,3 +10,4 @@ seaborn==0.12.1
 statsmodels==0.13.5
 traitlets==5.5.0
 urllib3==1.26.12
+altair==4.2.0
