@@ -797,12 +797,12 @@ class Preprocessor:
 
         # //------- HEADER -------//
         # Load logo
-        logo = open('xplainable/_img/logo.png', 'rb').read()
+        logo = open('../_img/logo.png', 'rb').read()
         logo_display = widgets.Image(
             value=logo, format='png', width=50, height=50)
         
         # Load preprocessor image
-        label = open('xplainable/_img/label_preprocessor.png', 'rb').read()
+        label = open('../_img/label_preprocessor.png', 'rb').read()
         label_display = widgets.Image(value=label, format='png')
 
         # Build Header
