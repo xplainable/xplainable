@@ -797,16 +797,17 @@ class Preprocessor:
 
         # //------- HEADER -------//
         # Load logo
-        logo = open('../_img/logo.png', 'rb').read()
-        logo_display = widgets.Image(
-            value=logo, format='png', width=50, height=50)
+        #logo = open('../_img/logo.png', 'rb').read()
+        #logo_display = widgets.Image(
+        #    value=logo, format='png', width=50, height=50)
         
         # Load preprocessor image
-        label = open('../_img/label_preprocessor.png', 'rb').read()
-        label_display = widgets.Image(value=label, format='png')
+        #label = open('../_img/label_preprocessor.png', 'rb').read()
+        #label_display = widgets.Image(value=label, format='png')
 
         # Build Header
-        header = widgets.HBox([logo_display, label_display])
+        #header = widgets.HBox([logo_display, label_display])
+        header = widgets.HBox([])
         header.layout = widgets.Layout(margin = ' 5px 0 15px 25px ')
 
         # //---------------------------------//
