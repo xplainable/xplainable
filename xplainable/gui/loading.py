@@ -88,14 +88,15 @@ def load_preprocessor():
         clear_output()
 
     # --- HEADER ---
-    logo = open('xplainable/_img/logo.png', 'rb').read()
-    logo_display = widgets.Image(
-        value=logo, format='png', width=50, height=50)
+    #logo = open('xplainable/_img/logo.png', 'rb').read()
+    #logo_display = widgets.Image(
+    #    value=logo, format='png', width=50, height=50)
     
-    label = open('xplainable/_img/label_load_preprocessor.png', 'rb').read()
-    label_display = widgets.Image(value=label, format='png')
+    #label = open('xplainable/_img/label_load_preprocessor.png', 'rb').read()
+    #label_display = widgets.Image(value=label, format='png')
 
-    header = widgets.HBox([logo_display, label_display])
+    #header = widgets.HBox([logo_display, label_display])
+    header = widgets.HBox([])
     header.layout = widgets.Layout(margin = ' 5px 0 15px 25px ')
 
     # --- BODY ---

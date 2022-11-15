@@ -33,10 +33,10 @@ def classifier(df, model_name, model_description=''):
         model_description=model_description)
 
     # HEADER
-    logo = open('../_img/logo.png', 'rb').read()
-    logo_display = widgets.Image(
-        value=logo, format='png', width=50, height=50)
-    logo_display.layout = widgets.Layout(margin='15px 25px 15px 15px')
+    #logo = open('../_img/logo.png', 'rb').read()
+    #logo_display = widgets.Image(
+    #    value=logo, format='png', width=50, height=50)
+    #logo_display.layout = widgets.Layout(margin='15px 25px 15px 15px')
 
     header_title = widgets.HTML(f"<h3>Model: {model_name}&nbsp&nbsp</h3>")
     header_title.layout = widgets.Layout(margin='10px 0 0 0')
@@ -55,7 +55,9 @@ def classifier(df, model_name, model_description=''):
             }
 
     header = widgets.VBox(
-        [widgets.HBox([widgets.VBox([logo_display]), header_title, connection_status_button])])
+        [widgets.HBox([
+            #widgets.VBox([logo_display]),
+            header_title, connection_status_button])])
 
     # COLUMN 1
     col1a = widgets.HTML(
