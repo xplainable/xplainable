@@ -1,4 +1,3 @@
-from .. import client
 from datetime import datetime
 import dill
 import os
@@ -6,7 +5,12 @@ import numpy as np
 import json
 from urllib3.exceptions import HTTPError
 from sklearn.metrics import *
-from xplainable.visualisation.explain import generate_explain_plots
+from xplainable.visualisation.explain import *
+import xplainable
+import ipywidgets as widgets
+from ipywidgets import interactive
+from IPython.display import display
+from xplainable.utils.xwidgets import ClickResponsiveToggleButtons
 
 
 class BaseModel:
@@ -15,7 +19,6 @@ class BaseModel:
 
         self.model_name = model_name
         self.model_description = model_description
-        self.__session = client.__session__
         
     @staticmethod
     def _update_profile_inf(profile):
@@ -91,28 +94,75 @@ class BaseModel:
 
         return x
 
+    def _partition_transform(self, x, partition):
+        """ Transforms a dataset into the model weights.
+        
+        Args:
+            x (pandas.DataFrame): The dataframe to be transformed.
+            
+        Returns:
+            pandas.DataFrame: The transformed dataset.
+        """
+
+        if partition not in self.partitions.keys():
+            raise ValueError(f'Partition {partition} does not exist')
+
+        x = x.copy()
+
+        n_cols = x.select_dtypes(include=np.number).columns.tolist()
+        x[n_cols] = x[n_cols].astype('float64')
+
+        profile = self.partitions[partition]['profile']
+        categorical_columns = list(profile['categorical'].keys())
+        numeric_columns = list(profile['numeric'].keys())
+
+        # Get column names from training data
+        columns = categorical_columns + numeric_columns
+
+        # Remove partition value
+        columns.remove(self.partition_on) if self.partition_on in columns else None
+
+        # Filter x to only relevant columns
+        x = x[[i for i in columns if i in list(x)]]
+
+        # Map score for all categorical features
+        for col in categorical_columns:
+            mapp = profile["categorical"][col]
+            x[col] = x[col].apply(self._map_categorical, args=(mapp,))
+
+        # Map score for all numeric features
+        for col in numeric_columns:
+            mapp = profile["numeric"][col]
+            x[col] = x[col].apply(self._map_numeric, args=(mapp,))
+
+        return x
+
     def publish(self):
 
         # Get models
-        response = self.__session.get(
-            url=f'{self.hostname}/models'
+        response = xplainable.client.__session__.get(
+            url=f'{self.hostname}/v1/models'
             )
 
         # Find model ID
         if response.status_code == 200:
             models = json.loads(response.content)
             if len(models) == 0:
-                raise HTTPError(f"400 Model with name {self.model_name} doesn't exist.")
+                raise HTTPError(
+                    f"400 Model with name {self.model_name} doesn't exist.")
                 
-            model_id = [i['model_id'] for i in models if i['model_name'] == self.model_name]
+            model_id = [i['model_id'] for i in models if \
+                i['model_name'] == self.model_name]
+
             if len(model_id) == 1:
                 model_id = model_id[0]
             else:
-                raise HTTPError(f"400 Model with name {self.model_name} doesn't exist.")
+                raise HTTPError(
+                    f"400 Model with name {self.model_name} doesn't exist.")
 
             # Publish model
-            response = self.__session.post(
-            url=f'{self.hostname}/models/{model_id}/publish'
+            response = xplainable.client.__session__.post(
+            url=f'{self.hostname}/v1/models/{model_id}/publish'
             )
 
             if response.status_code == 200:
@@ -147,5 +197,25 @@ class BaseModel:
             dill.dump(self, outp)
 
     def explain(self):
-        return generate_explain_plots(self)
+        data = generate_partition_data(self)
+        buttons = ClickResponsiveToggleButtons(description='')
+
+        buttons.options = list(data.keys())
+        buttons.value = buttons.options[0]
+
+        def on_change(_):
+            canvas.clear_output()
+            with canvas:
+                display(plot_partition(self, data, buttons.value))
+
+        buttons.on_click(on_change)
+
+        canvas = widgets.Output()
+        with canvas:
+            display(plot_partition(self, data, buttons.options[0]))
+        
+        out = widgets.VBox([buttons, canvas])
+        out.layout = widgets.Layout(min_height="500px")
+
+        return out
 

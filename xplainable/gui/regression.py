@@ -35,10 +35,6 @@ def regressor(df, model_name, model_description=''):
         model_description=model_description)
 
     # HEADER
-    #logo = open('../_img/logo.png', 'rb').read()
-    #logo_display = widgets.Image(
-    #    value=logo, format='png', width=50, height=50)
-    #logo_display.layout = widgets.Layout(margin='15px 25px 15px 15px')
 
     header_title = widgets.HTML(f"<h3>Model: {model_name}&nbsp&nbsp</h3>")
     header_title.layout = widgets.Layout(margin='10px 0 0 0')
@@ -231,7 +227,7 @@ def regressor(df, model_name, model_description=''):
 
     def _check_connection(_):
         try:
-            if ping_server(xplainable.__client__.compute_hostname):
+            if ping_server(xplainable.client.hostname):
                 connection_status_button.description = "Connected"
                 connection_status_button.style.button_color = 'green'
             else:
@@ -320,7 +316,10 @@ def regressor(df, model_name, model_description=''):
 
     # Create drop button
     drop_button = widgets.Button(description="Drop Stage(s)",icon='times')
-    drop_button.style.button_color = '#e21c47'
+    drop_button.style = {
+            "button_color": '#e14067',
+            "text_color": 'white'
+            }
     drop_button.on_click(drop_button_clicked)
 
     # Build column 3
@@ -370,7 +369,10 @@ def regressor(df, model_name, model_description=''):
 
     #  Create buttons and listen for clicks
     train_button = TrainButton(description="Train", icon='bolt', model=model, disabled=True)
-    train_button.style.button_color = '#0080ea'
+    train_button.style = {
+            "button_color": '#0080ea',
+            "text_color": 'white'
+            }
     train_button.on_click(train_button_clicked)
 
     close_button = widgets.Button(description='Close')

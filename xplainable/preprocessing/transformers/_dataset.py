@@ -3,6 +3,7 @@ import pandas.api.types as pdtypes
 from ipywidgets import interactive
 import xplainable.utils.xwidgets as xwidgets
 import numpy as np
+import scipy.signal as ss
 
 
 class DropCols(XBaseTransformer):
@@ -331,7 +332,8 @@ class GroupbyShift(XBaseTransformer):
             df = df.sort_values(self.order_by, ascending=not self.descending)
 
         if self.group_by and self.group_by[0] is not None:
-            df[self.as_new] = df.groupby(self.group_by)[self.target].shift(self.step)
+            df[self.as_new] = df.groupby(
+                self.group_by)[self.target].shift(self.step)
         else:
             df[self.as_new] = df[self.target].shift(self.step)
 
@@ -503,7 +505,8 @@ class TextSplit(XBaseTransformer):
 
     def _operations(self, df):
 
-        new_cols = df[self.target].astype(str).str.split(self.separator, expand=True, n=self.max_splits)
+        new_cols = df[self.target].astype(str).str.split(
+            self.separator, expand=True, n=self.max_splits)
         new_cols.columns = [f'{self.target}_{i}' for i in new_cols]
         df[new_cols.columns] = new_cols
         df = df.drop(columns=[self.target])
@@ -558,3 +561,64 @@ class ChangeCases(XBaseTransformer):
                 raise ValueError("case change must be either 'lower' or 'upper'")
 
         return df
+
+
+class GroupedSignalSmoothing(XBaseTransformer):
+    """ Smooths signal data within specified group.
+
+    Args:
+        target (str): The target feature to shift.
+        as_new (bool): Creates new column if True.
+        group_by (str): The column to group by.
+        order_by (str): The column to order by.
+        descending (bool): Orders the value descending if True.
+    """
+
+    # Attributes for ipyxwidgets
+    supported_types = ['dataset']
+
+    def __init__(self, target=None, group_by=None,\
+        order_by=None, descending=None):
+
+        super().__init__()
+        self.target = target
+
+        self.group_by = group_by
+        self.order_by = order_by
+        self.descending = descending
+
+    def __call__(self, df, *args, **kwargs):
+        
+        def _set_params(
+            group_by = xwidgets.SelectMultiple(
+                description='Group by: ', options=[None]+list(df.columns)),
+            order_by = xwidgets.SelectMultiple(
+                description='Order by: ', options=[None]+list(df.columns)),
+            descending = xwidgets.Checkbox(value=False),
+            targets=xwidgets.SelectMultiple(options=[None]+list(df.columns))
+            ):
+
+            self.targets = targets
+            self.group_by = list(group_by)
+            self.order_by = list(order_by)
+            self.descending = descending
+
+        return interactive(_set_params)
+
+    def _operations(self, df):
+
+        # Order values if
+        if self.order_by and self.order_by[0] is not None:
+            df = df.sort_values(self.order_by, ascending=not self.descending)
+
+        if self.group_by and self.group_by[0] is not None:
+            for t in self.targets:
+                df[t] = df.groupby(self.group_by)[t].transform(
+                    lambda x: ss.savgol_filter(x, window_length=19, \
+                        polyorder=1, deriv=0, mode='interp'))
+        else:
+            df[t] = ss.savgol_filter(
+                df[t], window_length=19, polyorder=1, deriv=0, mode='interp')
+
+        return df
+

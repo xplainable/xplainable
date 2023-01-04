@@ -33,12 +33,7 @@ def classifier(df, model_name, model_description=''):
         model_description=model_description)
 
     # HEADER
-    #logo = open('../_img/logo.png', 'rb').read()
-    #logo_display = widgets.Image(
-    #    value=logo, format='png', width=50, height=50)
-    #logo_display.layout = widgets.Layout(margin='15px 25px 15px 15px')
-
-    header_title = widgets.HTML(f"<h3>Model: {model_name}&nbsp&nbsp</h3>")
+    header_title = widgets.HTML(f"<h4>Model: {model_name}&nbsp&nbsp</h4>")
     header_title.layout = widgets.Layout(margin='10px 0 0 0')
 
     divider = widgets.HTML(
@@ -48,16 +43,22 @@ def classifier(df, model_name, model_description=''):
     connection_status.layout = widgets.Layout(margin='10px 0 0 0')
 
     connection_status_button = widgets.Button(description="offline")
-    connection_status_button.layout = widgets.Layout(margin='10px 0 0 0')
+
+    connection_status_button.layout = widgets.Layout(
+        height='25px', width='80px', margin='10px 0 0 10px')
+
     connection_status_button.style = {
-            "button_color": 'red',
-            "text_color": 'white'
+            "button_color": '#e21c47',
+            "text_color": 'white',
+            "font_size": "11.5px"
             }
 
     header = widgets.VBox(
         [widgets.HBox([
             #widgets.VBox([logo_display]),
             header_title, connection_status_button])])
+
+    header.layout = widgets.Layout(margin='0 0 20px 0')
 
     # COLUMN 1
     col1a = widgets.HTML(
@@ -72,8 +73,17 @@ def classifier(df, model_name, model_description=''):
         layout = widgets.Layout(width='200px')
         )
 
+    possible_partitions = [None]+[i for i in df.columns if df[i].nunique() < 11]
+
+    partition_on = widgets.Dropdown(
+        options=possible_partitions,
+        layout = widgets.Layout(width='200px')
+        )
+
     # get all cols with cardinality of 1
-    potential_id_cols = [None] + [col for col in df.columns if XScan._cardinality(df[col]) == 1]
+    potential_id_cols = [None] + [
+        col for col in df.columns if XScan._cardinality(df[col]) == 1]
+
     id_columns = widgets.SelectMultiple(
         options=potential_id_cols,
         style=style,
@@ -84,7 +94,6 @@ def classifier(df, model_name, model_description=''):
     colA.layout = widgets.Layout(margin='0 0 0 15px')
 
     # COLUMN 2
-
     # Options to toggle param/opt view
     options = {
         True: 'flex',
@@ -195,7 +204,8 @@ def classifier(df, model_name, model_description=''):
         layout = widgets.Layout(max_width='75px')
     )
 
-    min_leaf_size_display = widgets.HBox([min_leaf_size_space, min_leaf_size_step])
+    min_leaf_size_display = widgets.HBox(
+        [min_leaf_size_space, min_leaf_size_step])
 
     # SEARCH SPACE – MIN_LEAF_SIZE
     min_info_gain_space = widgets.FloatRangeSlider(
@@ -214,7 +224,8 @@ def classifier(df, model_name, model_description=''):
         layout = widgets.Layout(max_width='75px')
     )
 
-    min_info_gain_display = widgets.HBox([min_info_gain_space, min_info_gain_step])
+    min_info_gain_display = widgets.HBox(
+        [min_info_gain_space, min_info_gain_step])
 
     std_params = widgets.VBox([
         widgets.HTML(f"<h5>Hyperparameters</h5>"),
@@ -242,13 +253,23 @@ def classifier(df, model_name, model_description=''):
         opt_params
         ])
 
+    partition_header = widgets.HTML(f"<h5>Partition on</h5>")
+
     bin_alpha_header = widgets.HTML(f"<h5>Bin Alpha</h5>")
     bin_alpha = widgets.FloatSlider(value=0.05, min=0.01, max=0.5, step=0.01)
 
     validation_size_header = widgets.HTML(f"<h5>Validation Size</h5>")
-    validation_size = widgets.FloatSlider(value=0.2, min=0.05, max=0.5, step=0.01)
+    validation_size = widgets.FloatSlider(
+        value=0.2, min=0.05, max=0.5, step=0.01)
 
-    colBSettings = widgets.VBox([bin_alpha_header, bin_alpha, validation_size_header, validation_size])
+    colBSettings = widgets.VBox([
+        partition_header,
+        partition_on,
+        bin_alpha_header,
+        bin_alpha,
+        validation_size_header,
+        validation_size
+        ])
 
     colB = widgets.Tab([colBParams, colBSettings])
     colB.set_title(0, 'Parameters')
@@ -258,7 +279,9 @@ def classifier(df, model_name, model_description=''):
     body = widgets.HBox([colA, colB])
 
     # FOOTER
-    train_button = TrainButton(description='Train Model', model=model, icon='bolt', disabled=True)
+    train_button = TrainButton(
+        description='Train Model', model=model, icon='bolt', disabled=True)
+
     close_button = widgets.Button(description='Close')
 
     train_button.layout = widgets.Layout(margin=' 10px 0 10px 20px')
@@ -287,22 +310,23 @@ def classifier(df, model_name, model_description=''):
 
     def _check_connection(_):
         try:
-            if ping_server(xplainable.__client__.compute_hostname):
+            if ping_server(xplainable.client.hostname):
                 connection_status_button.description = "Connected"
-                connection_status_button.style.button_color = 'green'
+                connection_status_button.style.button_color = '#12b980'
             else:
                 connection_status_button.description = "Offline"
-                connection_status_button.style.button_color = 'red'
+                connection_status_button.style.button_color = '#e21c47'
         except:
             pass
-
-    connection_status_button.on_click(_check_connection)
 
     # Train model on click
     def train_button_clicked(b):
         with outt:
         
-            model = b.model         
+            model = b.model
+            model.model_name = model_name
+            model.model_description = model_description
+            model.partition_on = partition_on.value
             model.max_depth = max_depth.value
             model.min_leaf_size = min_leaf_size.value
             model.min_info_gain = min_info_gain.value
@@ -311,19 +335,25 @@ def classifier(df, model_name, model_description=''):
             model.n_trials = n_trials.value
             model.early_stopping = early_stopping.value
             model.validation_size = validation_size.value
-            model.max_depth_space = list(max_depth_space.value) + [max_depth_step.value]
-            model.min_leaf_size_space = list(min_leaf_size_space.value) + [min_leaf_size_step.value]
-            model.min_info_gain_space = list(min_info_gain_space.value) + [min_info_gain_step.value]
+            model.max_depth_space = list(max_depth_space.value) + \
+                [max_depth_step.value]
+
+            model.min_leaf_size_space = list(min_leaf_size_space.value) + \
+                [min_leaf_size_step.value]
+
+            model.min_info_gain_space = list(min_info_gain_space.value) + \
+                [min_info_gain_step.value]
+
             model.opt_metric = optimise_metric.value
 
             try:
                 body.close()
                 footer.close()
                 
-                X, y = df.drop(
-                    columns=[target.value]), df[target.value]
+                X, y = df.drop(columns=[target.value]), df[target.value]
 
-                model.fit(X, y, list(id_columns.value))
+                id_cols = [i for i in list(id_columns.value) if i is not None]
+                model.fit(X, y, id_columns=id_cols)
 
             except Exception as e:
                 close()
@@ -332,7 +362,11 @@ def classifier(df, model_name, model_description=''):
 
     # Listen for clicks
     train_button.on_click(train_button_clicked)
-    train_button.style.button_color = '#0080ea'
+    train_button.style = {
+            "button_color": '#0080ea',
+            "text_color": 'white'
+            }
+            
     close_button.on_click(close_button_click)
     connection_status_button.on_click(_check_connection)
 
@@ -343,7 +377,7 @@ def classifier(df, model_name, model_description=''):
     display(screen)
 
     # Ping server to check for connection
-    _check_connection(None)
+    _check_connection(xplainable.client.hostname)
 
     # Need to return empty model first
     return model
