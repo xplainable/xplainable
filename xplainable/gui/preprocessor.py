@@ -21,12 +21,13 @@ import dill
 
 class Preprocessor:
 
-    def __init__(self, preprocessor_name):
+    def __init__(self, name, description='no description'):
         
         pd.set_option('display.max_columns', 500)
         warnings.filterwarnings('ignore')
 
-        self.preprocessor_name = preprocessor_name
+        self.preprocessor_name = name
+        self.description = description
         self.pipeline = XPipeline()
         self._df_trans = pd.DataFrame()
         self.state = 0
@@ -442,34 +443,34 @@ class Preprocessor:
 
                 # Get user models
                 response = xplainable.client.__session__.get(
-                    f'{xplainable.__client__.api_hostname}/preprocessors'
+                    f'{xplainable.client.hostname}/v1/preprocessors'
                     )
 
                 # Prepare params
                 user_preprocessors = get_response_content(response)
 
-                api_params = {"preprocessor_name": self.preprocessor_name}
+                api_params = {
+                    "preprocessor_name": self.preprocessor_name,
+                    "preprocessor_description": self.description
+                    }
 
                 # Create model if model name doesn't exist
-                if not any(m['preprocessor_name'] == self.preprocessor_name for \
-                    m in user_preprocessors):
-                    
+                if not any(
+                    m[1] == self.preprocessor_name for m in user_preprocessors):
                     # Create preprocessor
                     response = xplainable.client.__session__.post(
-                        f'{xplainable.__client__.api_hostname}/create-preprocessor',
+                        f'{xplainable.client.hostname}/v1/create-preprocessor',
                         params=api_params
                         )
-
                     # Check response content and fetch id
                     preprocessor_id = get_response_content(response)
 
                 else:
-
+                    api_params.pop('preprocessor_description')
                     response = xplainable.client.__session__.get(
-                        f'{xplainable.__client__.api_hostname}/get-preprocessor-id',
+                        f'{xplainable.client.hostname}/v1/get-preprocessor-id',
                         params=api_params
                     )
-
                     preprocessor_id = get_response_content(response)
 
 
@@ -480,14 +481,13 @@ class Preprocessor:
                     "stages": metadata,
                     "deltas": self.df_delta
                 }
-
                 # Create preprocessor version
                 response = xplainable.client.__session__.post(
-                    f'{xplainable.__client__.api_hostname}/preprocessors/{preprocessor_id}/add-version',
-                    params=api_params,
-                    json=insert_data
+                    f'{xplainable.client.hostname}/v1/preprocessors/\
+                        {preprocessor_id}/add-version',
+                        params=api_params,
+                        json=insert_data
                     )
-
                 # Check response content and fetch id
                 preprocessor_id = get_response_content(response)
 
@@ -796,17 +796,6 @@ class Preprocessor:
 
 
         # //------- HEADER -------//
-        # Load logo
-        #logo = open('../_img/logo.png', 'rb').read()
-        #logo_display = widgets.Image(
-        #    value=logo, format='png', width=50, height=50)
-        
-        # Load preprocessor image
-        #label = open('../_img/label_preprocessor.png', 'rb').read()
-        #label_display = widgets.Image(value=label, format='png')
-
-        # Build Header
-        #header = widgets.HBox([logo_display, label_display])
         header = widgets.HBox([])
         header.layout = widgets.Layout(margin = ' 5px 0 15px 25px ')
 
@@ -1001,8 +990,11 @@ class Preprocessor:
         dist_plot_feature.observe(summary_report, names=['value'])
 
         multi_layout = widgets.Layout(width='250px')
-        multi_plot_x = widgets.Dropdown(options = self._df_trans.columns, layout=multi_layout)
-        multi_plot_y = widgets.Dropdown(options = self._df_trans.columns, layout=multi_layout)
+        multi_plot_x = widgets.Dropdown(
+            options = self._df_trans.columns, layout=multi_layout)
+            
+        multi_plot_y = widgets.Dropdown(
+            options = self._df_trans.columns, layout=multi_layout)
         multi_plot_hue = widgets.Dropdown(
             options = [None]+list(self._df_trans.columns), layout=multi_layout)
 

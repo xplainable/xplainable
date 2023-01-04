@@ -1,57 +1,93 @@
 import altair as alt
 import pandas as pd
 
-def _generate_explain_plot_data(model):
+def _generate_explain_plot_data(model, partition):
 
-        def get_plot_data(f):
-            if f in model._profile['numeric']:
-                prof = pd.DataFrame({i: v for i, v in model._profile['numeric'][f].items() if len(v) > 0}).T.reset_index()
+        def get_plot_data(f, p):
+            """ 
+            Args:
+                f (str): Feature
+                p (str): Partition
+            """
+            _profile = model.partitions[p]['profile']
+            if f in _profile['numeric']:
+                prof = pd.DataFrame(
+                    {i: v for i, v in _profile['numeric'][f].items() if \
+                        len(v) > 0}).T.reset_index()
+
                 if prof.empty:
                     return
-                prof['value'] = prof['lower'].astype(str) + " - " + prof['upper'].astype(str)
+
+                prof['value'] = prof['lower'].round(2).astype(str) + " - " + \
+                    prof['upper'].round(2).astype(str)
+
                 prof = prof[['value', 'score']]
-            elif f in model._profile['categorical']:
-                prof = pd.DataFrame({i: v for i, v in model._profile['categorical'][f].items() if len(v) > 0}).T.reset_index()
+                
+            elif f in _profile['categorical']:
+                prof = pd.DataFrame({i: v for i, v in _profile['categorical'][
+                    f].items() if len(v) > 0}).T.reset_index()
+
                 if prof.empty:
                     return
+
                 prof = prof[['categories', 'score']]
                 prof['categories'] = prof['categories'].apply(lambda x: list(x))
                 prof = prof.rename(columns={'categories': 'value'})
                 prof = prof.explode('value')
+
             else:
                 return
 
             prof['feature'] = f
-            prof['score_label'] = prof['score'].apply(lambda x: str(round(x*100, 1))+'%')
+            prof['score_label'] = prof['score'].apply(
+                lambda x: str(round(x*100, 1)))
 
             return prof.reset_index()
         
-        fimp = pd.DataFrame({i: {'importance': v} for i, v in model._feature_importances.items()}).T.reset_index()
+        feat_imp = model.partitions[partition]["feature_importances"]
+        fimp = pd.DataFrame(
+            {i: {'importance': v} for i, v in feat_imp.items()}).T.reset_index()
+
         fimp = fimp.rename(columns={'index': 'feature'})
-        fimp['importance_label'] = fimp['importance'].apply(lambda x: str(round(x*100, 1))+'%')
-        plot_data = [get_plot_data(i) for i in model._feature_importances.keys()]
-        prof = pd.concat([i for i in plot_data if i is not None]).reset_index(drop=True)
+        fimp['importance_label'] = fimp['importance'].apply(
+            lambda x: str(round(x*100, 1))+'%')
+
+        plot_data = [get_plot_data(i, partition) for i in feat_imp.keys()]
+        prof = pd.concat(
+            [i for i in plot_data if i is not None]).reset_index(drop=True)
         
         return fimp, prof
 
-def generate_explain_plots(model):
-    fi, p = _generate_explain_plot_data(model)
-    
-    single = alt.selection(type="single", fields=['feature'], init={'feature': list(model._feature_importances.keys())[0]})
+def generate_partition_data(model):
 
-    feature_importances = alt.Chart(fi, title='Feature Importances').mark_bar(color='#0080ea').encode(
-        x='importance',
-        y='feature',
-        tooltip='importance_label',
-        color=alt.condition(single, alt.value('lightgray'), alt.value('#0080ea'))
-    ).properties(
-        width=350,
-        height=400
-    ).add_selection(
-        single
-    )
+    data = {p: {} for p in model.partitions}
+    for p, v in data.items():
+        fi, prof = _generate_explain_plot_data(model, p)
+        data[p]['feature_importances'] = fi
+        data[p]['profile'] = prof
+        
+    return data
+        
+def plot_partition(model, data, partition):
 
-    profile = alt.Chart(p, title='Contributions').mark_bar(color='#e14067').encode(
+    fi, p = data[partition]['feature_importances'], data[partition]['profile']
+
+    single = alt.selection(
+        type="single", fields=['feature'], init={'feature': list(
+            model.partitions[partition]['feature_importances'].keys())[0]})
+
+    feature_importances = alt.Chart(
+        fi,
+        title='Feature Importances').mark_bar(color='#0080ea').encode(
+            x='importance', y=alt.Y('feature',
+                sort=alt.SortField(field='importance', order='descending')),
+            tooltip='importance_label',
+            color=alt.condition(
+            single, alt.value('lightgray'), alt.value('#0080ea'))
+    ).properties(width=350, height=400).add_selection(single)
+
+    profile = alt.Chart(p, title='Contributions').mark_bar(
+        color='#e14067').encode(
         x='score',
         y=alt.Y('value', sort=alt.SortField(field='index', order='descending')),
         tooltip='score_label',
@@ -66,6 +102,5 @@ def generate_explain_plots(model):
     ).transform_filter(
         single
     )
-
 
     return (feature_importances | profile)

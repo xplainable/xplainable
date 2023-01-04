@@ -1,16 +1,17 @@
 import json
-from .. import client
+
+from requests import HTTPError
 import numpy as np
 import sklearn.metrics as skm
 from xplainable.models._base_model import BaseModel
 from ..utils.api import get_response_content
 from IPython.display import display
 import ipywidgets as widgets
-from xplainable.client import __session__
 import time
 import xplainable
 import warnings
 import pickle
+import pandas as pd
 import zlib
 
 warnings.filterwarnings('ignore')
@@ -29,11 +30,10 @@ class XRegressor(BaseModel):
     """
 
     def __init__(self, max_depth=20, min_leaf_size=0.002, min_info_gain=0.01,\
-        bin_alpha=0.05, tail_sensitivity=1, prediction_range=None, validation_size=0.2, *args, **kwargs):
+        bin_alpha=0.05, tail_sensitivity=1, prediction_range=None,\
+            validation_size=0.2, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-
-        self.__session = client.__session__
 
         self._profile = None
         self._feature_importances = None
@@ -83,7 +83,8 @@ class XRegressor(BaseModel):
             self.min_prediction = -np.inf
             self.max_prediction = np.inf
 
-        elif type(self.prediction_range) == list and len(self.prediction_range) == 2:
+        elif type(
+            self.prediction_range) == list and len(self.prediction_range) == 2:
 
             if self.prediction_range[0] is not None:
                 self.min_prediction = self.prediction_range[0]
@@ -96,7 +97,8 @@ class XRegressor(BaseModel):
                 self.max_prediction = np.inf
 
         else:
-            raise ValueError("Prediction range must be list of length 2 or None")
+            raise ValueError(
+                "Prediction range must be list of length 2 or None")
 
     def __get_progress(self):
 
@@ -166,7 +168,9 @@ class XRegressor(BaseModel):
 
         screen = widgets.VBox([
             widgets.HBox([colA, colB]),
-            widgets.HTML(f'<hr class="solid">', layout=widgets.Layout(margin='15px 0 0 0')),
+            widgets.HTML(
+                f'<hr class="solid">',
+                layout=widgets.Layout(margin='15px 0 0 0')),
             stage_display
             ])
 
@@ -174,10 +178,14 @@ class XRegressor(BaseModel):
 
         while True:
             
-            data = json.loads(__session__.get(f'{xplainable.__client__.compute_hostname}/progress').content)
-        
+            time.sleep(0.1)
+            try:
+                data = json.loads(xplainable.client.__session__.get(
+                    f'{xplainable.__client__.compute_hostname}/progress').content)
+            except Exception as e:
+                raise HTTPError(status=500, error="Internal Server Error")
+
             if data is None:
-                time.sleep(0.1)
                 continue
 
             if data['stage'] != current_stage:
@@ -188,7 +196,6 @@ class XRegressor(BaseModel):
                 return
 
             if current_stage == 'initialising...':
-                time.sleep(0.1)
                 continue
 
             if not train_complete:
@@ -223,7 +230,8 @@ class XRegressor(BaseModel):
                 for i, v in pipeline.items():
                     opt_bars.children[int(i)-1].children[0].value = v['progress']
                     mae = "-" if v['metric'] == "-" else round(float(v['metric']), 2)
-                    opt_bars.children[int(i)-1].children[1].value = f"{v['progress']}/{iterations[int(i)-1]} (mae: {mae})"
+                    val = f"{v['progress']}/{iterations[int(i)-1]} (mae: {mae})"
+                    opt_bars.children[int(i)-1].children[1].value = val
 
                     if v['status'] == 'stopped early':
                         opt_bars.children[int(i)-1].children[0].bar_style = 'warning'
@@ -232,7 +240,7 @@ class XRegressor(BaseModel):
                         opt_bars.children[int(i)-1].children[0].bar_style = 'success'
 
                 current_output = pipeline
-            time.sleep(0.1)
+            
 
             if current_stage == 'done':
                 return json.loads(data['data'])
@@ -267,15 +275,15 @@ class XRegressor(BaseModel):
             "validation_size": self.validation_size,
             "layers": self._layers
         }
+        
+        uploading_text = widgets.HTML("Uploading Data...")
+        display(uploading_text)
 
         bts = pickle.dumps(df)
         compressed_bytes = zlib.compress(bts)
 
-        uploading_text = widgets.HTML("Uploading Data...")
-        display(uploading_text)
-
-        response = self.__session.post(
-            f'{xplainable.__client__.compute_hostname}/train/regression',
+        response = xplainable.client.__session__.post(
+            f'{xplainable.client.hostname}/v1/compute/train/regression',
             params=params,
             files={'data': compressed_bytes}
             )
@@ -301,7 +309,7 @@ class XRegressor(BaseModel):
         x = x.copy()
 
         # Map all values to fitted scores
-        x = self._transform(x)
+        x = self._transform(pd.DataFrame(x))
 
         # Add base value to the sum of all scores
         y_pred = np.array(x.sum(axis=1) + self._base_value)
