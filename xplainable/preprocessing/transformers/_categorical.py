@@ -1,10 +1,11 @@
+from ...utils import stopwords, xwidgets
+
 from ._base import XBaseTransformer, TransformError
 from pandas.api.types import is_string_dtype
 from ipywidgets import interactive
 import re
 import numpy as np
 import ipywidgets as widgets
-from xplainable.utils import stopwords, xwidgets
 
 
 class TextRemove(XBaseTransformer):

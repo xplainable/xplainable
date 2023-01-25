@@ -1,7 +1,8 @@
+from ...utils import xwidgets as xwidgets
 from ._base import XBaseTransformer
+
 import pandas.api.types as pdtypes
 from ipywidgets import interactive
-import xplainable.utils.xwidgets as xwidgets
 import numpy as np
 import scipy.signal as ss
 
