@@ -1,4 +1,8 @@
 # xplainable :tm:
-The data interface for data scientists, analysts, and storytellers.
+xplainable enables the rapid development of production-grade business optimisation systems.
 
-www.xplainable.io
+```
+pip install xplainable
+```
+
+visit xplainable.io
