@@ -35,7 +35,7 @@ share/python-wheels/
 MANIFEST
 
 # Cython
-xplainable/xplainable_core/xcython/*.c
+xplainable/core/xcython/*.c
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
