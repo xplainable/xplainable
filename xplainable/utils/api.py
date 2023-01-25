@@ -1,7 +1,7 @@
-from urllib3.exceptions import HTTPError
-import json
 import xplainable
 
+from urllib3.exceptions import HTTPError
+import json
 
 def get_response_content(response):
     if response.status_code == 200:

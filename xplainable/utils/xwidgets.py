@@ -121,6 +121,17 @@ class TransformerButton(widgets.Button):
             df=traitlets.Any(df)
             )
 
+class IDButton(widgets.Button):
+    """ Button that stores model state
+
+    Args:
+        model: xplainable model
+    """
+
+    def __init__(self, id=None, *args, **kwargs):
+        super(IDButton, self).__init__(*args, **kwargs)
+        self.add_traits(id=traitlets.Any(id))
+
 class TransformerDropdown(widgets.Dropdown):
     """ Button that stores model state
 
@@ -196,3 +207,53 @@ class ClickResponsiveToggleButtons(widgets.ToggleButtons):
         """
         if content.get('event', '') == 'click':
             self._click_handlers(self)
+
+class TextInput:
+    
+    def __init__(self, label, label_type='h4', label_margin='0 10px 0 0', box_width='200px'):
+        self.label = label
+        self.label_type = label_type
+        self.label_margin = label_margin
+        self.box_width = box_width
+        
+        # Widgets
+        self.w_text_input = None
+        self.w_label = None
+        self.w = widgets.HBox([])
+        self.init()
+
+    def init(self):
+        self.w_text_input = widgets.Text()        
+        self.w_label = widgets.HTML(
+            f'<{self.label_type}>{self.label}</{self.label_type}>')
+        
+        self.w_label.layout = widgets.Layout(margin=self.label_margin)
+        self.w_text_input.layout = widgets.Layout(width=self.box_width)
+        self.w.children = [self.w_label, self.w_text_input]
+        
+    def __call__(self, ):
+        
+        return self.w
+    
+    @property
+    def value(self):
+        return self.w_text_input.value
+    
+    @value.setter
+    def value(self, value):
+        try:
+            self.w_text_input.value = value
+        except:
+            pass
+        
+    def hide(self):
+        self.w.layout.display = 'none'
+    
+    def show(self):
+        self.w.layout.display = 'flex'
+
+    def disable(self):
+        self.w_text_input.disabled = True
+
+    def enable(self):
+        self.w_text_input.disabled = False
