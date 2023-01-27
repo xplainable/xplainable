@@ -18,7 +18,7 @@ class LiveDF:
 
 
 adder_element_layout = widgets.Layout(
-    max_width='260px',
+    width='260px',
     margin='0 0 10px 0'
 )
 adder_element_style = {'description_width': 'initial'}
@@ -55,6 +55,14 @@ class SelectMultiple(widgets.SelectMultiple):
     
     def __init__(self, *args, **kwargs):
         super(SelectMultiple, self).__init__(*args, **kwargs)
+        self.layout = adder_element_layout
+        self.style = adder_element_style
+
+class TagsInput(widgets.TagsInput):
+    """This is used to set a default max_width for adder Text"""
+    
+    def __init__(self, *args, **kwargs):
+        super(TagsInput, self).__init__(*args, **kwargs)
         self.layout = adder_element_layout
         self.style = adder_element_style
 

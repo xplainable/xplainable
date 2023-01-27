@@ -29,3 +29,14 @@ def ping_server(hostname):
     else:
         return False
 
+def ping_gateway(hostname):
+    response = xplainable.client.__session__.get(
+        f'{hostname}/v1/ping',
+        timeout=1
+        )
+    content = json.loads(response.content)
+    if content == True:
+        return True
+    else:
+        return False
+

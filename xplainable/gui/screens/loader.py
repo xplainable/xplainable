@@ -55,8 +55,7 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
             preprocessors.preprocessor = matches[0]
 
             versions_response = xplainable.client.__session__.get(
-                f"{xplainable.client.hostname}/v1/preprocessors/\
-                    {preprocessors.preprocessor}/versions")
+                f"{xplainable.client.hostname}/v1/preprocessors/{preprocessors.preprocessor}/versions")
             
             preprocessors.metadata = get_response_content(versions_response)
 

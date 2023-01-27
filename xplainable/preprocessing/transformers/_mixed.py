@@ -2,6 +2,8 @@ from ._base import XBaseTransformer
 import pandas.api.types as pdtypes
 from ipywidgets import interactive
 import ipywidgets as widgets
+import pandas as pd
+
 
 class SetDType(XBaseTransformer):
     """Changes the data type of a specified column."""
@@ -28,9 +30,10 @@ class SetDType(XBaseTransformer):
                 value = 'integer'
 
             elif pdtypes.is_string_dtype(ser):
-                options=["string"]
-                if all(ser.str.isdigit()):
-                    options += ["float", "integer"]
+                #options=["string"]
+                options = ["float", "integer", "string"]
+                #if all(ser.str.isdigit()):
+                #    options += ["float", "integer"]
                 value = 'string'
             
             elif pdtypes.is_datetime64_dtype(ser):
@@ -49,13 +52,19 @@ class SetDType(XBaseTransformer):
 
     def _operations(self, ser):
 
-        mapp = {
-            'integer': int,
-            'float': float,
-            'string': str
-        }
+        if self.to_type == 'string':
+            return ser.astype(str)
             
-        return ser.astype(mapp[self.to_type]) 
+        ser = pd.to_numeric(ser, errors='coerce')
+
+        if self.to_type == 'integer':
+            # If missing value are present, cannot cast to int
+            try:
+                ser = ser.astype(int)
+            except Exception:
+                pass
+
+        return ser
 
 
 class Shift(XBaseTransformer):

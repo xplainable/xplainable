@@ -1,4 +1,5 @@
-
+from ..exceptions import TransformerError
+import warnings
 
 class XPipeline:
     """Pipeline builder for xplainable transformers.
@@ -77,19 +78,24 @@ class XPipeline:
         X = X.copy()
 
         for stage in self.stages[start:]:
+            try:
+                if stage['feature'] == '__dataset__':
+                    stage['transformer'].fit(X)
+                    X = stage['transformer'].transform(X)
 
-            if stage['feature'] == '__dataset__':
-                stage['transformer'].fit(X)
-                X = stage['transformer'].transform(X)
+                    continue
 
-                continue
-
-            # Fit data to transformer
-            stage['transformer'].fit(X[stage['feature']])
-
-            # Apply transformation for chaining
-            X[stage['feature']] = stage['transformer'].transform(
-                X[stage['feature']])
+                # Fit data to transformer
+            
+                stage['transformer'].fit(X[stage['feature']])
+            
+                # Apply transformation for chaining
+                X[stage['feature']] = stage['transformer'].transform(
+                    X[stage['feature']])
+            
+            except Exception:
+                raise TransformerError(
+                    f"Transformer for {stage['feature']} failed. Ensure the datatypes are compatible") from None
 
         return X
 
@@ -105,12 +111,20 @@ class XPipeline:
 
         # Apply all transformers to dataset
         for stage in self.stages:
-            if stage['feature'] == '__dataset__':
-                X = stage['transformer'].transform(X)
-                continue
+            try:
+                if stage['feature'] == '__dataset__':
+                
+                    X = stage['transformer'].transform(X)
+                
+                    continue
             
-            X[stage['feature']] = stage['transformer'].transform(
-                X[stage['feature']])
+                if stage['feature'] not in X.columns:
+                    continue
+
+                X[stage['feature']] = stage['transformer'].transform(X[stage['feature']])
+            except Exception:
+                raise TransformerError(
+                    f"Transformer for feature {stage['feature']} failed. Ensure the datatypes are compatible") from None
 
         return X
 
