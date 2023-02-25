@@ -1,11 +1,12 @@
+import xplainable
+from ...cloud.regression import XRegressor
+from ...utils import TrainButton, ping_server
+from ...exceptions import *
+from ...quality import XScan
+
+from pandas.api.types import is_numeric_dtype
 from IPython.display import display, clear_output
 import ipywidgets as widgets
-from xplainable.models.regression import XRegressor
-from xplainable.utils import TrainButton, ping_server
-from pandas.api.types import is_numeric_dtype
-from xplainable.exceptions import *
-from xplainable.quality import XScan
-import xplainable
 
 def regressor(df, model_name, model_description=''):
     """ Trains an xplainable regressor via a simple GUI.

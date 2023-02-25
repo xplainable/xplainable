@@ -1,19 +1,26 @@
+import xplainable
+from ..utils.api import get_response_content
+from ..gui.cloud.displays import ClassificationProgress
+from ..gui.components import BarGroup
+from ._base_model import BaseModel
+
 import pandas as pd
 import json
 from IPython.display import display
-from xplainable.models._base_model import BaseModel
+
 import numpy as np
 import sklearn.metrics as skm
-import xplainable
-from xplainable.utils.api import get_response_content
+
 import ipywidgets as widgets
 import time
 import warnings
 import pickle
 import zlib
-import xplainable
-from xplainable.gui.displays import ClassificationProgress
 import threading
+import seaborn as sns
+
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 
 
 warnings.filterwarnings('ignore')
@@ -151,6 +158,8 @@ class XClassifier(BaseModel):
             params = v['optimise']['params']
             if 'bin_alpha' in params:
                 params.pop('bin_alpha')
+            if 'bin_alpha' in params:
+                params.pop('bin_alpha')
 
             progress.update_params(
                 idx,
@@ -163,6 +172,11 @@ class XClassifier(BaseModel):
                 partition_status[idx]['done_optimise'] = True
 
         def processes_fit(idx, v):
+            # TODO: This is a temporary fix
+            #partition_status[idx]['start_training'] = True
+            #partition_status[idx]['done_training'] = True
+            #return
+
             if not partition_status[idx]['start_training']:
                 progress.start_partition_training(idx)
                 partition_status[idx]['start_training'] = True
@@ -220,9 +234,8 @@ class XClassifier(BaseModel):
         display(screen)
 
         # Start loop (separate thread to maintain button interactivity)
-        thread = threading.Thread(target=run_loop)
+        thread = threading.Thread(target=run_loop, daemon = True)
         thread.start()
-        thread.join()
 
     def fit(self, X, y, id_columns=[]):
         """ Fits training dataset to the model.
@@ -284,6 +297,7 @@ class XClassifier(BaseModel):
                 partitions = partitions + list(vc[vc > 30].index)
             
             self.__get_progress(partitions, n_features)
+            
 
     def predict_score(self, x, use_partitions=False):
         """ Scores an observation's propensity to fall in the positive class.
@@ -387,7 +401,47 @@ class XClassifier(BaseModel):
 
         return output
 
-    def evaluate(self, x, y, use_prob=True, use_partitions=False, threshold=0.5):
+    @staticmethod
+    def _visual_eval(evaluation):
+        def show_chart(cm):
+            with output:
+
+                fig, ax = plt.subplots(figsize=(2,2))
+                sns.heatmap(
+                    cm,
+                    square=False,
+                    annot=True,
+                    cmap = sns.dark_palette(
+                        "#12b980", reverse=False, as_cmap=True),
+                    annot_kws={'fontsize': 18, 'color': 'white'},
+                    fmt='d',
+                    cbar=False,
+                    linewidths=3,
+                    xticklabels=['Pred 0', 'Pred 1'],
+                    yticklabels=['True 0', 'True 1']
+                )
+                plt.show(fig)
+        
+        bars = BarGroup(
+            items=['Accuracy', 'F1', 'Precision', 'Recall', 'AUC'],
+            heading='Metrics',
+            suffix='%')
+        
+        for e, v in evaluation.items():
+            if e in bars.items:
+                val = round(v*100, 2)
+                bars.set_value(e, val)
+        
+        output = widgets.Output()
+        output.layout = widgets.Layout(margin='25px 0 0 100px')
+        with output:
+            show_chart(evaluation['confusion_matrix'])
+        
+        screen = widgets.HBox([bars.show(), output])
+        
+        display(screen)
+
+    def evaluate(self, x, y, visualise=True, use_prob=True, use_partitions=False, threshold=0.5):
         """ Evaluates the model metrics
 
         Args:
@@ -409,7 +463,9 @@ class XClassifier(BaseModel):
         precision = skm.precision_score(y, y_pred, average='weighted')
         recall = skm.recall_score(y, y_pred, average='weighted')
         cm = skm.confusion_matrix(y, y_pred)
-        cr = skm.classification_report(y, y_pred, output_dict=True)
+        #cr = skm.classification_report(y, y_pred, output_dict=True)
+        fpr, tpr, thresholds = skm.roc_curve(y, y_pred, pos_label=2)
+        auc = skm.auc(fpr, tpr)
 
         # Produce output
         evaluation = {
@@ -417,9 +473,14 @@ class XClassifier(BaseModel):
             'F1': f1,
             'Precision': precision,
             'Recall': recall,
+            'AUC': auc,
             'confusion_matrix': cm,
-            'classification_report': cr
+            
+         #   'classification_report': cr
         }
+
+        if visualise:
+            return self._visual_eval(evaluation)
 
         return evaluation
     

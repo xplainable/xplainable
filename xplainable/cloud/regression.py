@@ -1,14 +1,14 @@
-import json
+import xplainable
+from ._base_model import BaseModel
+from ..utils.api import get_response_content
 
+import json
 from requests import HTTPError
 import numpy as np
 import sklearn.metrics as skm
-from xplainable.models._base_model import BaseModel
-from ..utils.api import get_response_content
 from IPython.display import display
 import ipywidgets as widgets
 import time
-import xplainable
 import warnings
 import pickle
 import pandas as pd

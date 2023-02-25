@@ -1,10 +1,11 @@
+from ...utils import stopwords, xwidgets
+
 from ._base import XBaseTransformer, TransformError
 from pandas.api.types import is_string_dtype
 from ipywidgets import interactive
 import re
 import numpy as np
 import ipywidgets as widgets
-from xplainable.utils import stopwords, xwidgets
 
 
 class TextRemove(XBaseTransformer):
@@ -282,9 +283,8 @@ class MergeCategories(XBaseTransformer):
 
     def __call__(self, column, *args, **kwargs):
 
-        unq = column.unique()
+        unq = column.dropna().unique()
 
-        
         def _set_params(merge_from=widgets.SelectMultiple(options=unq), merge_to=unq):
             self.merge_from = list(merge_from)
             self.merge_to = merge_to
@@ -314,8 +314,9 @@ class ReplaceCategory(XBaseTransformer):
 
     def __call__(self, column, *args, **kwargs):
         
-        
-        def _set_params(target=column.unique(), replace_with=''):
+        unq = column.dropna().unique()
+
+        def _set_params(target=unq, replace_with=''):
             self.target = target
             self.replace_with = replace_with
         
@@ -348,7 +349,7 @@ class FillMissingCategorical(XBaseTransformer):
 
     def _operations(self, ser):
         # Converts "" into np.nan to be filled
-        ser = ser.apply(lambda x: np.nan if x == "" else x)
+        ser = ser.apply(lambda x: np.nan if str(x).strip() == "" else x)
 
         return ser.fillna(self.fill_with)
 
@@ -369,7 +370,7 @@ class MapCategories(XBaseTransformer):
             args = locals()
             self.category_values = dict(args)['kwargs']
 
-        category_values = {i: widgets.Text(i) for i in ser.unique()}  
+        category_values = {i: widgets.Text(i) for i in ser.dropna().unique()}  
 
         return interactive(_set_params, **category_values)
 

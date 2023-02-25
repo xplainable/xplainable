@@ -1,9 +1,13 @@
+from ...utils import xwidgets as xwidgets
 from ._base import XBaseTransformer
+
 import pandas.api.types as pdtypes
+import pandas as pd
 from ipywidgets import interactive
-import xplainable.utils.xwidgets as xwidgets
+import ipywidgets as widgets
 import numpy as np
 import scipy.signal as ss
+from IPython.display import display
 
 
 class DropCols(XBaseTransformer):
@@ -62,10 +66,13 @@ class DropNaNs(XBaseTransformer):
 
     def _operations(self, df):
 
-        return df.copy().dropna(subset=self.subset)
+        subset = list(df.columns) if self.subset is None else self.subset
+        subset = [i for i in subset if i in df.columns]
 
-class AddCols(XBaseTransformer):
-    """Adds multiple numeric columns into single feature.
+        return df.copy().dropna(subset=subset)
+
+class Operation(XBaseTransformer):
+    """Applies operation to multiple columns (in order) into new feature.
 
     Args:
         columns (list): Column names to add.
@@ -76,126 +83,79 @@ class AddCols(XBaseTransformer):
     # Attributes for ipyxwidgets
     supported_types = ['dataset']
 
-    def __init__(self, columns=[], alias: str = None, drop: bool = False):
+    def __init__(self, columns=[], operation=None, alias: str = None, drop: bool = False):
         super().__init__()
         self.columns = columns
+        self.operation = operation
         self.alias = alias if alias else " + ".join([c for c in columns])
         self.drop = drop
 
     def __call__(self, dataset, *args, **kwargs):
         
+        cols = list(dataset.columns)
+        
         def _set_params(
-            columns_to_add=xwidgets.SelectMultiple(
+            columns_to_apply=xwidgets.SelectMultiple(
                 description='Columns: ',
-                options=dataset.columns),
+                value=[cols[0]],
+                options=cols,
+                allow_duplicates=False),
+            tags = xwidgets.TagsInput(
+                value=[cols[0]],
+                allowed_tags=cols
+            ),
+            operation=['add', 'multiply', 'average', 'concatenate'],
             alias=xwidgets.Text(''),
             drop_columns=xwidgets.Checkbox(value=True)):
 
-            self.columns = list(columns_to_add)
+            self.columns = list(columns_to_apply)
+            self.operation = operation
             self.alias = alias
             self.drop = drop_columns
         
-        return interactive(_set_params)
+        widget = interactive(_set_params)
+        dd = widget.children[0]
+        tags = widget.children[1]
+        
+        widget.children[3].layout = widgets.Layout(margin='10px 0 20px 0')
+        widgets.link((dd, 'value'), (tags, 'value'))
+        label = widgets.HTML('Drag to reorder')
+        label.layout = widgets.layout = widgets.Layout(margin='10px 0 0 0')
+
+        tags_display = widgets.VBox([dd, label, tags])
+        tags_display.layout = widgets.Layout(
+            margin='0 0 0 30px',
+            width='280px'
+            )
+        widget.children = (tags_display,) + widget.children[2:]
+        
+        return widget
 
     def _operations(self, df):
 
-        if not all([pdtypes.is_numeric_dtype(df[col]) for col in self.columns]):
-            raise TypeError("Cannot add string and numeric columns")
-
         df = df.copy()
 
-        df[self.alias] = df[self.columns].sum(axis=1)
-        if self.drop:
-            df = df.drop(columns=self.columns)
+        if self.operation == 'add':
+            if not all([pdtypes.is_numeric_dtype(df[col]) for col in self.columns]):
+                raise TypeError("Cannot add string and numeric columns")
+            df[self.alias] = df[self.columns].sum(axis=1)
 
-        return df
+        elif self.operation == 'multiply':
+            if not all([pdtypes.is_numeric_dtype(df[col]) for col in self.columns]):
+                raise TypeError("Cannot add string and numeric columns")
+            df[self.alias] = df[self.columns].apply(np.prod, axis=1)
 
-class MultiplyCols(XBaseTransformer):
-    """Multiplies multiple numeric columns into single feature.
+        elif self.operation == 'average':
+            if not all([pdtypes.is_numeric_dtype(df[col]) for col in self.columns]):
+                raise TypeError("Cannot add string and numeric columns")
+            df[self.alias] = df[self.columns].mean(axis=1)
 
-    Args:
-        columns (list): Column names to multiply
-        alias (str): Name of newly created column.
-        drop (bool): Drops original columns if True
-    """
+        elif self.operation == 'concatenate':
+            for col in self.columns:
+                if not pdtypes.is_string_dtype(df[col]):
+                    df[col] = df[col].astype(str)
+            df[self.alias] = df[self.columns].agg('-'.join, axis=1)
 
-    supported_types = ['dataset']
-
-    def __init__(self, columns=[], alias: str = None, drop: bool = False):
-        super().__init__()
-        self.columns = columns
-        self.alias = alias if alias else " * ".join([c for c in columns])
-        self.drop = drop
-
-    def __call__(self, dataset, *args, **kwargs):
-        
-        def _set_params(
-            columns_to_multiply=xwidgets.SelectMultiple(
-                description='Columns: ',
-                options=dataset.columns),
-            alias='',
-            drop_columns=True):
-
-            self.columns = list(columns_to_multiply)
-            self.alias = alias
-            self.drop = drop_columns
-        
-        return interactive(_set_params)
-
-    def _operations(self, df):
-
-        if not all([pdtypes.is_numeric_dtype(df[col]) for col in self.columns]):
-            raise TypeError("Cannot multiply string and numeric columns")
-
-        df = df.copy()
-
-        df[self.alias] = df[self.columns].prod(axis=1)
-        if self.drop:
-            df = df.drop(columns=self.columns)
-
-        return df
-
-class ConcatCols(XBaseTransformer):
-    """Concatenates multiple columns into single feature.
-
-    Args:
-        columns (list): column names to join.
-        alias (str): Name of newly created column.
-        drop (bool): Drops original columns if True.
-    """
-
-    supported_types = ['dataset']
-
-    def __init__(self, columns=[], alias: str = None, drop: bool = False):
-        super().__init__()
-        self.columns = columns
-        self.alias = alias if alias else " + ".join([c for c in columns])
-        self.drop = drop
-
-    def __call__(self, dataset, *args, **kwargs):
-        
-        def _set_params(
-            columns_to_concat=xwidgets.SelectMultiple(
-                description='Columns: ',
-                options=dataset.columns),
-            alias='',
-            drop_columns=True):
-
-            self.columns = list(columns_to_concat)
-            self.alias = alias
-            self.drop = drop_columns
-        
-        return interactive(_set_params)
-
-    def _operations(self, df):
-
-        for col in self.columns:
-            if not pdtypes.is_string_dtype(df[col]):
-                df[col] = df[col].astype(str)
-
-        df = df.copy()
-
-        df[self.alias] = df[self.columns].agg('-'.join, axis=1)
         if self.drop:
             df = df.drop(columns=self.columns)
 
@@ -224,7 +184,8 @@ class ChangeNames(XBaseTransformer):
 
     def _operations(self, df):
         df = df.copy()
-        return df.rename(columns=self.col_names)
+        col_names = [i for i in self.col_names if i in df.columns]
+        return df.rename(columns=col_names)
 
 
 class OrderBy(XBaseTransformer):
@@ -370,6 +331,8 @@ class FillMissing(XBaseTransformer):
     def _operations(self, df):
         
         for i, v in self.fill_values.items():
+            if i not in df.columns:
+                continue
             df[i] = df[i].fillna(v)
 
         return df
@@ -431,9 +394,10 @@ class SetDTypes(XBaseTransformer):
                 value = 'integer'
 
             elif pdtypes.is_string_dtype(df[col]):
-                options=["string"]
-                if all(df[col].str.isdigit()):
-                    options += ["float", "integer"]
+                #options=["string"]
+                options=["float", "integer", "string"]
+                # if all(df[col].str.isdigit()):
+                #     options += ["float", "integer"]
                 value = 'string'
             
             elif pdtypes.is_datetime64_dtype(df[col]):
@@ -458,15 +422,24 @@ class SetDTypes(XBaseTransformer):
 
     def _operations(self, df):
 
-        mapp = {
-            'integer': int,
-            'float': float,
-            'string': str
-        }
-
         for i, v in self.types.items():
-            df[i] = df[i].astype(mapp[v])
             
+            if i not in df.columns:
+                continue
+
+            if v == 'string':
+                df[i] = df[i].astype(str)
+                continue
+            
+            df[i] = pd.to_numeric(df[i], errors='coerce')
+
+            if v == 'integer':
+                # If missing value are present, cannot cast to int
+                try:
+                    df[i] = df[i].astype(int)
+                except Exception:
+                    continue
+
         return df
 
 
@@ -550,6 +523,8 @@ class ChangeCases(XBaseTransformer):
     def _operations(self, df):
 
         for col in self.columns:
+            if col not in df.columns:
+                continue
 
             if self.case == 'lower':
                 df[col] = df[col].str.lower()

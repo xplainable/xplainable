@@ -1,11 +1,14 @@
-from datetime import datetime
-from .preprocessor import Preprocessor
 import xplainable
+from ..screens.preprocessor import Preprocessor
+from ...utils import *
+from ...preprocessing import transformers as tf
+from .displays import BarGroup
+
+from datetime import datetime
 import ipywidgets as widgets
 from IPython.display import display, clear_output
-from xplainable.utils import *
-from xplainable.preprocessing import transformers as tf
-from xplainable.gui.displays import BarGroup
+
+
 
 def get_time_string(dt):
         """Get time since object created"""

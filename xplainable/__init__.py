@@ -1,12 +1,16 @@
-import requests
-from xplainable.client._client import Client
-from xplainable.gui.classification import *
-from xplainable.gui.regression import *
-from xplainable.gui.preprocessor import Preprocessor
-from xplainable.gui.loading import load_model, load_preprocessor
-from xplainable.client.access import *
+from .client._client import Client
+from .gui.screens.classifier import *
+from .gui.screens.preprocessor import *
+from .gui.screens.loader import *
+from .gui.screens.save import *
+from .client.access import initialise
+import warnings
 
-# Current Version
-__version__ = "0.1.0"
+__author__ = 'xplainable pty ltd'
+from ._version import __version__
+
+# Filter retry warnings as retries are expected and already handled
+warnings.filterwarnings(
+    "ignore", category=UserWarning, module="urllib3.connectionpool")
 
 client = None

@@ -217,10 +217,17 @@ class ClassificationProgress():
         
         def close_button_click(_):
             clear_output()
+
+        def close_button_click(_):
+            clear_output()
             
         close_button = widgets.Button(description='Close')
         close_button.layout = widgets.Layout(margin=' 10px 0 10px 20px')
         close_button.on_click(close_button_click)
+
+        stop_button = widgets.Button(description='Close')
+        stop_button.layout = widgets.Layout(margin=' 10px 0 10px 20px')
+        stop_button.on_click(close_button_click)
         
         footer = widgets.VBox([divider, widgets.HBox([close_button])])
         body = widgets.HBox([progress_bars, self.info_display])
@@ -313,79 +320,3 @@ class ClassificationProgress():
             self.info['folds_label'].value = f'<p>Fold {fold}: </p>'
             
         self.update_param_display()
-
-
-class BarGroup:
-    
-    def __init__(self, items=[], suffix='', prefix=''):
-        self.items = items
-        self.displays = {i: {} for i in items}
-        
-        self.suffix=suffix
-        self.prefix=prefix
-        
-        self.bar_layout = widgets.Layout(
-            width='200px',
-            height='25px',
-            margin='3px 5px 0 0')
-        
-        self.label_layout = widgets.Layout(
-            width='65px')
-        
-        self._initialise_bars()
-        
-        self.window = widgets.VBox(
-            [v['display'] for i, v in self.displays.items()])
-        self.window_layout = widgets.Layout()
-        self.window.layout = self.window_layout
-
-    def _initialise_bars(self):
-        
-        for i in self.items:
-            # Generate label
-            label = widgets.HTML(f"{i}: ", layout=self.label_layout)
-            self.displays[i]['label'] = label
-            
-            # Generate Bar
-            bar = widgets.FloatProgress(
-                min=0, max=100, value=0, layout=self.bar_layout)
-            self.displays[i]['bar'] = bar
-            
-            # Generate Value
-            val = widgets.HTML("-")
-            self.displays[i]['value'] = val
-            
-            # Generate Display
-            self.displays[i]['display'] = widgets.HBox([label, bar, val])
-            
-    def show(self):
-        return self.window
-    
-    def set_value(self, item, value):
-        self.displays[item]['bar'].value = value
-        self.displays[item]['value'].value = f'{self.prefix}{value}{self.suffix}'
-        
-    def set_bounds(self, items=None, min_val=None, max_val=None):
-        if items is None:
-            items = self.items
-        for i in items:
-            self.displays[i]['bar'].min = min_val
-            self.displays[i]['bar'].max = max_val
-            
-    def set_bar_color(self, items=None, color=None):
-        if items is None:
-            items = self.items
-        for i in items:
-            self.displays[i]['bar'].style.bar_color = color
-        
-    def collapse_items(self, items=None):
-        if items is None:
-            items = self.items
-        for item in items:
-            self.displays[item]['display'].layout.display = 'none'
-        
-    def expand_items(self, items=None):
-        if items is None:
-            items = self.items
-        for item in items:
-            self.displays[item]['display'].layout.display = 'flex'

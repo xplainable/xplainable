@@ -5,12 +5,12 @@ import numpy as np
 import json
 from urllib3.exceptions import HTTPError
 from sklearn.metrics import *
-from xplainable.visualisation.explain import *
+from ..visualisation.explain import *
 import xplainable
 import ipywidgets as widgets
 from ipywidgets import interactive
 from IPython.display import display
-from xplainable.utils.xwidgets import ClickResponsiveToggleButtons
+from ..utils.xwidgets import ClickResponsiveToggleButtons
 
 
 class BaseModel:

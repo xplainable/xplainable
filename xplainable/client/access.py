@@ -7,24 +7,29 @@ from dotenv import dotenv_values
 import warnings
 import logging
 
+def create_file_if_not_exisits():
+    pass
+
 def store_api_key(api_key):
     try:
-        env_file_path = os.path.join(
-            os.path.dirname(os.path.realpath('__file__')), 'env', '.api_key')
-
+        env_file_dir = os.path.join(xplainable.__path__[0], '.env')
+        if not os.path.isdir(env_file_dir):
+            os.makedirs(env_file_dir)
+        
+        env_file_path = os.path.join(env_file_dir, '.api_key')
+        
         with open(env_file_path, 'w') as env_file:
             env_file.write(f'XPLAINABLE_API_KEY={api_key}\n')
-        
+
         logging.info(f"Stored API Key to {env_file_path}")
-    except:
+    except Exception as e:
         warnings.warn("Could not store API key. Check documentation.")
         logging.info(f"Could not store API key to {env_file_path}")
 
 def get_api_key():
     # Determine the path to the .xp.env file
     try:
-        env_file_path = os.path.join(
-            os.path.dirname(os.path.realpath('__file__')), 'env', '.api_key')
+        env_file_path = os.path.join(xplainable.__path__[0], '.env', '.api_key')
 
         api_key = dotenv_values(env_file_path).get('XPLAINABLE_API_KEY')
         

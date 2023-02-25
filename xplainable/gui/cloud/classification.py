@@ -1,12 +1,14 @@
+import xplainable
+from ..cloud.classification import XClassifier
+from ...utils import TrainButton, ping_server
+from  ...quality import XScan
+from ...utils.xwidgets import TextInput
+from ...utils.api import get_response_content
+
 from IPython.display import display, clear_output
 import ipywidgets as widgets
-from xplainable.models.classification import XClassifier
-from xplainable.utils import TrainButton, ping_server
-from xplainable.quality import XScan
-import xplainable
 
-
-def classifier(df, model_name, model_description=''):
+def classifier(df):
     """ Trains an xplainable classifier via a simple GUI.
 
     Args:
@@ -28,13 +30,82 @@ def classifier(df, model_name, model_description=''):
     outt = widgets.Output()
 
     # Instantiate the model
-    model = XClassifier(
-        model_name=model_name,
-        model_description=model_description)
+    model = XClassifier(model_name='', model_description='')
 
     # HEADER
-    header_title = widgets.HTML(f"<h4>Model: {model_name}&nbsp&nbsp</h4>")
-    header_title.layout = widgets.Layout(margin='10px 0 0 0')
+    model_name = TextInput(
+        label="Model name: ",
+        label_type='h5',
+        label_margin='2px 10px 0 0',
+        box_width='220px')
+
+    model_description = TextInput(
+        label="Model description: ",
+        label_type='h5',
+        label_margin='2px 10px 0 15px',
+        box_width='350px'
+        )
+
+    model_details = widgets.HBox([model_name(), model_description()])
+    loader_dropdown = widgets.Dropdown(options=[None])
+    description_output = widgets.HTML(
+        f'', layout=widgets.Layout(margin='0 0 0 15px'))
+
+    loader = widgets.HBox(
+        [loader_dropdown, description_output],
+        layout=widgets.Layout(display='none'))
+
+    buttons = widgets.ToggleButtons(options=['New Model', 'Existing Model'])
+    buttons.layout = widgets.Layout(margin="0 0 20px 0")
+
+    class Options:
+        options = []
+    
+    model_options = Options()
+
+    def get_models():
+        models_response = xplainable.client.__session__.get(
+            f'{xplainable.client.hostname}/v1/models'
+        )
+        
+        models = get_response_content(models_response)
+        
+        model_options.options = [
+            (i['model_name'], i['model_description']) for i in models if \
+                i['model_type'] == 'binary_classification']
+
+        loader_dropdown.options = [None]+[i['model_name'] for i in models]
+
+    def on_select(_):
+        if buttons.index == 1:
+            model_name.hide()
+            model_description.hide()
+            loader_dropdown.index = 0
+            loader.layout.display = 'flex'
+            get_models()
+            model_name.value = ''
+            model_description.value = ''
+        else:
+            loader.layout.display = 'none'
+            model_name.value = ''
+            model_description.value = ''
+            model_name.show()
+            model_description.show()
+            
+    def model_selected(_):
+        idx = loader_dropdown.index
+        if idx is None:
+            model_name.value = ''
+            description_output.value = ''
+            model_description.value = ''
+        elif len(model_options.options) > 0:
+            model_name.value = model_options.options[idx-1][0]
+            desc = model_options.options[idx-1][1]
+            description_output.value = f'{desc}'
+            model_description.value = desc
+
+    buttons.observe(on_select, names=['value'])
+    loader_dropdown.observe(model_selected, names=['value'])
 
     divider = widgets.HTML(
         f'<hr class="solid">', layout=widgets.Layout(height='auto'))
@@ -45,7 +116,7 @@ def classifier(df, model_name, model_description=''):
     connection_status_button = widgets.Button(description="offline")
 
     connection_status_button.layout = widgets.Layout(
-        height='25px', width='80px', margin='10px 0 0 10px')
+        height='25px', width='80px', margin='0 0 0 10px')
 
     connection_status_button.style = {
             "button_color": '#e21c47',
@@ -53,11 +124,32 @@ def classifier(df, model_name, model_description=''):
             "font_size": "11.5px"
             }
 
-    header = widgets.VBox(
-        [widgets.HBox([
-            #widgets.VBox([logo_display]),
-            header_title, connection_status_button])])
+    machines = xplainable.client.machines
+    machines_dropdown = widgets.Dropdown(options=machines.keys())
+    machines_dropdown.layout = widgets.Layout(width='200px', margin='0 0 0 20px')
 
+    def on_machine_change(_):
+        machine_id = machines[machines_dropdown.value]
+        xplainable.client.__session__.params.update({'machine_id': machine_id})
+
+    def _check_connection(_):
+        try:
+            if ping_server(xplainable.client.hostname):
+                connection_status_button.description = "Connected"
+                connection_status_button.style.button_color = '#12b980'
+            else:
+                connection_status_button.description = "Offline"
+                connection_status_button.style.button_color = '#e21c47'
+        except:
+            pass
+        
+    machines_dropdown.observe(on_machine_change, names=['value'])
+    machines_dropdown.observe(_check_connection, names=['value'])
+            
+    button_display = widgets.HBox(
+        [buttons, machines_dropdown, connection_status_button])
+
+    header = widgets.VBox([button_display, model_details, loader, divider])
     header.layout = widgets.Layout(margin='0 0 20px 0')
 
     # COLUMN 1
@@ -255,7 +347,7 @@ def classifier(df, model_name, model_description=''):
 
     partition_header = widgets.HTML(f"<h5>Partition on</h5>")
 
-    bin_alpha_header = widgets.HTML(f"<h5>Bin Alpha</h5>")
+    alpha_header = widgets.HTML(f"<h5>bin_alpha</h5>")
     bin_alpha = widgets.FloatSlider(value=0.05, min=0.01, max=0.5, step=0.01)
 
     validation_size_header = widgets.HTML(f"<h5>Validation Size</h5>")
@@ -265,7 +357,7 @@ def classifier(df, model_name, model_description=''):
     colBSettings = widgets.VBox([
         partition_header,
         partition_on,
-        bin_alpha_header,
+        alpha_header,
         bin_alpha,
         validation_size_header,
         validation_size
@@ -308,24 +400,18 @@ def classifier(df, model_name, model_description=''):
         id_vals = [i for i in list(id_columns.value) if i is not None]
         id_title.value = f"<h5>ID Column ({len(id_vals)} selected)</h5>"
 
-    def _check_connection(_):
-        try:
-            if ping_server(xplainable.client.hostname):
-                connection_status_button.description = "Connected"
-                connection_status_button.style.button_color = '#12b980'
-            else:
-                connection_status_button.description = "Offline"
-                connection_status_button.style.button_color = '#e21c47'
-        except:
-            pass
-
     # Train model on click
     def train_button_clicked(b):
+        model_description.disable()
+        model_name.disable()
+        loader_dropdown.disabled = True
+        buttons.disabled = True
+
         with outt:
         
             model = b.model
-            model.model_name = model_name
-            model.model_description = model_description
+            model.model_name = model_name.value
+            model.model_description = model_description.value
             model.partition_on = partition_on.value
             model.max_depth = max_depth.value
             model.min_leaf_size = min_leaf_size.value
