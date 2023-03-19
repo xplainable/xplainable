@@ -202,7 +202,7 @@ class Evolve():
         # select parent chromosomes
         parents = self._natural_selection(x, *m)
 
-        for _ in tqdm(range(self.max_generation_depth), leave=False):
+        for _ in range(self.max_generation_depth):
             if parents.shape[0] == 1:
                 break
             m = self._reproduce_and_mutate(parents)
@@ -288,8 +288,8 @@ class Evolve():
                 self.generation_id += 1
                 pbar.set_postfix(**{xnetwork.metric: score})
 
-                if callback:
-                    callback(self.xnetwork.layer_id, i+1, score, 0)
+                #if callback:
+                #    callback(self.xnetwork.layer_id, i+1, score, 0)
 
         self._re_map(x)
 
@@ -479,7 +479,7 @@ class Tighten:
                 mae = np.mean(abs(self._calculate_error(x, y)))
 
                 # update callback
-                if callback:
+                if callback is not None:
                     callback(self.xnetwork.layer_id, i+1, bst_mae, 0)
 
                 # update output if best result

@@ -35,7 +35,7 @@ class Target:
         self.best_score = None
         self.best_diff = np.inf
         self.best_idxs = []
-        
+        self.values = []
         
         self.__random_init()
         self.__update_bounds()
@@ -147,7 +147,10 @@ class Target:
                     self.mappings[i][v] for i,v in enumerate(self.idxs)]
 
             if diff <= self.tolerance:
+                self.values.append(self.best_score)
                 break
+
+            self.values.append(self.best_score)
 
         nodes = [self._profile[i][v[0]] for i, v in enumerate(self.best_idxs)]
                         
