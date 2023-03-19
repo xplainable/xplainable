@@ -4,3 +4,6 @@ class MissingValueError(Exception):
 
 class TransformerError(Exception):
     pass
+
+class AuthenticationError(Exception):
+    pass
