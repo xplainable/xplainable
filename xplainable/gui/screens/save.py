@@ -3,136 +3,273 @@ from ...utils.api import get_response_content
 from ...utils.xwidgets import TextInput
 
 import ipywidgets as widgets
-from IPython.display import display, clear_output
+from IPython.display import display
 
-def save_model(model):
+from xplainable.utils.api import get_response_content
+from xplainable.utils.xwidgets import TextInput
 
-    model_name = TextInput(
-        label="Model name: ",
-        label_type='h5',
-        label_margin='2px 10px 0 0',
-        box_width='220px')
+import time
 
-    model_description = TextInput(
-        label="Model description: ",
-        label_type='h5',
-        label_margin='2px 10px 0 15px',
-        box_width='350px'
-        )
+
+class ModelPersist:
     
-    model_details = widgets.HBox([model_name(), model_description()])
-    loader_dropdown = widgets.Dropdown(options=[None])
-    description_output = widgets.HTML(
-        f'', layout=widgets.Layout(margin='0 0 0 15px'))
+    def __init__(self, model, eval_objects=None):
+        self.model=model
+        self.partition_on = model.partition_on
+        self.partitions = list(self.model.partitions.keys())
+        self.eval_objects = eval_objects
 
-    loader = widgets.HBox(
-        [loader_dropdown, description_output],
-        layout=widgets.Layout(display='none'))
+    def save(self):
 
-    buttons = widgets.ToggleButtons(options=['New Model', 'Existing Model'])
-    buttons.layout = widgets.Layout(margin="0 0 20px 0")
+        model_name = TextInput(
+            label="Name: ",
+            label_type='h5',
+            label_margin='2px 10px 0 0',
+            box_width='220px')
 
-    class Options:
-        options = []
-    
-    model_options = Options()
+        model_description = TextInput(
+            label="Description: ",
+            label_type='h5',
+            label_margin='2px 10px 0 15px',
+            box_width='350px'
+            )
 
-    def get_models():
-        models_response = xplainable.client.__session__.get(
-            f'{xplainable.client.hostname}/v1/models'
-        )
-        
-        models = get_response_content(models_response)
-        
-        model_options.options = [
-            (i['model_name'], i['model_description']) for i in models if \
-                i['model_type'] == 'binary_classification']
+        loading = widgets.IntProgress(min=0, max=8, value=0)
+        loading.layout = widgets.Layout(height='20px', width='100px', display='none', margin=' 15px 0 0 10px')
+        loading.style = {'bar_color': '#0080ea'}
 
-        loader_dropdown.options = [None]+[i['model_name'] for i in models]
+        loading_status = widgets.HTML(
+            f'', layout=widgets.Layout(margin='12px 0 0 15px', width='250px'))
 
-    def on_select(_):
-        if buttons.index == 1:
-            model_name.hide()
-            model_description.hide()
-            loader_dropdown.index = 0
-            loader.layout.display = 'flex'
-            get_models()
-            model_name.value = ''
-            model_description.value = ''
-        else:
+        model_details = widgets.HBox([model_name(), model_description()])
+        loader_dropdown = widgets.Dropdown(options=[None])
+        description_output = widgets.HTML(
+            f'', layout=widgets.Layout(margin='0 0 0 15px'))
+
+        loader = widgets.HBox(
+            [loader_dropdown, description_output],
+            layout=widgets.Layout(display='none'))
+
+        buttons = widgets.ToggleButtons(options=['New Model', 'Existing Model'])
+        buttons.layout = widgets.Layout(margin="0 0 20px 0")
+
+        class Options:
+            options = []
+
+        model_options = Options()
+
+        def get_models():
+            models_response = xplainable.client.__session__.get(
+                f'{xplainable.client.hostname}/v1/models'
+            )
+
+            models = get_response_content(models_response)
+
+            model_options.options = [
+                (i['model_name'], i['model_description']) for i in models if \
+                    i['model_type'] == 'binary_classification']
+
+            loader_dropdown.options = [None]+[i['model_name'] for i in models]
+
+        def on_select(_):
+            if buttons.index == 0:
+                loader.layout.display = 'none'
+                model_name.value = ''
+                model_description.value = ''
+                model_details.layout.display = 'flex'
+
+            else:
+                loader_dropdown.index = 0
+                loader.layout.display = 'flex'
+                model_details.layout.display = 'none'
+                get_models()
+                model_name.value = ''
+                model_description.value = ''
+
+        def model_selected(_):
+            idx = loader_dropdown.index
+            if idx is None:
+                model_name.value = ''
+                description_output.value = ''
+                model_description.value = ''
+            elif len(model_options.options) > 0:
+                model_name.value = model_options.options[idx-1][0]
+                desc = model_options.options[idx-1][1]
+                description_output.value = f'{desc}'
+                model_description.value = desc
+
+        def close(_):
+            button_display.close()
+            model_details.close()
+            loader.close()
+            divider.close()
+            action_buttons.close()
+
+        def name_change(_):
+            if model_name.value is None or model_name.value == '':
+                confirm_button.disabled = True
+            else:
+                confirm_button.disabled = False
+
+        def save_clicked(_):
+            action_buttons.layout.display = 'none'
+            button_display.layout.display = 'flex'
+            apply_buttons.layout.display = 'flex'
+
+            idx = buttons.index
+            if idx == 0:
+                model_details.layout.display = 'flex'
+                loader.layout.display = 'none'
+            else:
+                model_details.layout.display = 'none'
+                loader.layout.display = 'flex'
+
+        def cancel_clicked(_):
+            action_buttons.layout.display = 'flex'
+            button_display.layout.display = 'none'
+            model_details.layout.display = 'none'
+            apply_buttons.layout.display = 'none'
             loader.layout.display = 'none'
-            model_name.value = ''
-            model_description.value = ''
-            model_name.show()
-            model_description.show()
-            
-    def model_selected(_):
-        idx = loader_dropdown.index
-        if idx is None:
-            model_name.value = ''
-            description_output.value = ''
-            model_description.value = ''
-        elif len(model_options.options) > 0:
-            model_name.value = model_options.options[idx-1][0]
-            desc = model_options.options[idx-1][1]
-            description_output.value = f'{desc}'
-            model_description.value = desc
 
-    def on_confirm(_):
-        print(model_name.value)
-        print(model_description.value)
-        
-        confirm_button.description = "Saved"
-        confirm_button.style.button_color = '#12b980'
-        confirm_button.disabled = True
+        def on_confirm(_):
 
-        model_description.disable()
-        model_name.disable()
-        buttons.disabled = True
-        loader_dropdown.disabled = True
-
-    def close(_):
-        button_display.close()
-        model_details.close()
-        loader.close()
-        divider.close()
-        action_buttons.close()
-
-    def name_change(_):
-        if model_name.value is None or model_name.value == '':
+            confirm_button.description = "Saving..."
             confirm_button.disabled = True
-        else:
+            loading.max = len(self.partitions)
+            if self.eval_objects is not None: loading.max = loading.max * 2
+            loading.layout.display = 'flex'
+
+            model_id = xplainable.client.create_or_fetch_model_id(
+                model_name.value,
+                model_description.value,
+                self.model.partitions['__dataset__'].target,
+                "binary_classification"
+            )
+
+            version_id = xplainable.client.create_model_version(model_id, self.partition_on)
+            
+            for part in self.partitions:
+                
+                loading_status.value = f'logging {part} model'
+
+                try:
+                    mdl = self.model.partitions[part]
+
+                    partition_id = xplainable.client.log_partition(
+                        part,
+                        mdl,
+                        model_id,
+                        version_id
+                    )
+                except Exception as e:
+                    print(e)
+                    loading_status.value = f'something went wrong'
+                    confirm_button.description = "Error"
+                    confirm_button.style.button_color = '#e14067'
+                    time.sleep(0.5)
+                    break
+
+
+                # Increment loader after logging partition
+                loading.value = loading.value + 1
+
+                if self.eval_objects is not None:
+
+                    loading_status.value = f'logging {part} evaluation'
+
+                    try:
+                        evaluation_copy = {
+                            'y_true': self.eval_objects[part]['y_true'].copy().values,
+                            'y_prob': self.eval_objects[part]['y_prob'],
+
+                        }
+
+                        xplainable.client.log_evaluation(
+                            model_id,
+                            version_id,
+                            partition_id,
+                            evaluation_copy,
+                            'validation'
+                            )
+                    except:
+                        loading_status.value = f'something went wrong'
+                        time.sleep(0.5)
+
+                    # Increment loader after logging partition evaluation
+                    loading.value = loading.value + 1
+            
+            loading_status.value = ''
+            loading.layout.display = 'none'
+            loading.value = 0
+
+            if confirm_button.description != "Error":
+                confirm_button.description = "Saved"
+                confirm_button.style.button_color = '#12b980'
+
+            time.sleep(0.5)
+
+            button_display.layout.display = 'none'
+            model_details.layout.display = 'none'
+            apply_buttons.layout.display = 'none'
+            loader.layout.display = 'none'
+            action_buttons.layout.display = 'flex'
+
+            confirm_button.description = "Confirm"
+            confirm_button.style.button_color = '#0080ea'
             confirm_button.disabled = False
 
-    buttons.observe(on_select, names=['value'])
-    loader_dropdown.observe(model_selected, names=['value'])
-    button_display = widgets.HBox([buttons])
+        buttons.observe(on_select, names=['value'])
+        loader_dropdown.observe(model_selected, names=['value'])
+        button_display = widgets.HBox([buttons])
 
-    divider = widgets.HTML(f'<hr class="solid">')
-    confirm_button = widgets.Button(description="Save", disabled=True)
-    confirm_button.on_click(on_confirm)
-    close_button = widgets.Button(description="Close")
-    close_button.on_click(close)
+        divider = widgets.HTML(f'<hr class="solid">')
+        save_button = widgets.Button(description="Save", disabled=False)
+        save_button.layout = widgets.Layout(margin=' 10px 0 10px 10px')
+        save_button.style = {
+                "button_color": '#0080ea',
+                "text_color": 'white'
+                }
+        save_button.on_click(save_clicked)
 
-    close_button.layout = widgets.Layout(margin=' 10px 0 10px 20px')
-    close_button.style = {
-            "button_color": '#e14067',
-            "text_color": 'white'
-            }
+        cancel_button = widgets.Button(description="Cancel", disabled=False)
+        cancel_button.layout = widgets.Layout(margin=' 10px 0 10px 10px')
+        cancel_button.style = {
+                "button_color": '#e14067',
+                "text_color": 'white'
+                }
+        cancel_button.on_click(cancel_clicked)
 
-    confirm_button.layout = widgets.Layout(margin=' 10px 0 10px 10px')
-    confirm_button.style = {
-            "button_color": '#0080ea',
-            "text_color": 'white'
-            }
+        confirm_button = widgets.Button(description="Confirm", disabled=True)
+        confirm_button.on_click(on_confirm)
+        close_button = widgets.Button(description="Close")
+        close_button.on_click(close)
 
-    model_name.w_text_input.observe(name_change, names=['value'])
+        close_button.layout = widgets.Layout(margin=' 10px 0 10px 0')
+        close_button.style = {
+                "button_color": '#e14067',
+                "text_color": 'white'
+                }
 
-    action_buttons = widgets.HBox([close_button, confirm_button])
+        confirm_button.layout = widgets.Layout(margin=' 10px 0 10px 10px')
+        confirm_button.style = {
+                "button_color": '#0080ea',
+                "text_color": 'white'
+                }
 
-    screen = widgets.VBox([button_display, model_details, loader, divider, action_buttons])
+        apply_buttons = widgets.HBox([cancel_button, confirm_button, loading, loading_status])
 
-    display(screen)
+        model_name.w_text_input.observe(name_change, names=['value'])
+
+        action_buttons = widgets.HBox([close_button, save_button])
+        
+        screen = widgets.VBox([action_buttons, button_display, model_details, loader, apply_buttons])
+        
+        action_buttons.layout.display = 'flex'
+        button_display.layout.display = 'none'
+        model_details.layout.display = 'none'
+        apply_buttons.layout.display = 'none'
+
+        return screen
 
 
 def set_preprocessor_details(preprocessor):

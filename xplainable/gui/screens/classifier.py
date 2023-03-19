@@ -1,16 +1,28 @@
 from IPython.display import display, clear_output
 import ipywidgets as widgets
-from ...core.models import Classifier
+from ...core.ml.partitions.classification import PartitionedClassifier
+from ...core.models import XClassifier
 from ...core.optimisation.bayesian import XParamOptimiser
 from ...utils import TrainButton
+from ...utils.activation import huntley_activation
 from ...quality import XScan
+from ..components import Header
+from .evaluate import EvaluateClassifier
+from .save import ModelPersist
 import time
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+
+import os
+os.environ['KMP_WARNINGS'] = '0'
 
 #import ray
 #ray.init()
 
-
-from ...callbacks import OptCallback, OptCallbackRay
+from ...callbacks import OptCallback
 from ..components import BarGroup
 
 def classifier(df):
@@ -31,9 +43,11 @@ def classifier(df):
 
     # Instantiate widget output
     outt = widgets.Output()
+    #outt.layout = widgets.Layout(min_height='400px', display='none')
 
     # Instantiate the model
-    model = Classifier()
+    partitioned_model = PartitionedClassifier(None)
+    partitions = {"__dataset__": XClassifier()}
 
     divider = widgets.HTML(f'<hr class="solid">')
 
@@ -57,6 +71,16 @@ def classifier(df):
         layout = widgets.Layout(width='200px')
         )
 
+    def partition_change(_):
+        if partition_on.value is None:
+            train_button.partitions = {"__dataset__": XClassifier()}
+            return
+        partitioned_model.partition_on = partition_on.value
+        parts = {p: XClassifier() for p in df[partition_on.value].unique()}
+        train_button.partitions.update(parts)
+
+    partition_on.observe(partition_change, names=['value'])
+
     # get all cols with cardinality of 1
     potential_id_cols = [None] + [
         col for col in df.columns if XScan._cardinality(df[col]) == 1]
@@ -67,7 +91,16 @@ def classifier(df):
         layout = widgets.Layout(width='200px')
         )
 
-    colA = widgets.VBox([col1a, target, id_title, id_columns])
+    partition_header = widgets.HTML(f"<h5>Partition on</h5>")
+
+    colA = widgets.VBox([
+        col1a,
+        target,
+        id_title,
+        id_columns,
+        partition_header,
+        partition_on])
+
     colA.layout = widgets.Layout(margin='0 0 0 15px')
 
     # COLUMN 2
@@ -99,11 +132,22 @@ def classifier(df):
         layout = widgets.Layout(max_width='200px'))
 
     optimise_metrics = [
+        'positive-f1',
+        'negative-f1',
         'weighted-f1',
         'macro-f1',
+        'positive-recall',
+        'negative-recall',
+        'weighted-recall',
+        'macro-recall',
+        'positive-precision',
+        'negative-precision',
+        'weighted-precision',
+        'macro-precision',
         'accuracy',
-        'recall',
-        'precision'
+        'log-loss',
+        'brier-loss',
+        'roc-auc'
     ]
 
     optimise_metric = widgets.Dropdown(
@@ -126,29 +170,44 @@ def classifier(df):
 
     # Param pickers
     max_depth = widgets.IntSlider(
-        value=12, min=2, max=100, step=1, description='max_depth:',
+        value=6, min=2, max=100, step=1, description='max_depth:',
         style=style)
 
     min_leaf_size = widgets.FloatSlider(
-        value=0.015, min=0.001, max=0.2, step=0.001, readout_format='.3f',
+        value=0.035, min=0.0001, max=0.2, step=0.0001, readout_format='.4f',
         description='min_leaf_size:', style=style)
 
     min_info_gain = widgets.FloatSlider(
-        value=0.015, min=0.001, max=0.2, step=0.001, readout_format='.3f',
+        value=0.015, min=0.0001, max=0.2, step=0.0001, readout_format='.4f',
         description='min_info_gain:', style=style)
+
+    weight = widgets.FloatSlider(
+        description='weight',
+        style=style,
+        value=0.4, min=0.001, max=10, step=0.01)
+        
+    power_degree = widgets.IntSlider(
+        description='power_degree',
+        style=style,
+        value=1, min=1, max=7, step=2)
+        
+    sigmoid_exponent = widgets.FloatSlider(
+        description='sigmoid_exponent',
+        style=style,
+        value=1, min=0, max=6, step=0.25)
     
     # Optimise param pickers
     n_trials = widgets.IntSlider(
-        value=30, min=5, max=150, step=5, description='n_trials:',
+        value=100, min=5, max=1000, step=5, description='n_trials:',
         style=style)
 
     early_stopping = widgets.IntSlider(
-        value=15, min=5, max=50, step=5, description='early_stopping:',
+        value=40, min=5, max=1000, step=5, description='early_stopping:',
         style=style)
 
     # SEARCH SPACE – MAX_DEPTH
     max_depth_space = widgets.IntRangeSlider(
-        value=[4, 22],
+        value=[4, 18],
         min=2,
         max=100,
         step=1,
@@ -159,6 +218,7 @@ def classifier(df):
 
     max_depth_step = widgets.Dropdown(
         options=[1, 2, 5],
+        value=2,
         layout = widgets.Layout(max_width='75px')
     )
 
@@ -167,17 +227,18 @@ def classifier(df):
     # SEARCH SPACE – MIN_LEAF_SIZE
     min_leaf_size_space = widgets.FloatRangeSlider(
         value=[0.005, 0.08],
-        min=0.005,
+        min=0.0001,
         max=0.2,
-        step=0.005,
+        step=0.0001,
         description="min_leaf_size:",
         style={'description_width': 'initial'},
-        readout_format='.3f',
+        readout_format='.4f',
         layout = widgets.Layout(min_width='350px')
     )
 
     min_leaf_size_step = widgets.Dropdown(
-        options=[0.005, 0.01, 0.02],
+        options=[0.0005, 0.005, 0.01, 0.02],
+        value=0.005,
         layout = widgets.Layout(max_width='75px')
     )
 
@@ -187,28 +248,132 @@ def classifier(df):
     # SEARCH SPACE – MIN_LEAF_SIZE
     min_info_gain_space = widgets.FloatRangeSlider(
         value=[0.005, 0.08],
-        min=0.005,
+        min=0.0001,
         max=0.2,
-        step=0.005,
+        step=0.0001,
         description="min_info_gain:",
         style={'description_width': 'initial'},
-        readout_format='.3f',
+        readout_format='.4f',
         layout = widgets.Layout(min_width='350px')
     )
 
     min_info_gain_step = widgets.Dropdown(
-        options=[0.005, 0.01, 0.02],
+        options=[0.0005, 0.005, 0.01, 0.02],
+        value=0.0005,
         layout = widgets.Layout(max_width='75px')
     )
 
     min_info_gain_display = widgets.HBox(
         [min_info_gain_space, min_info_gain_step])
 
-    std_params = widgets.VBox([
+    # SEARCH SPACE – WEIGHT
+    weight_space = widgets.FloatRangeSlider(
+        value=[0, 1.6],
+        min=0,
+        max=5,
+        step=0.1,
+        description="weight:",
+        style={'description_width': 'initial'},
+        readout_format='.2f',
+        layout = widgets.Layout(min_width='350px')
+    )
+
+    weight_step = widgets.Dropdown(
+        options=[0.05, 0.1, 0.25, 0.5],
+        value=0.25,
+        layout = widgets.Layout(max_width='75px')
+    )
+
+    weight_display = widgets.HBox(
+        [weight_space, weight_step])
+
+    # SEARCH SPACE - POWER_DEGREE
+    power_degree_space = widgets.IntRangeSlider(
+        value=[1, 3],
+        min=1,
+        max=7,
+        step=2,
+        description="power_degree:",
+        style={'description_width': 'initial'},
+        layout = widgets.Layout(min_width='350px')
+    )
+
+    power_degree_step = widgets.Dropdown(
+        options=[2],
+        value=2,
+        layout = widgets.Layout(max_width='75px')
+    )
+
+    power_degree_display = widgets.HBox([power_degree_space, power_degree_step])
+
+    # SEARCH SPACE – SIGMOID_EXPONENT
+    sigmoid_exponent_space = widgets.FloatRangeSlider(
+        value=[0.5, 1.75],
+        min=0,
+        max=4,
+        step=0.25,
+        description="sigmoid_exponent:",
+        style={'description_width': 'initial'},
+        readout_format='.2f',
+        layout = widgets.Layout(min_width='350px')
+    )
+
+    sigmoid_exponent_step = widgets.Dropdown(
+        options=[0.25, 0.5, 1],
+        value=0.25,
+        layout = widgets.Layout(max_width='75px')
+    )
+
+    sigmoid_exponent_display = widgets.HBox(
+        [sigmoid_exponent_space, sigmoid_exponent_step])
+
+    def plot_huntley_activation():
+    
+        @widgets.interactive
+        def _activation(weight=weight, power_degree=power_degree,\
+            sigmoid_exponent=sigmoid_exponent):
+
+            freq = np.arange(0, 101, 1)
+            _nums = [huntley_activation(i, weight, power_degree, sigmoid_exponent) for i in freq]
+
+            data = pd.DataFrame({
+                "freq": freq,
+                "weight": _nums,
+            })
+
+            fig, ax = plt.subplots(figsize=(3, 2))
+
+            ax1 = sns.lineplot(data=data, y='weight', x='freq')
+
+            plt.show()
+            
+        w = _activation
+            
+        return w.children[-1]
+
+    huntley_display = widgets.Output()
+    with huntley_display:
+        display(plot_huntley_activation())
+
+    hyperparameter_box = widgets.VBox([
         widgets.HTML(f"<h5>Hyperparameters</h5>"),
         max_depth,
         min_leaf_size,
-        min_info_gain
+        min_info_gain,
+    ])
+
+    activation_box = widgets.VBox([
+        widgets.HTML(f"<h5>Activation</h5>"),
+        weight,
+        power_degree,
+        sigmoid_exponent,
+        huntley_display
+    ])
+
+    parameter_box = widgets.HBox([hyperparameter_box, activation_box])
+
+    std_params = widgets.VBox([
+        parameter_box,
     ])
 
     opt_params = widgets.VBox([
@@ -218,7 +383,11 @@ def classifier(df):
         widgets.HTML(f"<h5>Search Space</h5>"),
         max_depth_space_display,
         min_leaf_size_display,
-        min_info_gain_display
+        min_info_gain_display,
+        weight_display,
+        power_degree_display,
+        sigmoid_exponent_display
+
     ])
 
      # Set initial optimise widgets to no display
@@ -230,8 +399,6 @@ def classifier(df):
         opt_params
         ])
 
-    partition_header = widgets.HTML(f"<h5>Partition on</h5>")
-
     alpha_header = widgets.HTML(f"<h5>alpha</h5>")
     alpha = widgets.FloatSlider(value=0.05, min=0.01, max=0.5, step=0.01)
 
@@ -240,8 +407,6 @@ def classifier(df):
         value=0.2, min=0.05, max=0.5, step=0.01)
 
     colBSettings = widgets.VBox([
-        partition_header,
-        partition_on,
         alpha_header,
         alpha,
         validation_size_header,
@@ -255,33 +420,41 @@ def classifier(df):
     
     body = widgets.HBox([colA, colB])
 
+    # HEADER
+    header = Header(title='Train Classifier', logo_size=40, font_size=18)
+    header.title = {'margin': '10px 15px 0 10px'}
+    
+    part_progress = BarGroup(items=['Partitions'])
+    part_progress.collapse_items(items=['Partitions'])
+    part_progress.window_layout.margin = '10px 0 0 0'
+
+    header.add_widget(part_progress.show())
+
     # FOOTER
     train_button = TrainButton(
-        description='Train Model', model=model, icon='bolt', disabled=True)
+        description='Train Model', partitions=partitions, icon='bolt', disabled=True)
+    train_button.layout = widgets.Layout(margin=' 10px 0 10px 20px')
 
     close_button = widgets.Button(description='Close')
 
-    train_button.layout = widgets.Layout(margin=' 10px 0 10px 20px')
     close_button.layout = widgets.Layout(margin=' 10px 0 10px 10px')
 
     footer = widgets.VBox(
         [divider, widgets.HBox([train_button, close_button])])
 
-    title_text = widgets.HTML('<h3>Train Classifier<h3>')
-    title_text.layout = widgets.Layout(margin='0 0 0 20px')
-    title = widgets.VBox([title_text, divider])
+    
 
     # SCREEN – Build final screen
-    screen = widgets.VBox([title, body, footer, outt])
+    screen = widgets.VBox([header.show(), body, footer, outt])
     
     # Close screen
     def close():
-        title_text.close()
         body.close()
         footer.close()
 
     # Close and clear
     def close_button_click(_):
+        outt.close()
         close()
         clear_output()
 
@@ -289,9 +462,11 @@ def classifier(df):
         id_vals = [i for i in list(id_columns.value) if i is not None]
         id_title.value = f"<h5>ID Column ({len(id_vals)} selected)</h5>"
 
-    def generate_callback(_max_depth_space, _min_leaf_size_space, _min_info_gain_space):
+    def generate_callback(_max_depth_space, _min_leaf_size_space, _min_info_gain_space,\
+        _weight_space, _power_degree_space, _sigmoid_exponent_space):
+
         opt_bars = BarGroup(
-            items=['iteration'],
+            items=['iteration', 'fold', 'best'],
             heading='Hyperparameter Optimiser'
             )
 
@@ -302,33 +477,44 @@ def classifier(df):
         opt_bars.set_bounds(['iteration'], 0, n_trials.value)
         opt_bars.set_suffix(['iteration'], f'/{n_trials.value}')
         opt_bars.set_bar_color(color='#0080ea')
-        opt_bars.add_button(text='info', side='right')
 
         # Params
         param_bars = BarGroup(
-            items=['fold', 'max_depth', 'min_leaf_size', 'min_info_gain', 'best'],
+            items=[
+            'max_depth',
+            'min_leaf_size',
+            'min_info_gain',
+            'weight',
+            'power_degree',
+            'sigmoid_exponent'
+            ],
             heading='Hyperparameters'
             )
 
         param_bars.bar_layout.height='20px'
         param_bars.bar_layout.margin='6px 0 0 0'
-        param_bars.label_layout.width='90px'
+        param_bars.label_layout.width='110px'
         
-        param_bars.set_suffix(['fold'], '/5')
-        param_bars.set_prefix(['best'], f'{optimise_metric.value}: ')
+        opt_bars.set_suffix(['fold'], '/5')
+        opt_bars.set_prefix(['best'], f'{optimise_metric.value}: ')
 
-        param_bars.set_bounds(['fold'], 0, 5)
+        opt_bars.set_bounds(['fold'], 0, 5)
+        opt_bars.set_bar_color(items=['fold'], color='#0080ea')
+        opt_bars.set_bar_color(items=['best'], color='#12b980')
+
         param_bars.set_bounds(['max_depth'], _max_depth_space[0], _max_depth_space[1])
         param_bars.set_bounds(['min_leaf_size'], _min_leaf_size_space[0], _min_leaf_size_space[1])
         param_bars.set_bounds(['min_info_gain'], _min_info_gain_space[0], _min_info_gain_space[1])
 
+        param_bars.set_bounds(['weight'], _weight_space[0], _weight_space[1])
+        param_bars.set_bounds(['power_degree'], _power_degree_space[0], _power_degree_space[1])
+        param_bars.set_bounds(['sigmoid_exponent'], _sigmoid_exponent_space[0], _sigmoid_exponent_space[1])
+
         param_bars.set_bar_color(color='#e14067')
-        param_bars.set_bar_color(items=['fold'], color='#0080ea')
-        param_bars.set_bar_color(items=['best'], color='#12b980')
 
         opt_bars_display = opt_bars.show()
         param_bars_display = param_bars.show()
-        opt_bars_display.layout = widgets.Layout(min_width='400px')
+        opt_bars_display.layout = widgets.Layout(min_width='450px')
         param_bars_display.layout = widgets.Layout(margin='0 0 0 50px')
 
         callback = OptCallback(opt_bars, param_bars)
@@ -338,148 +524,176 @@ def classifier(df):
     # Train model on click
     def train_button_clicked(b):
 
+        part_progress.set_bounds(min_val=0, max_val=len(b.partitions))
+        part_progress.set_suffix(f'/{len(b.partitions)}')
+        part_progress.set_value('Partitions', 0)
+        part_progress.expand_items(items=['Partitions'])
+
         with outt:
+            
+            parts = b.partitions
+            body.close()
+            footer.close()
+            #outt.layout.display = 'flex'
+
+            eval_screens = {}
+            eval_objects = {}
+
+            if optimise.value:
+                _max_depth_space = list(max_depth_space.value) + \
+                    [max_depth_step.value]
+                _max_depth_space[1] += _max_depth_space[2]
+                
+                _min_leaf_size_space = list(min_leaf_size_space.value) + \
+                    [min_leaf_size_step.value]
+                _min_leaf_size_space[1] += _min_leaf_size_space[2]
+
+                _min_info_gain_space = list(min_info_gain_space.value) + \
+                    [min_info_gain_step.value]
+                _min_info_gain_space[1] += _min_info_gain_space[2]
+
+                _weight_space = list(weight_space.value) + \
+                    [weight_step.value]
+                _weight_space[1] += _weight_space[2]
+
+                _power_degree_space = list(power_degree_space.value) + \
+                    [power_degree_step.value]
+                _power_degree_space[1] += _power_degree_space[2]
+
+                _sigmoid_exponent_space = list(sigmoid_exponent_space.value) + \
+                    [sigmoid_exponent_step.value]
+                _sigmoid_exponent_space[1] += _sigmoid_exponent_space[2]
+
+                callback, opt_bars_display, param_bars_display = generate_callback(
+                _max_depth_space, _min_leaf_size_space, _min_info_gain_space,
+                _weight_space, _power_degree_space, _sigmoid_exponent_space
+                )
+
+                desc_partition = widgets.HTML(f'<strong>Partition: </strong>-')
+                desc_optimise_on = widgets.HTML(f'<strong>Optimise on: </strong>{optimise_metric.value}')
+                desc_early_stopping = widgets.HTML(f'<strong>Early Stopping: </strong>{early_stopping.value}')
+
+                opt_details = widgets.VBox([
+                    opt_bars_display,
+                    divider,
+                    desc_partition,
+                    desc_optimise_on,
+                    desc_early_stopping
+                ])
+
+                opt_display = widgets.HBox([opt_details, param_bars_display])
+                display(opt_display)
+
+            for i, (p, model) in enumerate(parts.items()):
+            
+                model.max_depth = max_depth.value
+                model.min_leaf_size = min_leaf_size.value
+                model.min_info_gain = min_info_gain.value
+                model.alpha = alpha.value
+                model.weight = weight.value
+                model.power_degree = power_degree.value
+                model.sigmoid_exponent = sigmoid_exponent.value
+
+                try:
+                    if optimise.value:
+                        desc_partition.value = f'<strong>Partition: </strong>{p}'
+                        callback.reset()
+                        
+                    if p != '__dataset__':
+                        part = df[df[partition_on.value] == p].drop(columns=[partition_on.value])
         
-            model = b.model
-            model.max_depth = max_depth.value
-            model.min_leaf_size = min_leaf_size.value
-            model.min_info_gain = min_info_gain.value
-            model.alpha = alpha.value
+                        if len(part) < 100:
+                            continue
 
-            try:
-                body.close()
-                footer.close()
-                
-                id_cols = [i for i in list(id_columns.value) if i is not None]
-                X, y = df.drop(columns=[target.value]), df[target.value]
+                        X, y = part.drop(columns=[target.value]), part[target.value]
+                        X_train, X_test, y_train, y_test = train_test_split(
+                            X, y, test_size=validation_size.value, random_state=1)
+                        
+                    else:
+                        drop_cols = [target.value]
 
-                #tabs = widgets.Tab(children=[widgets.Output()])
-                #tabs.set_title(0, '__dataset__')
-                #display(tabs)
+                        if partition_on.value is not None:
+                            drop_cols.append(partition_on.value)
 
-                #ray_tasks = []
-                #ray_callbacks = []
-                #callbacks = []
+                        X, y = df.drop(columns=drop_cols), df[target.value]
+                        X_train, X_test, y_train, y_test = train_test_split(
+                            X, y, test_size=validation_size.value, random_state=1)
 
-                if optimise.value:
-
-                    _max_depth_space = list(max_depth_space.value) + \
-                        [max_depth_step.value]
-
-                    _min_leaf_size_space = list(min_leaf_size_space.value) + \
-                        [min_leaf_size_step.value]
-
-                    _min_info_gain_space = list(min_info_gain_space.value) + \
-                        [min_info_gain_step.value]
-                            
-                    opt = XParamOptimiser(
-                        metric = optimise_metric.value,
-                        early_stopping=early_stopping.value,
-                        n_trials=n_trials.value,
-                        n_folds=5,
-                        max_depth_space=_max_depth_space,
-                        min_leaf_size_space=_min_leaf_size_space,
-                        min_info_gain_space=_min_info_gain_space,
-                        verbose=False
-                    )
-
-                    callback, opt_bars_display, param_bars_display = generate_callback(
-                        _max_depth_space, _min_leaf_size_space, _min_info_gain_space)
-
-                    #callbacks.append(callback)
-
-                    #ray_callback = OptCallbackRay()
-                    #ray_callbacks.append(ray_callback)
-                    display(widgets.HBox([opt_bars_display, param_bars_display]))
-                
-                    #ray_tasks.append(opt.ray_optimise.remote(X, y, verbose=False, callback=ray_callback))
-                    params = opt.optimise(X, y, verbose=False, callback=callback)
-                    model.set_params(**params)
-
-                model.fit(X, y, id_columns=id_cols)
-                
-                # if partition_on.value is not None:
+                    id_cols = [i for i in list(id_columns.value) if i is not None]
                     
-                #     unq = list(df[partition_on.value].unique())
+                    if optimise.value:
+      
+                        opt = XParamOptimiser(
+                            metric = optimise_metric.value,
+                            early_stopping=early_stopping.value,
+                            n_trials=n_trials.value,
+                            n_folds=5,
+                            alpha=alpha.value,
+                            max_depth_space=_max_depth_space,
+                            min_leaf_size_space=_min_leaf_size_space,
+                            min_info_gain_space=_min_info_gain_space,
+                            weight_space=_weight_space,
+                            power_degree_space=_power_degree_space,
+                            sigmoid_exponent_space=_sigmoid_exponent_space,
+                            verbose=False
+                        )
 
-                #     tabs.children = tabs.children + tuple([widgets.Output() for i in range(len(unq))])
-                #     for i, u in enumerate(unq):
-                #         tabs.set_title(i+1, u)
+                        params = opt.optimise(
+                            X_train, y_train, verbose=False, callback=callback)
+
+                        model.set_params(**params)
+
+                    # Train model
+                    model.fit(X_train, y_train, id_columns=id_cols)
+                    partitioned_model.add_partition(model, p)
                     
-                #     for idx, i in enumerate(unq):
-                #         part = df[df[partition_on.value] == i].copy()
-                #         X, y = part.drop(columns=[target.value, partition_on.value]), part[target.value]
+                    if len(model.target_map) > 0:
+                        y_train = y_train.map(model.target_map)
 
-                #         if optimise.value:
-
-                #             _max_depth_space = list(max_depth_space.value) + \
-                #                 [max_depth_step.value]
-
-                #             _min_leaf_size_space = list(min_leaf_size_space.value) + \
-                #                 [min_leaf_size_step.value]
-
-                #             _min_info_gain_space = list(min_info_gain_space.value) + \
-                #                 [min_info_gain_step.value]
-                                    
-                #             opt = XParamOptimiser(
-                #                 metric = optimise_metric.value,
-                #                 early_stopping=early_stopping.value,
-                #                 n_trials=n_trials.value,
-                #                 n_folds=5,
-                #                 max_depth_space=_max_depth_space,
-                #                 min_leaf_size_space=_min_leaf_size_space,
-                #                 min_info_gain_space=_min_info_gain_space,
-                #                 verbose=False
-                #             )
-
-                #             callback, opt_bars_display, param_bars_display = generate_callback(
-                #                 _max_depth_space, _min_leaf_size_space, _min_info_gain_space)
-                #             callbacks.append(callback)
-
-                #             #ray_callback = OptCallbackRay()
-                #             #ray_callbacks.append(ray_callback)
-                #             with tabs.children[idx+1]:
-                #                 display(widgets.HBox([opt_bars_display, param_bars_display]))
-                                
-                #                 #ray_tasks.append(opt.ray_optimise.remote(X, y, verbose=False, callback=ray_callback))
-                #                 params = opt.optimise(X, y, verbose=False, callback=callback)
-
-                #                 sub_model = Classifier(**params)
-                #                 sub_model.fit(X, y, id_columns=id_cols)
+                    e = EvaluateClassifier(model, X_train, y_train)
                     
-                    # while any([ray.get(c._iteration.to_value.remote()) < n_trials.value for c in ray_callbacks]):
-                    #     for cb, rcb in zip(callbacks, ray_callbacks):
-                    #         cb.fold = ray.get(rcb._fold.to_value.remote())
-                    #         cb.iteration = ray.get(rcb._iteration.to_value.remote())
-                    #         cb.metric = ray.get(rcb._metric.to_value.remote())
-                    #         md = ray.get(rcb._max_depth.to_value.remote())
-                    #         mls = ray.get(rcb._min_leaf_size.to_value.remote())
-                    #         mig = ray.get(rcb._min_info_gain.to_value.remote())
-                    #         cb.update_params(md, mls, mig)
-                    #         time.sleep(0.01)
+                    eval_screens[p] = e.profile(X_test, y_test)
 
-                    # results = ray.get(ray_tasks)
-                    # X, y = df.drop(columns=[target.value]), df[target.value]
-                    # sub_model = Classifier(**results[idx+1])
-                    # id_cols = [i for i in list(id_columns.value) if i is not None]
+                    eval_items = {
+                        'y_true': e.y_val,
+                        'y_prob': e.y_val_prob
+                    }
+                    eval_objects[p] = eval_items
+                    part_progress.set_value('Partitions', i+1)
+                    
+                except Exception as e:
+                    close()
+                    clear_output()
+                    raise RuntimeError(e)
+            
+            if optimise.value:
+                callback.finalise()
+                opt_display.close()
+            
+            part_progress.collapse_items(items=['Partitions'])
+            header.title = {'title': 'Profile'}
+            divider.close()
 
-                    # sub_model.fit(X, y, id_columns=id_cols)
-                    # print('trained')
+            save = ModelPersist(partitioned_model, eval_objects)
 
-                    # for idx, i in enumerate(unq):
-                    #     part = df[df[partition_on.value] == i].copy()
-                    #     X, y = part.drop(columns=[target.value, partition_on.value]), part[target.value]
+            partition_select = widgets.Dropdown(
+                options = eval_screens.keys()
+            )
 
-                    #     sub_model = Classifier(**results[idx+1])
-                    #     id_cols = [i for i in list(id_columns.value) if i is not None]
+            partition_select.layout = widgets.Layout(margin='10px 0 0 0')
 
-                    #     sub_model.fit(X, y, id_columns=id_cols)
-                    #     print('trained')
+            header.add_widget(partition_select)
 
-            except Exception as e:
-                close()
-                clear_output()
-                raise RuntimeError(e)
+            def show_evaluation():
+                
+                def _gen(partition=partition_select):
+                    display(eval_screens[partition])
+                w = widgets.interactive(_gen)
+                w.children = (w.children[-1],)
+                return w
+
+            display(show_evaluation())
+            display(save.save())
 
     # Listen for clicks
     train_button.on_click(train_button_clicked)
@@ -497,4 +711,4 @@ def classifier(df):
     display(screen)
 
     # Need to return empty model first
-    return model
+    return partitioned_model

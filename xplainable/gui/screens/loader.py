@@ -5,7 +5,7 @@ import ipywidgets as widgets
 from IPython.display import display, clear_output
 from ...utils import *
 from ...preprocessing import transformers as tf
-from ..components import BarGroup
+from ..components import Header
 
 
 def get_time_string(dt):
@@ -108,8 +108,8 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
         return xplainable.client.load_preprocessor(preprocessor_id, version_id)
 
     # --- HEADER ---
-    header = widgets.HBox([])
-    header.layout = widgets.Layout(margin = ' 5px 0 15px 25px ')
+    header = Header(title='Load Preprocessor', logo_size=40, font_size=18)
+    header.title = {'margin': '10px 15px 0 10px'}
 
     # --- BODY ---
     # SELECTOR
@@ -118,7 +118,7 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
         f'{xplainable.client.hostname}/v1/preprocessors'
     )
 
-    selector_heading = widgets.HTML("<h4>Select Preprocessor</h4>")
+    selector_heading = widgets.HTML("<h5>Select</h5>")
 
     preprocessor_content = get_response_content(preprocessors_response)
 
@@ -134,7 +134,7 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
     selector.layout = widgets.Layout(margin='0 20px 20px 20px')
 
     # PIPELINE
-    pipeline_heading = widgets.HTML("<h4>Pipeline</h4>")
+    pipeline_heading = widgets.HTML("<h5>Pipeline</h5>")
 
     stages = widgets.Select(options=[''])
     stages.layout = widgets.Layout(height='122px', width='500px')
@@ -156,7 +156,7 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
     footer = widgets.HBox([load_button, close_button])
 
     # --- SCREEN ---
-    screen = widgets.VBox([header, body, footer])
+    screen = widgets.VBox([header.show(), body, footer])
 
     display(screen)
 
