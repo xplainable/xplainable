@@ -13,6 +13,10 @@ saved_models/
 /datasets
 .vscode
 
+*.csv
+*.xlsx
+*.json
+
 # Distribution / packaging
 .Python
 build/
