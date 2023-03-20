@@ -8,6 +8,10 @@ from ..preprocessing import transformers as tf
 from ..exceptions import AuthenticationError
 import json
 import numpy as np
+import pyperclip
+import time
+from IPython.display import clear_output
+
 
 class Client:
     """ Client for interfacing with the xplainable web api.
@@ -68,6 +72,7 @@ class Client:
             )
 
         return get_response_content(response)
+
 
     def load_preprocessor(self, preprocessor_id, version_id='latest'):
 
@@ -287,3 +292,39 @@ class Client:
         evaluation_id = get_response_content(response)
 
         return evaluation_id
+
+    def deploy(self, model_id, version_id, partition_id):
+        url = f'{self.hostname}/v1/models/{model_id}/versions/{version_id}/partitions/{partition_id}/deploy'
+        response = self.__session__.get(url)
+        if response.status_code == 200:
+            return {"deployment_id": response.json()}
+
+    def model_generate_deploy_key(
+        self,
+        description: str,
+        deployment_id: int,
+        days_until_expiry: float = 90
+        ):
+
+        url = f'{self.hostname}/v1/create-deploy-key'
+        
+        params = {
+            'description': description,
+            'deployment_id': deployment_id,
+            'days_until_expiry': days_until_expiry
+        }
+        
+        response = self.__session__.get(
+            url=url,
+            params=params
+            )
+
+        deploy_key = response.json()
+
+        if deploy_key:
+            pyperclip.copy(deploy_key)
+            print("Deploy key copied to clipboard!")
+            time.sleep(2)
+            clear_output()
+        else:
+            return response.status_code

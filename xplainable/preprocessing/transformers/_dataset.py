@@ -162,6 +162,76 @@ class Operation(XBaseTransformer):
         return df
 
 
+class TextTrimMulti(XBaseTransformer):
+    """ Drops or keeps first/last n characters of a categorical column.
+
+    Args:
+        selector (str): [first, last].
+        n (int): Number of characters to identify.
+        action (str): [keep, drop] the identified characters.
+    """
+
+    # Attributes for ipywidgets
+    supported_types = ['dataset']
+
+    def __init__(
+        self, column='', selector=None, n=0,
+        action='keep', drop_col=False, alias=''):
+        
+        self.column = column
+        self.selector = selector
+        self.n = n
+        self.action = action
+        self.drop_col = drop_col
+        self.alias = alias
+
+    def __call__(self, dataset, *args, **kwargs):
+
+        cols = list(dataset.columns)
+        
+        def _set_params(
+            column=xwidgets.Dropdown(
+                description='Column: ',
+                value=cols[0],
+                options=cols),
+            selector = widgets.Dropdown(options=["first", "last"]),
+            n = widgets.IntText(n=1),
+            action = widgets.Dropdown(options=['keep', 'drop']),
+            alias = widgets.Text(''),
+            drop_col = widgets.Checkbox(description="drop original")
+        ):
+            self.selector = selector
+            self.n = n
+            self.action = action
+            self.alias = alias
+            self.drop_col = drop_col
+            self.column = column
+
+        return interactive(_set_params)
+
+    def _operations(self, df):
+        df = df.copy()
+        ser = df[self.column]
+
+        if self.action == 'keep':
+            if self.selector == "first":
+                df[self.alias] = ser.str[:self.n]
+
+            else:
+                df[self.alias] = ser.str[-self.n:]
+        else:
+            if self.selector == "first":
+                df[self.alias] = ser.str[self.n:]
+
+            else:
+                df[self.alias] = ser.str[:-self.n]
+
+        if self.drop_col:
+            df = df.drop(columns=[self.column])
+
+        return df
+
+
 class ChangeNames(XBaseTransformer):
     """Changes names of columns in a dataset"""
 

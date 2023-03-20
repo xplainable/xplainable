@@ -207,7 +207,7 @@ def classifier(df):
 
     # SEARCH SPACE – MAX_DEPTH
     max_depth_space = widgets.IntRangeSlider(
-        value=[4, 18],
+        value=[4, 10],
         min=2,
         max=100,
         step=1,
@@ -226,7 +226,7 @@ def classifier(df):
 
     # SEARCH SPACE – MIN_LEAF_SIZE
     min_leaf_size_space = widgets.FloatRangeSlider(
-        value=[0.005, 0.08],
+        value=[0.0001, 0.04],
         min=0.0001,
         max=0.2,
         step=0.0001,
@@ -247,7 +247,7 @@ def classifier(df):
 
     # SEARCH SPACE – MIN_LEAF_SIZE
     min_info_gain_space = widgets.FloatRangeSlider(
-        value=[0.005, 0.08],
+        value=[0.0001, 0.04],
         min=0.0001,
         max=0.2,
         step=0.0001,
@@ -268,7 +268,7 @@ def classifier(df):
 
     # SEARCH SPACE – WEIGHT
     weight_space = widgets.FloatRangeSlider(
-        value=[0, 1.6],
+        value=[0, 1.2],
         min=0,
         max=5,
         step=0.1,
@@ -289,7 +289,7 @@ def classifier(df):
 
     # SEARCH SPACE - POWER_DEGREE
     power_degree_space = widgets.IntRangeSlider(
-        value=[1, 3],
+        value=[1, 1],
         min=1,
         max=7,
         step=2,
@@ -308,7 +308,7 @@ def classifier(df):
 
     # SEARCH SPACE – SIGMOID_EXPONENT
     sigmoid_exponent_space = widgets.FloatRangeSlider(
-        value=[0.5, 1.75],
+        value=[0.75, 1.25],
         min=0,
         max=4,
         step=0.25,
