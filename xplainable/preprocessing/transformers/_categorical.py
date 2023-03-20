@@ -443,7 +443,7 @@ class TextTrim(XBaseTransformer):
         def _set_params(
             selector = widgets.Dropdown(options=["first", "last"]),
             n = widgets.IntText(n=1),
-            action = widgets.Dropdown(options=['keep', 'drop'])
+            action = widgets.Dropdown(options=['keep', 'drop']),
         ):
             self.selector = selector
             self.n = n
