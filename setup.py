@@ -10,7 +10,7 @@ setup(
     author='xplainable pty ltd',
     license=None,
     install_requires=[
-        'numpy>=1.24.1',
+        'numpy>=1.23.0',
         'pandas>=1.5.2',
         'hyperopt>=0.2.7',
         'joblib>=1.1.0',
