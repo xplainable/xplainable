@@ -2,10 +2,14 @@ from ._client import Client
 import xplainable
 from IPython.display import clear_output
 import os
+import sys
 from getpass import getpass
 from dotenv import dotenv_values
 import warnings
 import logging
+from ..gui.components import KeyValueTable, Header
+from IPython.display import display, clear_output
+
 
 def create_file_if_not_exisits():
     pass
@@ -43,6 +47,7 @@ def get_api_key():
     except:
         return False
 
+
 def initialise():
     
     has_set = False
@@ -55,7 +60,36 @@ def initialise():
         xplainable.client = Client(api_key)
         store_api_key(api_key)
         clear_output()
-        return "Initialised"
+
+        pyinf = sys.version_info
+        data = {
+            "xplainable version": xplainable.__version__,
+            "python version": f'{pyinf.major}.{pyinf.minor}.{pyinf.micro}',
+            "user": xplainable.client._user
+        }
+
+        try:
+            import ipywidgets as widgets
+
+            table = KeyValueTable(
+                data,
+                transpose=False,
+                padding="0px 45px 0px 5px",
+                table_width='auto',
+                header_color='#e8e8e8',
+                border_color='#dddddd',
+                header_font_color='#20252d',
+                cell_font_color= '#374151'
+                )
+
+            header = Header('Initialised', 30, 16)
+            header.divider.layout.display = 'none'
+            header.title = {'margin':'4px 0 0 8px'}
+            output = widgets.VBox([header.show(), table.html_widget])
+            display(output)
+        except:
+            return data
+
     except:
         clear_output()
         text = "Invalid. Paste a valid API Key: "

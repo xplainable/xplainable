@@ -18,6 +18,11 @@ class BarGroup:
         
         self.label_layout = widgets.Layout(
             width='65px')
+
+        self.value_layout = widgets.Layout(
+            width='40px')
+
+        self.displays_layout = widgets.Layout()
         
         self._initialise_bars()
         
@@ -31,7 +36,7 @@ class BarGroup:
         
         for i in self.items:
             # Generate label
-            label = widgets.HTML(f"{i}: ", layout=self.label_layout)
+            label = widgets.HTML(f"{i}", layout=self.label_layout)
             self.displays[i]['label'] = label
             
             # Generate Bar
@@ -41,10 +46,12 @@ class BarGroup:
             
             # Generate Value
             val = widgets.HTML("-")
+            val.layout = self.value_layout
             self.displays[i]['value'] = val
             
             # Generate Display
-            self.displays[i]['display'] = widgets.HBox([label, bar, val])
+            self.displays[i]['display'] = widgets.HBox(
+                [label, bar, val], layout=self.displays_layout)
             
     def show(self):
         if self.heading is None:
@@ -68,13 +75,13 @@ class BarGroup:
         for i in items:
             self.displays[i]['bar'].style.bar_color = color
 
-    def set_prefix(self, items, prefix):
+    def set_prefix(self, prefix, items=None):
         if items is None:
             items = self.items
         for i in items:
             self.prefix[i] = prefix
 
-    def set_suffix(self, items, suffix):
+    def set_suffix(self, suffix, items=None):
         if items is None:
             items = self.items
         for i in items:
@@ -92,13 +99,13 @@ class BarGroup:
         for item in items:
             self.displays[item]['display'].layout.display = 'flex'
 
-    def add_button(self, items=None, text='button', side='right', on_click=None):
+    def add_button(self, items=None, text='button', side='right', on_click=None, height=25, width=50):
         if items is None:
             items = self.items
         for item in items:
             button = IDButton(description=text, id=item)
             button_layout = widgets.Layout(
-                height='25px', width='50px', display='flex', margin='3px 0 0 10px')
+                height=f'{height}px', width=f'{width}px', display='flex', margin='3px 0 0 10px')
             button.layout = button_layout
 
             if on_click is not None:

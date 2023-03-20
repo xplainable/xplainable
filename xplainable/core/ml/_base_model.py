@@ -11,7 +11,7 @@ class BaseModel:
 
         self.columns = []
         self.id_columns = []
-        self._profile = {}
+        self._profile = []
         self.base_value = None
         self.target_map = {}
         self.target_map_inv = {}
@@ -79,7 +79,7 @@ class BaseModel:
         # Store categorical column names
         self.categorical_columns = list(x.select_dtypes('object'))
 
-        self.columns=x.columns
+        self.columns = list(x.columns)
 
     def _preprocess(self, x, y=None):
         
@@ -170,9 +170,10 @@ class BaseModel:
             'numeric': {c: [] for c in self.numeric_columns},
             'categorical': {c: [] for c in self.categorical_columns}
         }
-        for (c, p) in zip(self.columns, self._profile):
+        for i, (c, p) in enumerate(zip(self.columns, self._profile)):
+            p = np.array(p)
             _key = "numeric" if c in self.numeric_columns else "categorical"
-            
+
             if len(p) < 2:
                 profile[_key][c] = []
                 continue
@@ -186,7 +187,16 @@ class BaseModel:
                     'mean': v[3],
                     'freq': v[4]
                     }
+                if _key == "categorical":
+                    _prof.update({'categories': []})
+                
                 leaf_nodes.append(_prof)
+            
+            if _key == 'categorical':
+                mapp = self.feature_map_inv[c]
+                for k in np.array(list(mapp.keys())):
+                    idx = np.where((p[:, 0] < k) & (k < p[:, 1]))
+                    leaf_nodes[idx[0][0]]['categories'].append(mapp[k])
                 
             profile[_key][c] = leaf_nodes
 

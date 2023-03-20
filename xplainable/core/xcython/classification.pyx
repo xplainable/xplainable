@@ -17,6 +17,9 @@ cdef class XCProfiler:
     cdef double min_info_gain
     cdef double min_leaf_size
     cdef double alpha
+    cdef double weight
+    cdef long power_degree
+    cdef double sigmoid_exponent
 
     # Storage
     cdef double base_value
@@ -28,12 +31,19 @@ cdef class XCProfiler:
         int max_depth=8,
         double min_info_gain=0.02,
         double min_leaf_size=0.02,
-        double alpha=0.01):
+        double alpha=0.01,
+        double weight=1,
+        long power_degree=1,
+        double sigmoid_exponent=0
+        ):
 
         self.max_depth = max_depth
         self.min_info_gain = min_info_gain
         self.min_leaf_size = min_leaf_size
         self.alpha = alpha
+        self.weight = weight
+        self.power_degree = power_degree
+        self.sigmoid_exponent = sigmoid_exponent
 
     @property
     def profile(self):
@@ -102,7 +112,7 @@ cdef class XCProfiler:
             for i in range(len(v)):
                 node = list(v[i])
                 self.profile[idx][i][2] = self._normalise_score(
-                    node[2], _sum_min, _sum_max)
+                    node[5], _sum_min, _sum_max)
 
         return self
 
@@ -119,11 +129,15 @@ cdef class XCProfiler:
         for i in range(x.shape[1]):
             f = x[:, i]
             tree = Tree(
-                False, # classifier
-                self.max_depth,
-                self.min_leaf_size,
-                self.min_info_gain,
-                self.alpha
+                regressor=False, # classifier
+                max_depth=self.max_depth,
+                min_info_gain=self.min_info_gain,
+                min_leaf_size=self.min_leaf_size,
+                alpha=self.alpha,
+                tail_sensitivity=1, # No need for tail sensitivity
+                weight=self.weight,
+                power_degree=self.power_degree,
+                sigmoid_exponent=self.sigmoid_exponent,
                 )
 
             tree.fit(f, y)
@@ -137,13 +151,17 @@ cdef class XCProfiler:
     @cython.wraparound(False)
     cpdef rebuild_tree(
         self, Py_ssize_t idx, int max_depth, double min_info_gain,
-        double min_leaf_size, double alpha):
+        double min_leaf_size, double alpha, double weight, long power_degree,
+        double sigmoid_exponent):
 
         self.trees[idx].rebuild_tree(
             max_depth = max_depth,
             min_info_gain = min_info_gain,
             min_leaf_size = min_leaf_size,
-            alpha = alpha
+            alpha = alpha,
+            weight = weight,
+            power_degree = power_degree,
+            sigmoid_exponent = sigmoid_exponent
         )
 
         # rebuild the profile with new values

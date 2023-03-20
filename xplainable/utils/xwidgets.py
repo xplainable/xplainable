@@ -110,9 +110,9 @@ class TrainButton(widgets.Button):
         model: xplainable model
     """
 
-    def __init__(self, model=None, *args, **kwargs):
+    def __init__(self, partitions=None, *args, **kwargs):
         super(TrainButton, self).__init__(*args, **kwargs)
-        self.add_traits(model=traitlets.Any(model))
+        self.add_traits(partitions=traitlets.Any(partitions))
 
 
 class TransformerButton(widgets.Button):

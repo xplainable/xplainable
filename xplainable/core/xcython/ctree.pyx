@@ -1,5 +1,8 @@
 import numpy as np
 cimport numpy as np
+
+np.import_array()
+
 cimport cython
 from cpython cimport array
 from numpy cimport ndarray
@@ -25,6 +28,9 @@ cdef class Tree:
     cdef double min_leaf_size
     cdef double alpha
     cdef double tail_sensitivity
+    cdef double weight
+    cdef long power_degree
+    cdef double sigmoid_exponent
     cdef bint regressor
 
     # Storage
@@ -45,11 +51,15 @@ cdef class Tree:
     def __init__(
         self,
         bint regressor=False,
-        int max_depth=8,
+        long max_depth=8,
         double min_info_gain=0.02,
         double min_leaf_size=0.02,
         double alpha=0.01,
-        double tail_sensitivity=1.0):
+        double tail_sensitivity=1.0,
+        double weight=1,
+        long power_degree=1,
+        double sigmoid_exponent=0
+        ):
 
         self.regressor = regressor
         self.max_depth = max_depth
@@ -57,6 +67,9 @@ cdef class Tree:
         self.min_leaf_size = min_leaf_size
         self.tail_sensitivity = tail_sensitivity
         self.alpha = alpha
+        self.weight = weight
+        self.power_degree = power_degree
+        self.sigmoid_exponent = sigmoid_exponent
 
     @property
     def regressor(self):
@@ -77,6 +90,18 @@ cdef class Tree:
     @property
     def alpha(self):
         return self.alpha
+
+    @property
+    def weight(self):
+        return self.weight
+
+    @property
+    def power_degree(self):
+        return self.power_degree
+
+    @property
+    def sigmoid_exponent(self):
+        return self.sigmoid_exponent
 
     @property
     def base_value(self):
@@ -126,12 +151,11 @@ cdef class Tree:
 
         return possible_splits
 
-
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
     @cython.inline
-    cpdef initialise_splits_clf(self, double[:] splits, double[:] x, double[:] y):
+    cdef initialise_splits_clf(self, double[:] splits, double[:] x, double[:] y):
         cdef double[:,:,:] meta = np.empty((len(splits), 2, 2), dtype=np.float64)
         cdef double split
         cdef int left
@@ -140,10 +164,11 @@ cdef class Tree:
         cdef double pos_r
         cdef double lmean
         cdef double rmean
-        cdef int i, v
+        cdef Py_ssize_t i, v
         cdef int len_y = len(y)
+        cdef int len_splits = len(splits)
 
-        for i in range(len(splits)):
+        for i in prange(len_splits, nogil=True):
 
             split = splits[i]
 
@@ -155,14 +180,14 @@ cdef class Tree:
             # Create splits
             for v in range(len_y):
                 if x[v] <= split:
-                    left += 1
+                    left = left + 1
                     if y[v] == 1:
-                        pos_l += 1
+                        pos_l = pos_l + 1
 
                 else:
-                    right += 1
+                    right = right + 1
                     if y[v] == 1:
-                        pos_r += 1
+                        pos_r = pos_r + 1
 
             lmean = pos_l / left
             rmean = pos_r / right
@@ -263,6 +288,21 @@ cdef class Tree:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.inline
+    @cython.cdivision(True)
+    cdef huntley_activation(self, long v, double weight, long power_degree, float sigmoid_exponent):
+
+        cdef double nval = np.power(v, weight) / np.power(10, (weight*2))
+        cdef double degval = (np.power((nval*100 - 50), power_degree) + np.power(50, power_degree)) / (2 * np.power(50, power_degree))
+        cdef double val
+
+        if sigmoid_exponent < 1:
+            return degval
+        else:
+            return 1 / (1 + np.exp(-((degval-0.5)*np.power(10, sigmoid_exponent))))
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.cdivision(True)
     cdef build_tree(self, dict node):
 
@@ -286,7 +326,12 @@ cdef class Tree:
         if self.idx == -1 or node['depth'] >= self.max_depth:
             
             if not self.regressor:
-                score = log2(node['freq'] * 100) * (node['mean'] - self.base_value)
+                score = self.huntley_activation(
+                    node['freq']*100,
+                    self.weight,
+                    self.power_degree,
+                    self.sigmoid_exponent
+                    ) * (node['mean'] - self.base_value)
             else:
                 diff = node['mean'] - self.base_value
 
@@ -314,7 +359,8 @@ cdef class Tree:
                 elif direction == 1:
                     self.lower = split_path
 
-            leaf = np.array([self.lower, self.upper, score, node['mean'], node['freq']])
+            # score at end to persist non-normalised score
+            leaf = np.array([self.lower, self.upper, score, node['mean'], node['freq'], score])
 
             self.leaf_nodes.append(leaf)
             return
@@ -377,7 +423,8 @@ cdef class Tree:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef rebuild_tree(
-        self, int max_depth, double min_info_gain, double min_leaf_size, double alpha):
+        self, int max_depth, double min_info_gain, double min_leaf_size, double alpha,
+        double weight, long power_degree, double sigmoid_exponent):
         
         cdef dict node = self._copy_root_node()
 
@@ -386,6 +433,9 @@ cdef class Tree:
         self.min_info_gain = min_info_gain
         self.min_leaf_size = min_leaf_size
         self.alpha = alpha
+        self.weight = weight
+        self.power_degree = power_degree
+        self.sigmoid_exponent = sigmoid_exponent
         self.abs_min_leaf_size = np.amax(
             [1, int(self.min_leaf_size * self.samples)])
 

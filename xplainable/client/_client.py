@@ -1,19 +1,24 @@
 from ..utils.api import get_response_content
+from ..utils.encoders import NpEncoder
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from ..gui.screens.preprocessor import Preprocessor
 from ..preprocessing import transformers as tf
+from ..exceptions import AuthenticationError
+import json
+import numpy as np
 
 class Client:
     """ Client for interfacing with the xplainable web api.
     """
 
-    def __init__(self, api_key, use_ray=False):
+    def __init__(self, api_key):
         self.__api_key = api_key
         self.hostname = 'https://api.xplainable.io'
         self.machines = {}
         self.__session__ = requests.Session()
+        self._user = None
         self.init()
 
     def init(self):
@@ -36,27 +41,7 @@ class Client:
         ADAPTER = HTTPAdapter(max_retries=RETRY_STRATEGY)
         self.__session__.mount(self.hostname, ADAPTER)
 
-        url = f'{self.hostname}/v1/ping'
-        response = self.__session__.get(url)
-
-        if response.status_code == 200:
-            return
-
-            # url = f'{self.hostname}/v1/machines'
-            # try:
-            #     response = self.__session__.get(url)
-            #     self.machines = {
-            #         i['machine_name']: i['machine_id'] for \
-            #             i in get_response_content(response)}
-            
-            # except Exception as e:
-            #     raise ConnectionError('User has no available machines')
-            
-            # return
-        
-        else:
-            raise PermissionError(
-                "Not authenticated. API key invalid or expired")
+        self._user = self.get_user_data()['username']
 
     def list_models(self):
         """ Lists models of active user.
@@ -171,11 +156,11 @@ class Client:
             
         
         if model_meta['model_type'] == 'binary_classification':
-            from xplainable.models.classification import XClassifier
+            from xplainable.core.models.classification import XClassifier
             model = XClassifier(model_name=model_meta['model_name'])
 
         elif model_meta['model_type'] == 'regression':
-            from xplainable.models.regression import XRegressor
+            from xplainable.core.models.regression import XRegressor
             model = XRegressor(model_name=model_meta['model_name'])
         
         model._load_metadata(model_data)
@@ -193,8 +178,112 @@ class Client:
         url=f'{self.hostname}/v1/user'
         )
 
-        return get_response_content(response)
+        if response.status_code ==200:
+            return get_response_content(response)
+        else:
+            raise AuthenticationError("API key has expired or is invalid.")
 
-    def save_model(self, model):
-        pass
+    def create_or_fetch_model_id(self, model_name, model_description, target, model_type):
+
+        # Get user models
+        response = self.__session__.get(
+            url=f'{self.hostname}/v1/models')
+
+        user_models = get_response_content(response)
         
+        # Create model if model name doesn't exist
+        if not any(m['model_name'] == model_name for m in user_models):
+            
+            params = {
+                "model_name": model_name,
+                "model_description": model_description,
+                "model_type": model_type,
+                "target_name": target
+            }
+            
+            response = self.__session__.post(
+                url=f'{self.hostname}/v1/create-model',
+                params=params
+            )
+            
+            model_id = get_response_content(response)
+            
+        else:
+            
+            params = {"model_name": model_name}
+
+            response = self.__session__.get(
+            url=f'{self.hostname}/v1/get-model-id',
+                params=params
+            )
+            
+            model_id = get_response_content(response)
+
+        return model_id
+
+    def create_model_version(self, model_id, partition_on):
+
+        params = {"partition_on": partition_on}
+
+        # Create a new version and fetch id
+        response = self.__session__.post(
+                url=f'{self.hostname}/v1/models/{model_id}/add-version',
+            params=params
+        )
+
+        version_id = get_response_content(response)
+
+        return version_id
+
+    def log_partition(self, partition_name, model, model_id, version_id):
+
+        data = {
+            "profile": json.dumps(model._profile, cls=NpEncoder),
+            "calibration_map": json.loads(json.dumps(model._calibration_map, cls=NpEncoder)),
+            "feature_importances": json.loads(json.dumps(model.get_feature_importances(), cls=NpEncoder)),
+            "id_columns": json.loads(json.dumps(model.id_columns, cls=NpEncoder)),
+            "columns": json.loads(json.dumps(model.columns, cls=NpEncoder)),
+            "target_map": json.loads(json.dumps(model.target_map_inv, cls=NpEncoder)),
+            "support_map": json.loads(json.dumps(model._support_map, cls=NpEncoder)),
+            "parameters": json.loads(json.dumps(model.get_params(), cls=NpEncoder)),
+            "base_value": json.loads(json.dumps(model.base_value, cls=NpEncoder)),
+            "feature_map": json.loads(json.dumps(model.feature_map, cls=NpEncoder))
+        }
+
+        params = {
+            "partition": str(partition_name)
+            }
+
+        try:
+            response = self.__session__.post(
+                url=f'{self.hostname}/v1/models/{model_id}/versions/{version_id}/add-partition',
+                params=params,
+                json=data
+            )
+        except Exception as e:
+            raise ValueError(e)
+
+        partition_id = get_response_content(response)
+
+        return partition_id
+
+    def log_evaluation(self, model_id, version_id, partition_id, evaluation, tags):
+        
+        assert type(evaluation) == dict, "evaluation must be JSON serialisable"
+
+        data = {
+            'evaluation': json.dumps(evaluation, cls=NpEncoder),
+            'tags': tags
+        }
+
+        try:
+            response = self.__session__.post(
+                url=f'{self.hostname}/v1/models/{model_id}/versions/{version_id}/partitions/{partition_id}/log-evaluation',
+                json=data
+            )
+        except Exception as e:
+            raise ValueError(e)
+
+        evaluation_id = get_response_content(response)
+
+        return evaluation_id

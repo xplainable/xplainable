@@ -8,25 +8,46 @@ class OptCallback():
         self.params = params
 
     def fold(self, fold):
-        self.params.set_value(item='fold', value=fold)
+        self.progress.set_value(item='fold', value=fold)
 
     def iteration(self, i):
         self.progress.set_value(item='iteration', value=i)
 
     def metric(self, v):
-        self.params.set_value(item='best', value=v)
+        self.progress.set_value(item='best', value=v)
 
-    def update_params(self, max_depth, min_leaf_size, min_info_gain, alpha=None):
-        self.params.set_value(item='max_depth', value=max_depth)
-        self.params.set_value(item='min_leaf_size', value=min_leaf_size)
-        self.params.set_value(item='min_info_gain', value=min_info_gain)
+    def update_params(self, max_depth, min_leaf_size, min_info_gain, weight, power_degree, sigmoid_exponent, alpha=None):
+        self.params.set_value(item='max_depth', value=int(max_depth))
+        self.params.set_value(item='min_leaf_size', value=round(min_leaf_size, 4))
+        self.params.set_value(item='min_info_gain', value=round(min_info_gain, 4))
+        self.params.set_value(item='weight', value=round(weight, 2))
+        self.params.set_value(item='power_degree', value=int(power_degree))
+        self.params.set_value(item='sigmoid_exponent', value=round(sigmoid_exponent, 2))
+
+    def reset(self):
+        self.params.set_value(item='max_depth', value=0)
+        self.params.set_value(item='min_leaf_size', value=0)
+        self.params.set_value(item='min_info_gain', value=0)
+        self.params.set_value(item='weight', value=0)
+        self.params.set_value(item='power_degree', value=0)
+        self.params.set_value(item='sigmoid_exponent', value=0)
+        
+        self.progress.set_value(item='best', value=0)
+        self.progress.set_value(item='fold', value=0)
+        self.progress.set_value(item='iteration', value=0)
 
     def finalise(self):
         self.progress.set_bar_color(color='#12b980')
         self.params.set_bar_color(
-            items=['max_depth', 'min_leaf_size', 'min_info_gain'], color='#0080ea')
-        self.params.collapse_items(items=['fold'])
-
+            items=[
+                'max_depth',
+                'min_leaf_size',
+                'min_info_gain',
+                'weight',
+                'power_degree', 
+                'sigmoid_exponent'
+                ], color='#0080ea')
+        self.progress.collapse_items(items=['fold'])
 
 @ray.remote
 class ValueActor:

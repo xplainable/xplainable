@@ -7,9 +7,12 @@ import sklearn.metrics as skm
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
 import pandas as pd
-from ..ml.classification import Classifier
+from ..ml.classification import XClassifier
 import warnings
-import ray
+import numpy as np
+import time
+from ...metrics import feature_bin_error
+
 #suppress warnings
 warnings.filterwarnings('ignore')
 
@@ -25,14 +28,17 @@ class XParamOptimiser:
             shuffle (bool, optional): Shuffle the CV splits. Defaults to False.
             subsample (float, optional): Subsamples the training data.
             alpha (float, optional): Sets the alpha of the model.
-            balance (bool): True to handle class balance.
             random_state (int, optional): Random seed. Defaults to 1.
     """
 
     def __init__(self, metric='weighted-f1', early_stopping=100, n_trials=30, n_folds=5,
-                       shuffle=False, subsample=1, alpha=0.01, balance=False,
-                       max_depth_space = [4, 22, 2], min_leaf_size_space = [0.005, 0.08, 0.005],
-                       min_info_gain_space = [0.005, 0.08, 0.005], balance_space=[0.0, 0.6, 0.1],
+                       shuffle=False, subsample=1, alpha=0.01,
+                       max_depth_space = [4, 22, 2],
+                       min_leaf_size_space = [0.005, 0.08, 0.005],
+                       min_info_gain_space = [0.005, 0.08, 0.005],
+                       weight_space = [0, 5, 0.25],
+                       power_degree_space = [1, 7, 2],
+                       sigmoid_exponent_space = [0.5, 4, 0.25],
                        verbose=True, random_state=1):
 
         super().__init__()
@@ -47,22 +53,26 @@ class XParamOptimiser:
         self.alpha = alpha
         self.verbose = verbose
         self.random_state = random_state
-        self.balance = balance
 
         self.max_depth_space = max_depth_space
         self.min_leaf_size_space = min_leaf_size_space
         self.min_info_gain_space = min_info_gain_space
-        self.balance_space = balance_space
+        self.weight_space = weight_space
+        self.power_degree_space = power_degree_space
+        self.sigmoid_exponent_space = sigmoid_exponent_space
 
         # Callback support
         self.callback = None
         self.iteration = 1
-        self.best_score = 0
+        self.best_score = -np.inf
 
         # Instantiate class objects
         self.x = None
         self.y = None
         self.id_columns = []
+        self.models = {i: XClassifier(map_calibration=False) for i in range(n_folds)}
+        self.folds = {}
+        self.results = []
 
     def _cv_fold(self, params):
         """ Runs an iteration of cross-validation for a set of parameters.
@@ -78,41 +88,76 @@ class XParamOptimiser:
         X_ = self.x.reset_index(drop=True)
         y_ = self.y.reset_index(drop=True)
 
-        # Instantiate starting values for iteration
-        if self.shuffle:
-            folds = StratifiedKFold(
-                n_splits=self.n_folds, shuffle=self.shuffle, random_state=self.random_state)
-
-        else:
-            folds = StratifiedKFold(n_splits=self.n_folds, shuffle=self.shuffle)
-
         scores = []
+        start = time.time()
         # Run iteration over n_folds
-        for i, (train_index, test_index) in enumerate(folds.split(X_, y_)):
+        for i, model in self.models.items():
             
             # Instantiate and fit model
-            model = Classifier(**params, map_calibration=False)
-            model.fit(X_.loc[train_index], y_.loc[train_index], id_columns=self.id_columns)
+            model.update_feature_params(model.columns, **params)
+
+            test_index = self.folds[i]['test_index']
 
             # Get predictions for fold
-            y_pred = model.predict(X_.loc[test_index])
+            if self.metric in ['brier-loss', 'log-loss']:
+                y_prob = model.predict_score(X_.loc[test_index])
+                y_prob = np.clip(y_prob, 0, 1)
+                y_pred = (y_prob > 0.5).astype(int)
+            else:
+                y_pred = model.predict(X_.loc[test_index], remap=False)
+
             y_test = y_.loc[test_index]
 
             # Calculate the score for the fold
             if self.metric == 'macro-f1':
                 scores.append(skm.f1_score(y_test, y_pred, average='macro'))
 
-            if self.metric == 'weighted-f1':
+            elif self.metric == 'weighted-f1':
                 scores.append(skm.f1_score(y_test, y_pred, average='weighted'))
+
+            elif self.metric == 'positive-f1':
+                scores.append(skm.f1_score(y_test, y_pred, average=None)[1])
+
+            elif self.metric == 'negative-f1':
+                scores.append(skm.f1_score(y_test, y_pred, average=None)[0])
+
+            elif self.metric == 'macro-precision':
+                scores.append(skm.precision_score(y_test, y_pred, average='macro'))
+
+            elif self.metric == 'weighted-precision':
+                scores.append(skm.precision_score(y_test, y_pred, average='weighted'))
+
+            elif self.metric == 'positive-precision':
+                scores.append(skm.precision_score(y_test, y_pred, average=None)[1])
+
+            elif self.metric == 'negative-precision':
+                scores.append(skm.precision_score(y_test, y_pred, average=None)[0])
+
+            elif self.metric == 'macro-recall':
+                scores.append(skm.precision_score(y_test, y_pred, average='macro'))
+
+            elif self.metric == 'weighted-recall':
+                scores.append(skm.precision_score(y_test, y_pred, average='weighted'))
+
+            elif self.metric == 'positive-recall':
+                scores.append(skm.precision_score(y_test, y_pred, average=None)[1])
+
+            elif self.metric == 'negative-recall':
+                scores.append(skm.precision_score(y_test, y_pred, average=None)[0])
 
             elif self.metric == 'accuracy':
                 scores.append(skm.accuracy_score(y_test, y_pred))
 
-            elif self.metric == 'recall':
-                scores.append(skm.recall_score(y_test, y_pred))
+            elif self.metric == 'brier-loss':
+                # Negative as we want to minimise the score
+                scores.append(1 - skm.brier_score_loss(y_test, y_prob))
 
-            elif self.metric == 'precision':
-                scores.append(skm.precision_score(y_test, y_pred))
+            elif self.metric == 'log-loss':
+                # Negative as we want to minimise the score
+                scores.append(-skm.log_loss(y_test, y_prob))
+
+            elif self.metric == 'roc-auc':
+                scores.append(skm.roc_auc_score(y_test, y_pred))
 
             else:
                 scores.append(skm.f1_score(y_test, y_pred, average='weighted'))
@@ -121,7 +166,18 @@ class XParamOptimiser:
                 # fold callback
                 self.callback.fold(i+1)
 
-        return np.mean(scores)
+        score = np.mean(scores)
+
+        run_time = time.time() - start
+        run_info = {
+            'params': params,
+            'score': score,
+            'run_time': run_time
+        }
+        
+        self.results.append(run_info)
+
+        return score
 
     def _convert_int_params(self, names, params):
         """Converts a given set of parameters to integer values.
@@ -177,7 +233,7 @@ class XParamOptimiser:
             self.callback.iteration(self.iteration)
             # metric callback
             if score > self.best_score:
-                self.callback.metric(round(score*100, 2))
+                self.callback.metric(abs(round(score*100, 2)))
                 self.best_score = score
 
             if self.iteration < self.n_trials:
@@ -186,8 +242,26 @@ class XParamOptimiser:
         # Calculate the run time
         run_time = timer() - start
 
-        return {"loss": -1 * score, "params": params, "train_time": run_time,
+        return {"loss": -score, "params": params, "train_time": run_time,
                 "status": hyperopt.STATUS_OK}
+
+    def _instantiate(self):
+
+        X_ = self.x.reset_index(drop=True)
+        y_ = self.y.reset_index(drop=True)
+
+        if self.shuffle:
+            folds = StratifiedKFold(
+                n_splits=self.n_folds, shuffle=self.shuffle, random_state=self.random_state)
+
+        else:
+            folds = StratifiedKFold(n_splits=self.n_folds, shuffle=self.shuffle)
+
+        self.folds = {i: {'train_index': train_index, 'test_index': test_index} for \
+            i, (train_index, test_index) in enumerate(folds.split(X_, y_))}
+
+        for i, v in self.folds.items():
+            self.models[i].fit(X_.loc[v['train_index']], y_.loc[v['train_index']], id_columns=self.id_columns)
 
     def optimise(self, x, y, id_columns=[], verbose=True, callback=None):
         """ Get an optimised set of parameters for an xplainable model.
@@ -206,6 +280,7 @@ class XParamOptimiser:
         self.x = x.copy()
         self.y = y.copy()
         self.id_columns = id_columns
+        self._instantiate()
 
         self.callback = callback
 
@@ -241,19 +316,14 @@ class XParamOptimiser:
         self.y = self.y.reset_index(drop=True)
 
         # Instantiate the search space for hyperopt
-        md = self.max_depth_space
-        mls = self.min_leaf_size_space
-        migs = self.min_info_gain_space
-
         space = {
-            'max_depth': hp.quniform('max_depth', md[0], md[1], md[2]),
-            'min_leaf_size': hp.quniform('min_leaf_size', mls[0], mls[1], mls[2]),
-            'min_info_gain': hp.quniform('min_info_gain', migs[0], migs[1], migs[2])
+            'max_depth': hp.choice('max_depth', np.arange(*self.max_depth_space)),
+            'min_leaf_size': hp.choice('min_leaf_size', np.arange(*self.min_leaf_size_space)),
+            'min_info_gain': hp.choice('min_info_gain', np.arange(*self.min_info_gain_space)),
+            'weight': hp.choice('weight', np.arange(*self.weight_space)),
+            'power_degree': hp.choice('power_degree', np.arange(*self.power_degree_space)),
+            'sigmoid_exponent': hp.choice('sigmoid_exponent', np.arange(*self.sigmoid_exponent_space))
             }
-
-        if self.balance:
-            bs = self.balance_space
-            space['balance'] = hp.quniform('balance', bs[0], bs[1], bs[2])
 
         # Instantiate trials
         trials = Trials()
@@ -276,15 +346,6 @@ class XParamOptimiser:
         # iteration callback completed
         if self.callback:
             self.callback.update_params(**best_params)
-            
-            try:
-                self.callback.finalise()
-            except:
-                pass
 
         # Return the best parameters
         return best_params
-
-# @ray.remote
-# def ray_optimise(opt, x, y, id_columns=[], verbose=True, callback=None):
-#     return opt.optimise(x, y, id_columns, verbose, callback)
