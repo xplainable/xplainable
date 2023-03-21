@@ -4,7 +4,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import pandas as pd
 from ._base_model import BaseModel
-from ..xcython.regression import XRProfiler
+#from ..xcython.regression import XRProfiler
 from ._constructor import XConstructor
 from sklearn.metrics import *
 import copy
