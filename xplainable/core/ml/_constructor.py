@@ -131,11 +131,11 @@ class XConstructor:
             for v in prange(_len_y):
                 if X[v] <= _split:
                     _0_cnt += 1
-                    _0_tot += 1
+                    _0_tot += y[v]
 
                 else:
                     _1_cnt += 1
-                    _1_tot += 1
+                    _1_tot += y[v]
 
             _0_mean = _0_tot / _0_cnt
             _1_mean = _1_tot / _1_cnt
@@ -148,7 +148,7 @@ class XConstructor:
         return _meta
     
     @staticmethod
-    @njit(parallel=True, fastmath=True, nogil=True)
+    @njit(parallel=False, fastmath=True, nogil=True)
     def _best_split(meta, mls, bv, samp, mig):
         """ Finds the best split across all splits """
 
@@ -202,8 +202,11 @@ class XConstructor:
             
             if (idx == -1) or (_depth >= self.max_depth):
                 
-                if self.regressor:
+                if not self.regressor:
+                    score = self._activation(_freq*100) * (
+                        _mean - self.base_value)
 
+                else:
                     diff = _mean - self.base_value
 
                     if diff >= 0:
@@ -212,11 +215,8 @@ class XConstructor:
                     else:
                         score = (abs(diff) ** self.tail_sensitivity) * - 1
 
-                score = self._activation(_freq*100) * \
-                        (_mean - self.base_value)
-
                 if score < self._min_score:
-                    self._min_score = score
+                        self._min_score = score
 
                 if score > self._max_score:
                     self._max_score = score
@@ -308,6 +308,7 @@ class XConstructor:
         weight,
         power_degree,
         sigmoid_exponent,
+        tail_sensitivity
     ):
         """ Reconstructs nodes with new params without reinitiating splits """
     
@@ -318,6 +319,7 @@ class XConstructor:
         self.weight = weight
         self.power_degree = power_degree
         self.sigmoid_exponent = sigmoid_exponent
+        self.tail_sensitivity = tail_sensitivity
         
         self._nodes = []
         self.max_score = -np.inf

@@ -64,7 +64,7 @@ def classifier(df):
         layout = widgets.Layout(width='200px')
         )
 
-    possible_partitions = [None]+[i for i in df.columns if df[i].nunique() < 11]
+    possible_partitions = [None]+[i for i in df.columns if df[i].nunique() < 20]
 
     partition_on = widgets.Dropdown(
         options=possible_partitions,

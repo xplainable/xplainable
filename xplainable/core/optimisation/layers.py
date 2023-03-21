@@ -15,7 +15,9 @@ class Evolve():
         max_severity=0.5,
         max_leaves=20,
         mutation_type='relative',
-        reproduction_strategy='merge'):
+        reproduction_strategy='merge',
+        apply_range=True
+        ):
         
         self.mutations = mutations
         self.generations = generations
@@ -24,6 +26,7 @@ class Evolve():
         self.max_leaves = max_leaves
         self.mutation_type = mutation_type
         self.reproduction_strategy = reproduction_strategy
+        self.apply_range = apply_range
 
         self.objective = None
 
@@ -44,9 +47,12 @@ class Evolve():
         """
 
         # calculate relative error
-        err = (np.nansum(x, axis=1) + self.xnetwork.model.base_value) - self.y
+        _pred = np.nansum(x, axis=1) + self.xnetwork.model.base_value
 
-        return err
+        if self.apply_range:
+            _pred = _pred.clip(*self.xnetwork.model.prediction_range)
+
+        return _pred - self.y
 
     def _mae(self, x):
         
@@ -310,12 +316,19 @@ class Tighten:
             use_cython (bool): Use cython splitting function if True.
     """
 
-    def __init__(self, iterations=100, learning_rate=0.03, early_stopping=None):
+    def __init__(
+        self,
+        iterations=100,
+        learning_rate=0.03,
+        early_stopping=None,
+        apply_range=True
+        ):
 
         # store params
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.early_stopping = early_stopping
+        self.apply_range = apply_range
 
         self.xnetwork = None
         
@@ -331,9 +344,12 @@ class Tighten:
         """
 
         # calculate relative error
-        err = (np.nansum(x, axis=1) + self.xnetwork.model.base_value) - y
+        _pred = np.nansum(x, axis=1) + self.xnetwork.model.base_value
 
-        return err
+        if self.apply_range:
+            _pred = _pred.clip(*self.xnetwork.model.prediction_range)
+
+        return _pred - y
 
     def _next_best_change(self, errors):
         """ Identifies the most effective leaf node change to improve model.
@@ -346,14 +362,14 @@ class Tighten:
             float: The max amount the score can change.
         """
 
-        def get_change(idx):
+        # def get_change(idx):
 
-            # if 'inc' yeilds higher benefit, change by 'um'
-            if inc[idx] > dec[idx]:
-                return um[idx]
+        #     # if 'inc' yeilds higher benefit, change by 'um'
+        #     if inc[idx] > dec[idx]:
+        #         return um[idx]
 
-            else:
-                return om[idx] * -1
+        #     else:
+        #         return om[idx] * -1
 
         # load mask
         mask = self.xnetwork._mask
@@ -399,8 +415,13 @@ class Tighten:
         bstloc = np.where(bsts==bst)[0][0]
 
         # get value to update by
-        change = get_change(bstloc) * self.learning_rate
+        if inc[bstloc] > dec[bstloc]:
+            change = um[bstloc] * self.learning_rate
 
+        else:
+            change = om[bstloc] * -1 * self.learning_rate
+
+        #change = get_change(bstloc) * self.learning_rate
         return bstloc, change
 
     def _run_iteration(self, x, y):

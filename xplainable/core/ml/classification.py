@@ -207,6 +207,10 @@ class XClassifier(BaseModel):
 
         # Store meta data
         self.id_columns = id_columns
+
+        if type(x) == np.ndarray:
+            x = pd.DataFrame(x)
+
         x = x.drop(columns=id_columns)
 
         self._fetch_meta(x, y)
@@ -252,7 +256,7 @@ class XClassifier(BaseModel):
 
     def update_feature_params(self, features, max_depth, min_info_gain, \
         min_leaf_size, alpha, weight, power_degree, sigmoid_exponent,
-        x=None, y=None):
+        tail_sensitivity=None, x=None, y=None):
         
         for feature in features:
             idx = self.columns.index(feature)
@@ -264,7 +268,8 @@ class XClassifier(BaseModel):
                 alpha = alpha,
                 weight = weight,
                 power_degree = power_degree,
-                sigmoid_exponent = sigmoid_exponent
+                sigmoid_exponent = sigmoid_exponent,
+                tail_sensitivity = tail_sensitivity
             )
 
         self._build_profile()

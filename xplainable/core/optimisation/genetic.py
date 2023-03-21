@@ -41,9 +41,9 @@ class XEvolutionaryNetwork:
 
         # infer metric from type
         if self.metric == None:
-            if type(self.model).__name__ == 'Regressor':
+            if type(self.model).__name__ == 'XRegressor':
                 self.metric = 'mae'
-            elif type(self.model).__name__ == 'Classifier':
+            elif type(self.model).__name__ == 'XClassifier':
                 self.metric = 'f1'
 
         # Remove id columns if they exist
