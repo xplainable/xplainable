@@ -36,6 +36,10 @@ setup(
         'altair==4.2.0',
         'scipy==1.6.2',
         'pyperclip>=1.8.2',
+        'ray>=2.2.0',
+        'tqdm>=4.62.2',
+        'drawsvg>=2.1.1',
+        'numba>=0.56.4',
         'python-dotenv'
     ]
 )
