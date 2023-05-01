@@ -13,4 +13,5 @@ traitlets==5.5.0
 urllib3==1.26.12
 altair==4.2.0
 scipy==1.6.2
+pyperclip>=1.8.2
 python-dotenv
