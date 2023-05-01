@@ -16,7 +16,7 @@ setup(
     author_email="contact@xplainable.io",
     license=None,
     install_requires=[
-        'numpy>=1.23.0',
+        'numpy>=1.21.0',
         'pandas>=1.5.2',
         'hyperopt>=0.2.7',
         'joblib>=1.1.0',
