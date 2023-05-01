@@ -34,7 +34,7 @@ setup(
         'traitlets==5.5.0',
         'urllib3==1.26.12',
         'altair==4.2.0',
-        'scipy==1.6.2',
+        'scipy==1.9.1',
         'pyperclip>=1.8.2',
         'ray>=2.2.0',
         'tqdm>=4.62.2',
