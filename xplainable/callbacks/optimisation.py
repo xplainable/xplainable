@@ -1,5 +1,51 @@
 
 import ray
+from ..gui.components.bars import BarGroup
+
+
+class RegressionCallback:
+    
+    def __init__(self, network):
+        self.network = network
+        self.init()
+        
+    def init(self):
+        self.items = [f'Layer {i} ({c.__class__.__name__})' for \
+                      i, c in enumerate(self.network.future_layers, start=1)]
+        
+        self.group = BarGroup(items=self.items, heading='Pipeline', footer=True)
+        self.group.label_layout.width = '120px'
+        for i, item in enumerate(self.items):
+            if self.network.future_layers[i].__class__.__name__ == 'Tighten':
+                limit = self.network.future_layers[i].__dict__['iterations']
+
+            elif self.network.future_layers[i].__class__.__name__ == 'Evolve':
+                limit = self.network.future_layers[i].__dict__['generations']
+
+            self.group.set_bounds(items=[item], min_val=0, max_val=limit)
+            self.group.set_suffix(suffix=f'/{limit}', items=[item])
+        
+    def set_value(self, idx, value):
+        item = self.items[idx]
+        self.group.set_value(item, value)
+
+    def set_metric_bounds(self, min_val, max_val):
+        self.group.set_footer_bounds(min_val, max_val)
+        
+    def set_metric(self, metric, value):
+        self.group.set_footer_label(metric)
+        self.group.set_footer_value(value)
+        
+    def stopped_early(self, idx):
+        item = self.items[idx]
+        self.group.set_bar_color(items=[item], color='#fbc051')
+        
+    def finalise_bar(self, idx):
+        item = self.items[idx]
+        self.group.set_bar_color(items=[item], color='#12b980')
+
+    def close(self):
+        self.group.close()
 
 class OptCallback():
 
