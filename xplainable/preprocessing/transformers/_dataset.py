@@ -247,14 +247,19 @@ class ChangeNames(XBaseTransformer):
         def _set_params(*args, **kwargs):
             args = locals()
             self.col_names = dict(args)['kwargs']
-
-        col_names = {col: xwidgets.Text(col) for col in df.columns}  
-
-        return interactive(_set_params, **col_names)
+        
+        col_names = {col: xwidgets.Text(col) for col in df.columns}
+        
+        w = interactive(_set_params, **col_names)
+        
+        for c in w.children[:-1]:
+            c.description = ''
+        
+        return w
 
     def _operations(self, df):
         df = df.copy()
-        col_names = [i for i in self.col_names if i in df.columns]
+        col_names = {i: v for i, v in self.col_names.items() if i in df.columns}
         return df.rename(columns=col_names)
 
 
@@ -308,13 +313,14 @@ class GroupbyShift(XBaseTransformer):
     # Attributes for ipyxwidgets
     supported_types = ['dataset']
 
-    def __init__(self, target=None, step=0, as_new=None, group_by=None,\
-        order_by=None, descending=None):
+    def __init__(self, columns=None, step=0, as_new=True, col_names=[], \
+        group_by=None, order_by=None, descending=None):
 
         super().__init__()
-        self.target = target
+        self.columns = columns
         self.step = step
         self.as_new = as_new
+        self.col_names = col_names
 
         self.group_by = group_by
         self.order_by = order_by
@@ -328,31 +334,33 @@ class GroupbyShift(XBaseTransformer):
             order_by = xwidgets.SelectMultiple(
                 description='Order by: ', options=[None]+list(df.columns)),
             descending = xwidgets.Checkbox(value=False),
-            target=xwidgets.Dropdown(options=[None]+list(df.columns)),
+            columns=xwidgets.SelectMultiple(
+                description='Columns: ', options=[None]+list(df.columns)),
             step = xwidgets.IntText(value=0, min=-1000, max=1000),
             as_new = xwidgets.Checkbox(value=False)
             ):
 
-            self.target = target
+            self.columns = columns
             self.group_by = list(group_by)
             self.order_by = list(order_by)
             self.descending = descending
             self.step = step
 
-            self.as_new = target
+            self.as_new = as_new
 
-            # build new col name if as_new
-            if as_new and target is not None:
-                col_name = f'{target}_shift_{step}'
-                if len(self.group_by) > 0:
-                    col_name += "_gb_"
-                    col_name += '_'.join(self.group_by)
+            # build new col names if as_new
+            if as_new and len(columns) > 0:
+                for target in columns:
+                    col_name = f'{target}_shift_{step}'
+                    if len(self.group_by) > 0:
+                        col_name += "_gb_"
+                        col_name += '_'.join(self.group_by)
 
-                if len(self.order_by) > 0:
-                    col_name += "_ob_"
-                    col_name += '_'.join(self.order_by)
-            
-                self.as_new = col_name
+                    if len(self.order_by) > 0:
+                        col_name += "_ob_"
+                        col_name += '_'.join(self.order_by)
+                
+                    self.col_names.append(col_name)
 
         return interactive(_set_params)
 
@@ -362,11 +370,12 @@ class GroupbyShift(XBaseTransformer):
         if self.order_by and self.order_by[0] is not None:
             df = df.sort_values(self.order_by, ascending=not self.descending)
 
-        if self.group_by and self.group_by[0] is not None:
-            df[self.as_new] = df.groupby(
-                self.group_by)[self.target].shift(self.step)
-        else:
-            df[self.as_new] = df[self.target].shift(self.step)
+        for col_name, target in zip(self.col_names, self.columns):
+            if self.group_by and self.group_by[0] is not None:
+                df[col_name] = df.groupby(
+                    self.group_by)[target].shift(self.step)
+            else:
+                df[col_name] = df[target].shift(self.step)
 
         return df
 
@@ -667,3 +676,222 @@ class GroupedSignalSmoothing(XBaseTransformer):
 
         return df
 
+
+class DateTimeExtract(XBaseTransformer):
+    """ Extracts Datetime values from datetime object. """
+
+    # Attributes for ipywidgets
+    supported_types = ['dataset']
+
+    def __init__(self, target=None, year=False, month=False, day=False, \
+        weekday=False, day_name=False, hour=False, minute=False, \
+            second=False, drop=False):
+
+        self.target = target
+        self.year = year
+        self.month = month
+        self.day = day
+        self.weekday = weekday
+        self.day_name = day_name
+        self.hour = hour
+        self.minute = minute
+        self.second = second
+        self.drop = drop
+
+
+    def __call__(self, df, *args, **kwargs):
+        
+        def _set_params(
+            target=widgets.Dropdown(options=df.columns),
+            year=widgets.ToggleButton(value=False),
+            month=widgets.ToggleButton(value=False),
+            day=widgets.ToggleButton(value=False),
+            weekday=widgets.ToggleButton(value=False),
+            day_name=widgets.ToggleButton(value=False),
+            hour=widgets.ToggleButton(value=False),
+            minute=widgets.ToggleButton(value=False),
+            second=widgets.ToggleButton(value=False),
+            drop = widgets.Checkbox(value=False)
+        ):
+
+            self.target = target
+            self.year = year
+            self.month = month
+            self.day = day
+            self.weekday = weekday
+            self.day_name = day_name
+            self.hour = hour
+            self.minute = minute
+            self.second = second
+            self.drop = drop
+
+        w = interactive(_set_params)
+        _target = w.children[0]
+        left = widgets.VBox(w.children[1:5])
+        right = widgets.VBox(w.children[5:9])
+        buttons = widgets.HBox([left, right])
+        _drop = w.children[9]
+        elements = widgets.VBox([_target, buttons, _drop])
+                
+        return elements
+
+    def _operations(self, df):
+
+        df = df.copy()
+
+        try:
+            df[self.target] = pd.to_datetime(df[self.target])
+        except:
+            raise TypeError(f"{self.target} can not be coerced to datetime")
+
+        if self.year:
+            df[f'{self.target}_year'] = df[self.target].dt.year
+        
+        if self.month:
+            df[f'{self.target}_month'] = df[self.target].dt.month
+
+        if self.day:
+            df[f'{self.target}_day'] = df[self.target].dt.day
+
+        if self.weekday:
+            df[f'{self.target}_weekday'] = df[self.target].dt.weekday
+
+        if self.day_name:
+            df[f'{self.target}_day_name'] = df[self.target].dt.day_name()
+
+        if self.hour:
+            df[f'{self.target}_hour'] = df[self.target].dt.hour
+
+        if self.minute:
+            df[f'{self.target}_minute'] = df[self.target].dt.minute
+
+        if self.second:
+            df[f'{self.target}_second'] = df[self.target].dt.second
+
+        if self.drop:
+            df = df.drop(columns=[self.target])
+
+        return df
+
+
+class RollingOperation(XBaseTransformer):
+    """Applies operation to multiple columns (in order) into new feature.
+
+    Args:
+        columns (list): Column names to add.
+        alias (str): Name of newly created column.
+        drop (bool): Drops original columns if True
+    """
+    
+    # Attributes for ipyxwidgets
+    supported_types = ['dataset']
+
+    def __init__(
+        self,
+        groupby=None,
+        orderby=None,
+        direction=None,
+        columns=[],
+        window=None,
+        operation=None,
+        drop: bool = False
+        ):
+
+        super().__init__()
+        self.groupby = groupby
+        self.orderby = orderby
+        self.direction = direction
+        self.columns = columns
+        self.window = window
+        self.operation = operation
+        self.drop = drop
+
+    def __call__(self, df, *args, **kwargs):
+        
+        cols = list(df.columns)
+        
+        def _set_params(
+            group_by = xwidgets.SelectMultiple(
+                description='Group by: ', options=[None]+list(df.columns)),
+            order_by = xwidgets.SelectMultiple(
+                description='Order by: ', options=[None]+list(df.columns)),
+            direction = xwidgets.ToggleButtons(
+                description='Direction: ',
+                options=['ascending', 'descending']),
+            columns_to_apply=xwidgets.SelectMultiple(
+                description='Columns: ',
+                value=[cols[0]],
+                options=cols,
+                allow_duplicates=False),
+            window=xwidgets.IntText(min=2, value=3),
+            operation=['mean', 'sum', 'max', 'min'],
+            drop_columns=xwidgets.Checkbox(value=True)):
+
+            self.groupby = list(group_by)
+            self.orderby = list(order_by)
+            self.direction = direction
+            self.columns = list(columns_to_apply)
+            self.operation = operation
+            self.window = window
+            self.drop = drop_columns
+        
+        widget = widgets.interactive(_set_params)
+
+        widget.children[6].layout = widgets.Layout(margin='10px 0 20px 0')
+
+        widget.layout = widgets.Layout(
+            margin='0 0 0 30px',
+            width='280px'
+            )
+
+        return widget
+
+    def _operations(self, df):
+
+        df = df.copy()
+
+        assert all(
+            [pdtypes.is_numeric_dtype(df[col]) for col in self.columns]
+            ), "Selected columns must be numeric"
+
+        asc = True if self.direction == 'ascending' else False
+
+        for col in self.columns:
+            alias = f'{col}_{self.operation}_{self.window}'
+
+            if self.operation == 'mean':
+                if self.groupby:
+                    df[alias] = df.sort_values(
+                        self.orderby, ascending=asc).groupby(self.groupby).rolling(
+                            self.window).mean()[col].values
+                else:
+                    df[alias] = df[col].rolling(self.window).mean()
+
+            elif self.operation == 'sum':
+                if self.groupby:
+                    df[alias] = df.sort_values(
+                        self.orderby, ascending=asc).groupby(self.groupby).rolling(
+                            self.window).sum()[col].values
+                else:
+                    df[alias] = df[col].rolling(self.window).sum()
+
+            elif self.operation == 'max':
+                if self.groupby:
+                    df[alias] = df.sort_values(
+                        self.orderby, ascending=asc).groupby(self.groupby).rolling(
+                            self.window).max()[col].values
+                else:
+                    df[alias] = df[col].rolling(self.window).max()
+
+            elif self.operation == 'min':
+                if self.groupby:
+                    df[alias] = df.sort_values(
+                        self.orderby, ascending=asc).groupby(self.groupby).rolling(
+                            self.window).min()[col].values
+                else:
+                    df[alias] = df[col].rolling(self.window).min()
+
+            if self.drop:
+                df = df.drop(columns=self.columns)
+
+        return df
