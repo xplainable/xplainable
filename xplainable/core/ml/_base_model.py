@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_bool_dtype
 
 class BaseModel:
 
@@ -17,6 +18,7 @@ class BaseModel:
         self.target_map_inv = {}
         self.feature_map = {}
         self.feature_map_inv = {}
+        self.category_meta = {}
 
     def _encode_feature(self, x, y):
         """ Encodes features in order of their relationship with the target.
@@ -52,6 +54,29 @@ class BaseModel:
 
         return
 
+    def _cast_to_pandas(self, x, y=None, target_name='target', column_names=None):
+        
+        if isinstance(x, np.ndarray):
+            x = pd.DataFrame(x)
+            if column_names is not None:
+                assert x.shape[1] == len(column_names), \
+                    "column names must match array shape"
+                x.columns = column_names
+            else:
+                x.columns = [f"feature_{i}" for i in range(x.shape[1])]
+            
+            x = x.apply(pd.to_numeric, errors='ignore')
+
+        if y is not None: 
+            if isinstance(y, np.ndarray):
+                y = pd.Series(y)
+                assert isinstance(target_name, str), "target name must be str type"
+                y.name = target_name
+
+            return x, y
+
+        return x
+
     def _encode_target(self, y):
         
         y = y.copy()
@@ -81,13 +106,41 @@ class BaseModel:
 
         self.columns = list(x.columns)
 
+        # calculate mean and frequency information for categories
+        self.category_meta = {c: {} for c in self.categorical_columns}
+        for col in self.categorical_columns:
+            group = pd.DataFrame({
+                col: x[col],
+                'target': y
+            })
+            
+            self.category_meta[col]["means"] = dict(
+                group.groupby(col)['target'].mean())
+
+            self.category_meta[col]["freqs"] = dict(
+                x[col].value_counts() / len(y))
+
     def _preprocess(self, x, y=None):
         
-        x = x[self.columns]
+        x = x[[c for c in self.columns if c in x.columns]]
 
         x = x.astype('float64')
         if y is not None:
             y = y.astype('float64')
+            return x, y
+        
+        return x
+
+    def _coerce_dtypes(self, x, y=None):
+
+        for col in x.columns:
+            if is_bool_dtype(x[col]):
+                x[col] = x[col].astype(str)
+
+        if y is not None:
+            if is_bool_dtype(y):
+                y = y.astype(int)
+            
             return x, y
         
         return x
@@ -119,6 +172,8 @@ class BaseModel:
 
         x = x.copy()
         
+        x = self._cast_to_pandas(x, column_names=self.columns)
+        x = self._coerce_dtypes(x)
         x = self._encode(x)
         x = self._preprocess(x).values
 
@@ -134,15 +189,11 @@ class BaseModel:
         
         return x
 
-    def _buid_leaf_id_map(self):
+    def _build_leaf_id_map(self):
         id_map = []
 
-        lid = 0
         for idx in range(len(self._profile)):
             fmap = [i for i in range(len(self._profile[idx]))]
-            # for i in range(len(self._profile[idx])):
-            #     fmap.append(lid)
-            #     lid += 1
             id_map.append(fmap)
         
         return id_map
@@ -154,13 +205,17 @@ class BaseModel:
         x = self._encode(x)
         x = self._preprocess(x).values
 
-        id_map = self._buid_leaf_id_map()
+        id_map = self._build_leaf_id_map()
 
         for i in range(x.shape[1]):
+
             nodes = np.array(self._profile[i])
-            idx = np.searchsorted(nodes[:, 1], x[:,i])
-            x[:,i] = np.vectorize(lambda x: id_map[i][x])(idx.astype(int))
-        
+            if len(nodes) > 1:
+                idx = np.searchsorted(nodes[:, 1], x[:,i])
+                x[:,i] = np.vectorize(lambda x: id_map[i][x])(idx.astype(int))
+            else:
+                x[:,i] = 0
+
         return x.astype(int)
 
     def get_profile(self):
@@ -188,17 +243,27 @@ class BaseModel:
                     'freq': v[4]
                     }
                 if _key == "categorical":
-                    _prof.update({'categories': []})
-                
+                    _prof.update({
+                        'categories': [],
+                        'means': [],
+                        'frequencies': []
+                    })
+
                 leaf_nodes.append(_prof)
-            
+
             if _key == 'categorical':
                 mapp = self.feature_map_inv[c]
                 for k in np.array(list(mapp.keys())):
                     idx = np.where((p[:, 0] < k) & (k < p[:, 1]))
                     leaf_nodes[idx[0][0]]['categories'].append(mapp[k])
-                
+                    
+                    leaf_nodes[idx[0][0]]['means'].append(
+                        self.category_meta[c]["means"][mapp[k]])
+
+                    leaf_nodes[idx[0][0]]['frequencies'].append(
+                        self.category_meta[c]["freqs"][mapp[k]])
+
             profile[_key][c] = leaf_nodes
 
         return profile
-    
+        
