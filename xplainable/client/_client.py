@@ -22,7 +22,7 @@ class Client:
 
     def __init__(self, api_key):
         self.__api_key = api_key
-        self.hostname = 'http://localhost:8001'#'https://api.xplainable.io'
+        self.hostname = 'https://api.xplainable.io'
         self.machines = {}
         self.__session__ = requests.Session()
         self._user = None
