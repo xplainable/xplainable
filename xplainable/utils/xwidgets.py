@@ -140,6 +140,18 @@ class IDButton(widgets.Button):
         super(IDButton, self).__init__(*args, **kwargs)
         self.add_traits(id=traitlets.Any(id))
 
+class LayerButton(widgets.Button):
+    """ Button that stores model state
+
+    Args:
+        model: xplainable model
+    """
+
+    def __init__(self, idx=None, layer=None, *args, **kwargs):
+        super(LayerButton, self).__init__(*args, **kwargs)
+        self.add_traits(idx=traitlets.Any(idx))
+        self.add_traits(layer=traitlets.Any(layer))
+
 class TransformerDropdown(widgets.Dropdown):
     """ Button that stores model state
 
