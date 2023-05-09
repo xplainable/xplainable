@@ -11,7 +11,6 @@ from ..ml.classification import XClassifier
 import warnings
 import numpy as np
 import time
-from ...metrics import feature_bin_error
 
 #suppress warnings
 warnings.filterwarnings('ignore')
@@ -31,15 +30,23 @@ class XParamOptimiser:
             random_state (int, optional): Random seed. Defaults to 1.
     """
 
-    def __init__(self, metric='weighted-f1', early_stopping=100, n_trials=30, n_folds=5,
-                       shuffle=False, subsample=1, alpha=0.01,
-                       max_depth_space = [4, 22, 2],
-                       min_leaf_size_space = [0.005, 0.08, 0.005],
-                       min_info_gain_space = [0.005, 0.08, 0.005],
-                       weight_space = [0, 5, 0.25],
-                       power_degree_space = [1, 7, 2],
-                       sigmoid_exponent_space = [0.5, 4, 0.25],
-                       verbose=True, random_state=1):
+    def __init__(
+        self,
+        metric='brier-loss',
+        early_stopping=30,
+        n_trials=30,
+        n_folds=5,
+        shuffle=False,
+        subsample=1,
+        alpha=0.01,
+        max_depth_space = [4, 22, 2],
+        min_leaf_size_space = [0.005, 0.08, 0.005],
+        min_info_gain_space = [0.005, 0.08, 0.005],
+        weight_space = [0, 5, 0.25],
+        power_degree_space = [1, 7, 2],
+        sigmoid_exponent_space = [0.5, 4, 0.25],
+        verbose=True, random_state=1
+        ):
 
         super().__init__()
 
@@ -70,7 +77,8 @@ class XParamOptimiser:
         self.x = None
         self.y = None
         self.id_columns = []
-        self.models = {i: XClassifier(map_calibration=False) for i in range(n_folds)}
+        self.models = {i: XClassifier(
+            map_calibration=False) for i in range(n_folds)}
         self.folds = {}
         self.results = []
 
@@ -89,6 +97,7 @@ class XParamOptimiser:
         y_ = self.y.reset_index(drop=True)
 
         scores = []
+        _has_nan = False
         start = time.time()
         # Run iteration over n_folds
         for i, model in self.models.items():
@@ -99,7 +108,7 @@ class XParamOptimiser:
             test_index = self.folds[i]['test_index']
 
             # Get predictions for fold
-            if self.metric in ['brier-loss', 'log-loss']:
+            if self.metric in ['brier-loss', 'log-loss', 'roc-auc']:
                 y_prob = model.predict_score(X_.loc[test_index])
                 y_prob = np.clip(y_prob, 0, 1)
                 y_pred = (y_prob > 0.5).astype(int)
@@ -122,28 +131,36 @@ class XParamOptimiser:
                 scores.append(skm.f1_score(y_test, y_pred, average=None)[0])
 
             elif self.metric == 'macro-precision':
-                scores.append(skm.precision_score(y_test, y_pred, average='macro'))
+                scores.append(
+                    skm.precision_score(y_test, y_pred, average='macro'))
 
             elif self.metric == 'weighted-precision':
-                scores.append(skm.precision_score(y_test, y_pred, average='weighted'))
+                scores.append(
+                    skm.precision_score(y_test, y_pred, average='weighted'))
 
             elif self.metric == 'positive-precision':
-                scores.append(skm.precision_score(y_test, y_pred, average=None)[1])
+                scores.append(
+                    skm.precision_score(y_test, y_pred, average=None)[1])
 
             elif self.metric == 'negative-precision':
-                scores.append(skm.precision_score(y_test, y_pred, average=None)[0])
+                scores.append(
+                    skm.precision_score(y_test, y_pred, average=None)[0])
 
             elif self.metric == 'macro-recall':
-                scores.append(skm.precision_score(y_test, y_pred, average='macro'))
+                scores.append(
+                    skm.precision_score(y_test, y_pred, average='macro'))
 
             elif self.metric == 'weighted-recall':
-                scores.append(skm.precision_score(y_test, y_pred, average='weighted'))
+                scores.append(
+                    skm.precision_score(y_test, y_pred, average='weighted'))
 
             elif self.metric == 'positive-recall':
-                scores.append(skm.precision_score(y_test, y_pred, average=None)[1])
+                scores.append(
+                    skm.precision_score(y_test, y_pred, average=None)[1])
 
             elif self.metric == 'negative-recall':
-                scores.append(skm.precision_score(y_test, y_pred, average=None)[0])
+                scores.append(
+                    skm.precision_score(y_test, y_pred, average=None)[0])
 
             elif self.metric == 'accuracy':
                 scores.append(skm.accuracy_score(y_test, y_pred))
@@ -157,7 +174,11 @@ class XParamOptimiser:
                 scores.append(-skm.log_loss(y_test, y_prob))
 
             elif self.metric == 'roc-auc':
-                scores.append(skm.roc_auc_score(y_test, y_pred))
+                try:
+                    scores.append(skm.roc_auc_score(y_test, y_prob))
+                except Exception as e:
+                    scores.append(np.nan)
+                    _has_nan = True
 
             else:
                 scores.append(skm.f1_score(y_test, y_pred, average='weighted'))
@@ -166,7 +187,7 @@ class XParamOptimiser:
                 # fold callback
                 self.callback.fold(i+1)
 
-        score = np.mean(scores)
+        score = np.nanmean(scores) if _has_nan else np.mean(scores)
 
         run_time = time.time() - start
         run_info = {
@@ -252,7 +273,10 @@ class XParamOptimiser:
 
         if self.shuffle:
             folds = StratifiedKFold(
-                n_splits=self.n_folds, shuffle=self.shuffle, random_state=self.random_state)
+                n_splits=self.n_folds,
+                shuffle=self.shuffle,
+                random_state=self.random_state
+                )
 
         else:
             folds = StratifiedKFold(n_splits=self.n_folds, shuffle=self.shuffle)
@@ -261,7 +285,11 @@ class XParamOptimiser:
             i, (train_index, test_index) in enumerate(folds.split(X_, y_))}
 
         for i, v in self.folds.items():
-            self.models[i].fit(X_.loc[v['train_index']], y_.loc[v['train_index']], id_columns=self.id_columns)
+            self.models[i].fit(
+                X_.loc[v['train_index']],
+                y_.loc[v['train_index']],
+                id_columns=self.id_columns
+                )
 
     def optimise(self, x, y, id_columns=[], verbose=True, callback=None):
         """ Get an optimised set of parameters for an xplainable model.
@@ -309,7 +337,11 @@ class XParamOptimiser:
 
         # Apply subsampling
         if self.subsample < 1:
-            self.x = self.x.sample(int(len(self.x) * self.subsample), random_state=self.random_state)
+            self.x = self.x.sample(
+                int(len(self.x) * self.subsample),
+                random_state=self.random_state
+                )
+
             self.y = self.y[self.x.index]
 
         self.x = self.x.reset_index(drop=True)
@@ -317,12 +349,17 @@ class XParamOptimiser:
 
         # Instantiate the search space for hyperopt
         space = {
-            'max_depth': hp.choice('max_depth', np.arange(*self.max_depth_space)),
-            'min_leaf_size': hp.choice('min_leaf_size', np.arange(*self.min_leaf_size_space)),
-            'min_info_gain': hp.choice('min_info_gain', np.arange(*self.min_info_gain_space)),
+            'max_depth': hp.choice(
+                'max_depth', np.arange(*self.max_depth_space)),
+            'min_leaf_size': hp.choice(
+                'min_leaf_size', np.arange(*self.min_leaf_size_space)),
+            'min_info_gain': hp.choice(
+                'min_info_gain', np.arange(*self.min_info_gain_space)),
             'weight': hp.choice('weight', np.arange(*self.weight_space)),
-            'power_degree': hp.choice('power_degree', np.arange(*self.power_degree_space)),
-            'sigmoid_exponent': hp.choice('sigmoid_exponent', np.arange(*self.sigmoid_exponent_space))
+            'power_degree': hp.choice(
+                'power_degree', np.arange(*self.power_degree_space)),
+            'sigmoid_exponent': hp.choice(
+                'sigmoid_exponent', np.arange(*self.sigmoid_exponent_space))
             }
 
         # Instantiate trials
