@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import pandas as pd
 
 
 class Target:
@@ -155,4 +156,67 @@ class Target:
         nodes = [self._profile[i][v[0]] for i, v in enumerate(self.best_idxs)]
                         
         return {f: list(n) for f, n in zip(self.columns, nodes)}
-                
+
+
+def generate_ruleset(
+    df,
+    target,
+    id_columns=[],
+    min_support=10,
+    include_numeric=False
+    ):
+
+    rule_data = df.drop(columns=id_columns+[target])
+    rule_data = rule_data.loc[:, (rule_data != 0).any(axis=0)]
+    cols = list(rule_data.columns)
+
+    num_cols = rule_data._get_numeric_data().columns
+
+    if include_numeric:
+        for col in num_cols:
+            intervals = pd.cut(
+                rule_data[col], min([10, rule_data[col].nunique()]))
+            left = intervals.copy().apply(lambda x: x.left)
+            right = intervals.copy().apply(lambda x: x.right)
+            rule_data[col] = pd.Series([tuple(x) for x in zip(left, right)])
+
+    else:
+        keep_cols = [col for col in cols if col not in num_cols]
+        rule_data = rule_data[keep_cols]
+        
+    dummied = pd.get_dummies(rule_data, dummy_na=False, prefix_sep='___')
+
+    support_rules = {i: [u for u in rule_data[i].value_counts()[
+        rule_data[i].value_counts() < min_support].index] for i in cols}
+    
+    frames = []
+    
+    for col in list(dummied.columns):
+
+        t = dummied.groupby(col).sum().T
+
+        matches = t[(t[0] > 0) & (t[1] == 0)]
+        _c, _v = col.split('___')
+        
+        if _v in support_rules[_c]:
+            continue
+        
+        matches = matches[~matches.index.str.startswith(_c)]
+        if len(matches) > 0:
+            feature_rules = pd.DataFrame({
+                'feature': _c,
+                'value': _v,
+                'rule': matches.index.values
+            })
+            feature_rules[['rule_feature', 'rule_value']] = feature_rules[
+                'rule'].str.split('___', expand=True)
+
+            feature_rules.drop(columns=['rule'], inplace=True)
+            
+            frames.append(feature_rules)
+        
+    r = pd.concat(frames)
+    r = r[r.apply(lambda row: row['rule_value'] not in support_rules[
+        row['rule_feature']], axis=1)]
+        
+    return r.to_json(orient='records')
