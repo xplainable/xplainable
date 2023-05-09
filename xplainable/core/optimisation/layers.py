@@ -1,41 +1,55 @@
-from subprocess import call
 import numpy as np
 import random
 from tqdm.auto import trange
-from tqdm import tqdm
-from sklearn.metrics import f1_score, accuracy_score
+import math
+from numba import njit, prange
 
-class Evolve():
+@njit(fastmath=False)
+def nansum_numba_1d(arr):
+    total = 0.0
+    for i in range(arr.shape[0]):
+        val = arr[i]
+        if not np.isnan(val):
+            total += float(val)
+    return total
 
-    def __init__(
-        self,
-        mutations=100,
-        generations=50,
-        max_generation_depth=10,
-        max_severity=0.5,
-        max_leaves=20,
-        mutation_type='relative',
-        reproduction_strategy='merge',
-        apply_range=True
-        ):
-        
-        self.mutations = mutations
-        self.generations = generations
-        self.max_generation_depth = max_generation_depth
-        self.max_severity = max_severity
-        self.max_leaves = max_leaves
-        self.mutation_type = mutation_type
-        self.reproduction_strategy = reproduction_strategy
-        self.apply_range = apply_range
+@njit(fastmath=False)
+def nansum_numba_2d_axis0(arr):
+    result = np.zeros(arr.shape[1], dtype=np.float64)
+    for i in range(arr.shape[0]):
+        for j in range(arr.shape[1]):
+            val = arr[i, j]
+            if not np.isnan(val):
+                result[j] += float(val)
+    return result
 
-        self.objective = None
+@njit(fastmath=False, parallel=True)
+def nansum_numba_2d_axis1(arr):
+    result = np.zeros(arr.shape[0], dtype=np.float64)
+    for i in prange(arr.shape[0]):
+        for j in prange(arr.shape[1]):
+            val = arr[i, j]
+            if not np.isnan(val):
+                result[i] += float(val)
+    return result
 
+def nansum_numba(arr, axis=None):
+    if axis is None or arr.ndim == 1:
+        return nansum_numba_1d(arr)
+    elif axis == 0:
+        return nansum_numba_2d_axis0(arr)
+    elif axis == 1:
+        return nansum_numba_2d_axis1(arr)
+    else:
+        raise ValueError("Invalid axis value")
+
+class BaseLayer:
+
+    def __init__(self, metric='mae'):
         self.xnetwork = None
-        self.y = None
+        self.metric = metric
 
-        self.generation_id = 1
-
-    def _calculate_error(self, x):
+    def _calculate_error(self, x, y):
         """ Calculates the error of a set of predictions.
 
         Args:
@@ -47,37 +61,97 @@ class Evolve():
         """
 
         # calculate relative error
-        _pred = np.nansum(x, axis=1) + self.xnetwork.model.base_value
+        _pred = nansum_numba(x, axis=1) + self.xnetwork.model.base_value
 
-        if self.apply_range:
+        if self.xnetwork.static_scores is not None:
+            _pred = _pred + self.xnetwork.static_scores
+
+        if self.xnetwork.apply_range:
             _pred = _pred.clip(*self.xnetwork.model.prediction_range)
 
-        return _pred - self.y
+        return _pred - y
 
-    def _mae(self, x):
+    def _increment_error(self, x, y):
+        pass
+    
+    @staticmethod
+    def _score():
+        pass
+
+    @staticmethod
+    @njit
+    def _mae(err):
         
-        mae = np.mean(abs(self._calculate_error(x)))
+        mae = np.mean(np.abs(err))
 
         return mae
 
-    def _f1(self, x):
+    @staticmethod
+    @njit
+    def _mse(err):
         
-        pred = (np.nansum(x, axis=1) + self.xnetwork.model.base_value) > 0.5
+        mse = np.mean(err**2)
 
-        return f1_score(pred, self.y, average='macro')
+        return mse
 
-    def _accuracy(self, x):
+    def _initialise(self, metric):
+
+        # Infer objective from metric
+        if metric == 'mse':
+            self._score = self._mse
+            self.objective = 'minimise'
+
+        elif metric == 'mae':
+            self._score = self._mae
+            self.objective = 'minimise'
+
+        else:
+            raise ValueError(f'Metric {metric} not supported')
+
+
+class Evolve(BaseLayer):
+
+    def __init__(
+        self,
+        mutations=100,
+        generations=50,
+        max_generation_depth=10,
+        max_severity=0.5,
+        max_leaves=20,
+        early_stopping=None
+        ):
+        super().__init__()
         
-        pred = (np.nansum(x, axis=1) + self.xnetwork.model.base_value) > 0.5
+        self.mutations = mutations
+        self.generations = generations
+        self.max_generation_depth = max_generation_depth
+        self.max_severity = max_severity
+        self.max_leaves = max_leaves
+        self.early_stopping = early_stopping
 
-        return accuracy_score(pred, self.y)
+        self.objective = None
 
-    def _score(self):
-        pass
+        self.xnetwork = None
+        self.y = None
+        self._error = None
+
+        self.generation_id = 1
+
+    def get_params(self):
+        params = {
+            'mutations': self.mutations,
+            'generations': self.generations,
+            'max_generation_depth': self.max_generation_depth,
+            'max_severity': self.max_severity,
+            'max_leaves':self.max_leaves,
+            'metric': self.metric
+        }
+
+        return params
 
     def _mutate(self, chromosome):
         
-        new_chromosome = chromosome.copy()
+        new_chromosome = np.array(chromosome)#.copy()
         chrome_length = chromosome.shape[0]
 
         # randomly select number of leaves to mutate
@@ -104,29 +178,63 @@ class Evolve():
         mutations = []
         deltas = []
         for _ in range(n):
-            mutation, delta = self._mutate(chromosome)
-            mutations.append(mutation)
+            new_chromosome, delta = self._mutate(chromosome)
+            mutations.append(new_chromosome)
             deltas.append(delta)
 
         return np.array(mutations), np.array(deltas)
 
-    def _mutate_transform(self, x, delta):
+    @staticmethod
+    @njit(parallel=True, fastmath=True)
+    def _mutate_transform(x, delta_keys, delta_values):
 
-        x = x.copy()
-
-        for i, v in delta.items():
-            x[:,i][~np.isnan(x[:,i])] *= v
+        for k in prange(len(delta_keys)):
+            i = int(delta_keys[k])
+            v = delta_values[k]
+            mask = ~np.isnan(x[:, i])
             
+            for j in prange(x.shape[0]):
+                if mask[j]:
+                    x[j, i] = x[j, i] * v
+                    
+        return x
+
+    @staticmethod
+    @njit(parallel=True, fastmath=True)
+    def _inverse_mutate_transform(x, delta_keys, delta_values):
+        """ Inverse mutation is faster than copying and altering the full array """
+
+        for k in prange(len(delta_keys)):
+            i = int(delta_keys[k])
+            v = delta_values[k]
+            mask = ~np.isnan(x[:, i])
+            
+            for j in prange(x.shape[0]):
+                if mask[j]:
+                    x[j, i] = x[j, i] / v
+                    
         return x
 
     def score_mutation(self, x, delta):
 
-        x = x.copy()
-        x = self._mutate_transform(x, delta)
+        # get the indices and delta changes for each mutation
+        dkeys = np.array(list(delta.keys()))
+        dvalues = np.array(list(delta.values()))
 
-        return self._score(x)
+        # Apply mutation
+        x = self._mutate_transform(x, dkeys, dvalues)
 
-    def _merge_genes(self, pair):
+        # Score mutation
+        err = self._calculate_error(x, self.y)
+        score = self._score(err)
+        
+        # reverse mutation to maintain initial structure
+        x = self._inverse_mutate_transform(x, dkeys, dvalues)
+        
+        return score
+
+    def reproduce(self, pair):
+        """ Merges the genes of a chromosome pair """
         
         # get parent chromosomes
         a, b = pair
@@ -134,9 +242,6 @@ class Evolve():
         child = (a + b) / 2
 
         return child
-
-    def reproduce(self):
-        pass
 
     def _get_delta(self, chromosome):
 
@@ -199,9 +304,6 @@ class Evolve():
 
     def _run_generation(self, x):
         
-        # Reset the target error
-        self.target_score = self._score(x)
-
         # Generate first n mutations
         m = self._n_mutations(self.target_chromosome, self.mutations)
         
@@ -223,30 +325,9 @@ class Evolve():
         for l, v in zip(self.xnetwork.leaves, chromosome):
             f, _id = l.split("_")
             self.xnetwork.model._profile[int(f)][int(_id)][2] = v
+            self.xnetwork.model._constructs[int(f)]._nodes[int(_id)][2] = v
 
         return self.xnetwork.model._profile
-
-    def _initialise(self, metric):
-
-        # Infer objective from metric
-        if metric == 'mae':
-            self._score = self._mae
-            self.objective = 'minimise'
-
-        elif metric == 'f1':
-            self._score = self._f1
-            self.objective = 'maximise'
-
-        elif metric == 'accuracy':
-            self._score = self._accuracy
-            self.objective = 'maximise'
-
-        else:
-            raise ValueError(f'Metric {metric} not supported')
-
-        # Set reproduction strategy
-        if self.reproduction_strategy == 'merge':
-            self.reproduce = self._merge_genes
 
     def transform(self, xnetwork, x, y, callback=None):
         """ Optimises a feature score map with respect to the true values.
@@ -254,11 +335,6 @@ class Evolve():
         Args:
             x (pandas.DataFrame): The input variables used for prediction.
             y (pandas.Series): The true values to fit to the x values.
-            x_val ((pandas.DataFrame), optional): Validation x dataset.
-            y_val ((pandas.Series), optional): Validation y dataset.
-            verbose (bool, optional): Prints status if True. Defaults to False.
-            plot (bool): Plots the live optimisation progress if True.
-            plot_window (int, optional): The rolling average for plotting.
 
         Returns:
             dict: The optimised feature score map.
@@ -276,36 +352,68 @@ class Evolve():
         except:
             pass
 
-        self._initialise(self.xnetwork.metric)
+        self._initialise(self.metric)
 
         self.target_chromosome = xnetwork.root_chromosome
-        self.target_score = self._score(
-            self._mutate_transform(x, self._get_delta(xnetwork.root_chromosome)))
+        delta = self._get_delta(xnetwork.root_chromosome)
+        dkeys = np.array(list(delta.keys()))
+        dvalues = np.array(list(delta.values()))
 
-        #if self.xnetwork.layer_id == 1: print(f"Starting {xnetwork.metric}: ", self.target_score)
+        transformed = self._mutate_transform(x, dkeys, dvalues)
+        self._error = self._calculate_error(transformed, self.y)
+        self.target_score = self._score(self._error)
+
+        bst_score = float(self.target_score)
+
+        if (callback is not None) and (self.xnetwork.layer_id == 0):
+            callback.set_metric_bounds(0, bst_score)
+
+        # iterations since best
+        isb = 0
         
-        with trange(self.generations) as pbar:
-            for i in pbar:
-                pbar.set_description(f'Layer {self.xnetwork.layer_id} ({self.xnetwork.layer_name})')
-                gen = self._run_generation(x)
-                delta = self._get_delta(gen)
-                x = self._mutate_transform(x, delta)
-                score = str(round(self._score(x), 4))
-                self.generation_id += 1
-                pbar.set_postfix(**{xnetwork.metric: score})
+        for i in range(1, self.generations+1):
+            # Handle Early stopping
+            if (self.early_stopping) is not None and (isb >= self.early_stopping):
+                if callback:
+                    callback.stopped_early(self.xnetwork.layer_id)
 
-                #if callback:
-                #    callback(self.xnetwork.layer_id, i+1, score, 0)
+                self.xnetwork.checkpoint_score = float(bst_score)
+                self._re_map(x)
+                return x, self.target_chromosome
 
+            gen = self._run_generation(x)
+            delta = self._get_delta(gen)
+            dkeys = np.array(list(delta.keys()))
+            dvalues = np.array(list(delta.values()))
+
+            x = self._mutate_transform(x, dkeys, dvalues)
+            self._error = self._calculate_error(x, self.y)
+            self.target_score = self._score(self._error)
+
+            if callback:
+                callback.set_value(self.xnetwork.layer_id, i)
+
+            # Tracker for early stopping
+            if self.target_score < bst_score:
+                bst_score = self.target_score
+                isb = 0
+                if callback:
+                    callback.set_metric(self.metric, round(bst_score, 4))
+            else:
+                isb += 1
+
+            self.generation_id += 1
+
+        self.xnetwork.checkpoint_score = float(bst_score)
         self._re_map(x)
 
         if callback:
-            callback(self.xnetwork.layer_id, i+1, score, 1)
+            callback.finalise_bar(self.xnetwork.layer_id)
 
         return x, self.target_chromosome
 
 
-class Tighten:
+class Tighten(BaseLayer):
     """ Optimises the feature score map for XRegressor Models.
 
         Args:
@@ -320,36 +428,26 @@ class Tighten:
         self,
         iterations=100,
         learning_rate=0.03,
-        early_stopping=None,
-        apply_range=True
+        early_stopping=None
         ):
+        super().__init__()
 
         # store params
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.early_stopping = early_stopping
-        self.apply_range = apply_range
 
         self.xnetwork = None
-        
-    def _calculate_error(self, x, y):
-        """ Calculates the error of a set of predictions.
 
-        Args:
-            x (numpy.array): An array of transformed values.
-            y (numpy.array): An array of the true values.
+    def get_params(self):
+        params = {
+            'iterations': self.iterations,
+            'learning_rate': self.learning_rate,
+            'early_stopping': self.early_stopping,
+            'metric': self.metric
+        }
 
-        Returns:
-            np.array: An array of the errors.
-        """
-
-        # calculate relative error
-        _pred = np.nansum(x, axis=1) + self.xnetwork.model.base_value
-
-        if self.apply_range:
-            _pred = _pred.clip(*self.xnetwork.model.prediction_range)
-
-        return _pred - y
+        return params
 
     def _next_best_change(self, errors):
         """ Identifies the most effective leaf node change to improve model.
@@ -361,15 +459,6 @@ class Tighten:
             int: The index of the best leaf node.
             float: The max amount the score can change.
         """
-
-        # def get_change(idx):
-
-        #     # if 'inc' yeilds higher benefit, change by 'um'
-        #     if inc[idx] > dec[idx]:
-        #         return um[idx]
-
-        #     else:
-        #         return om[idx] * -1
 
         # load mask
         mask = self.xnetwork._mask
@@ -395,6 +484,10 @@ class Tighten:
         u_vals = (errmp * u_mask)
         u_vals[u_vals == 0] = np.nan
 
+        if self.metric == 'mse':
+            o_vals = o_vals**2
+            u_vals = u_vals**2
+
         # get mean error and count of obs that are too high for each leaf
         om = np.nanmean(o_vals, axis=0)
         oc = o_mask.sum(axis=0)
@@ -416,10 +509,10 @@ class Tighten:
 
         # get value to update by
         if inc[bstloc] > dec[bstloc]:
-            change = um[bstloc] * self.learning_rate
+            change = math.sqrt(um[bstloc]) * self.learning_rate
 
         else:
-            change = om[bstloc] * -1 * self.learning_rate
+            change = math.sqrt(om[bstloc]) * -1 * self.learning_rate
 
         #change = get_change(bstloc) * self.learning_rate
         return bstloc, change
@@ -465,56 +558,61 @@ class Tighten:
         self.xnetwork = xnetwork
         x = x.copy()
 
-        starting_mae = np.mean(abs(self._calculate_error(x, y)))
+        self._initialise(self.metric)
 
-        #if self.xnetwork.layer_id == 1:
-        #print("Starting mae: ", starting_mae)
+        err = self._calculate_error(x, y)
+        starting_score = self._score(err)
 
         # instantiate best df, best mae
-        bst_mae = starting_mae
+        bst_score = starting_score
         best_x = x.copy()
+
+        if (callback is not None) and (self.xnetwork.layer_id == 0):
+            callback.set_metric_bounds(0, bst_score)
 
         # iterations since best
         isb = 0
         
         # start optimisation process
-        with trange(self.iterations) as pbar:
+        for i in range(1, self.iterations+1):
 
-            for i in pbar:
+            # stop early if early stopping threshold reached
+            if (self.early_stopping) is not None and (isb >= self.early_stopping):
+                if callback:
+                    callback.stopped_early(self.xnetwork.layer_id)
 
-                pbar.set_description(f'Layer {self.xnetwork.layer_id} ({self.xnetwork.layer_name})')
+                self.xnetwork.checkpoint_score = float(bst_score)
 
-                # stop early if early stopping threshold reached
-                if self.early_stopping:
-                    if isb >= self.early_stopping:
-                        # update callback
-                        if callback:
-                            callback(self.xnetwork.layer_id, i+1, bst_mae, 'stopped early')
-                        print(f'Stopped early after {i} iterations.')
-                        return best_x, np.nanmax(best_x, axis=0)
+                return best_x, np.nanmax(best_x, axis=0)
 
-                # run iteration
-                x = self._run_iteration(x, y)
+            # run iteration
+            x = self._run_iteration(x, y)
 
-                # calculate mean absolute error
-                mae = np.mean(abs(self._calculate_error(x, y)))
+            # calculate mean absolute error
+            err = self._calculate_error(x, y)
 
-                # update callback
-                if callback is not None:
-                    callback(self.xnetwork.layer_id, i+1, bst_mae, 0)
+            _score = self._score(err)
 
-                # update output if best result
-                if mae < bst_mae:
-                    bst_mae = mae
-                    best_x = x.copy()
-                    isb = 0
-                    pbar.set_postfix(mae=str(round(mae, 2)))
+            # update callback
+            if callback is not None:
+                callback.set_value(self.xnetwork.layer_id, i)
 
-                else:
-                    isb += 1
+            # update output if best result
+            if _score < bst_score:
+                bst_score = _score
+                best_x = x.copy()
+                isb = 0
+                
+                if callback:
+                    callback.set_metric(self.metric, round(bst_score, 4))
+
+            else:
+                isb += 1
 
         # update callback
         if callback:
-            callback(self.xnetwork.layer_id, i+1, bst_mae, 1)
+            callback.finalise_bar(self.xnetwork.layer_id)
+
+        self.xnetwork.checkpoint_score = float(bst_score)
 
         return best_x, np.nanmax(best_x, axis=0)
