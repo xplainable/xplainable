@@ -1,4 +1,4 @@
-from pandas.api.types import is_string_dtype, is_datetime64_dtype, is_numeric_dtype
+from pandas.api.types import is_string_dtype, is_datetime64_dtype, is_numeric_dtype, is_bool_dtype
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tools.tools import add_constant
 import pandas as pd
@@ -360,7 +360,12 @@ class XScan:
         return vif_report
 
     def _scan_feature(self, ser):
-        if is_numeric_dtype(ser):
+
+        if is_bool_dtype(ser):
+            ser = ser.astype(str)
+            sub_profile = self._scan_categorical_feature(ser)
+
+        elif is_numeric_dtype(ser):
                 sub_profile = self._scan_numeric_feature(ser)
                 
         elif is_string_dtype(ser):
@@ -374,7 +379,7 @@ class XScan:
 
         return sub_profile
 
-    def scan(self, df, target=None):
+    def scan(self, df, target=None, verbose=True):
 
         if target:
             if target not in df.columns:
@@ -388,13 +393,15 @@ class XScan:
             max=df.shape[1],
             style={'description_width': 'initial'})
 
-        current_feature = widgets.HTML("")
-        display(widgets.HBox([progress_bar, current_feature]))
+        if verbose:
+            current_feature = widgets.HTML("")
+            display(widgets.HBox([progress_bar, current_feature]))
 
         for i, col in enumerate(df.columns):
 
-            progress_bar.value = i
-            current_feature.value = col
+            if verbose:
+                progress_bar.value = i
+                current_feature.value = col
 
             self.profile[col] = self._scan_feature(df[col])
 
