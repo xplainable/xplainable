@@ -1,16 +1,36 @@
 import ipywidgets as widgets
 from IPython.display import display
 import drawsvg as draw
+import xplainable as xp
+from ...utils.xwidgets import offline_button, docs_button
+
 
 class Header:
     
-    def __init__(self, title='Title', logo_size=45, font_size=20):
+    def __init__(self, title='Title', logo_size=45, font_size=20, avatar=True):
         
         self.title_name = title
         self.font_size = font_size
         
         self._vwidgets = widgets.VBox([])
-        self._hwidgets = widgets.HBox([])
+        self._hwidgets_left = widgets.HBox([], layout=widgets.Layout(
+            display='flex', flex='1')
+        )
+        self.user = widgets.HBox([
+            docs_button,
+            xp.client.avatar if xp.client else offline_button
+            ])
+        self.user.layout = widgets.Layout(
+            margin='auto', margin_right='15px', align_items = 'center'
+        )
+        self._hwidgets = widgets.HBox([self._hwidgets_left])
+        if avatar:
+            self._hwidgets.children += (self.user,)
+
+        self._hwidgets.layout = widgets.Layout(
+            display='flex', width='100%'
+        )
+
         self.divider = widgets.HTML(
             f'<hr class="solid">',
             layout=widgets.Layout(margin='-15px 0 0 0')
@@ -109,8 +129,8 @@ class Header:
     
     def _build_header(self):
         
-        if len(self._hwidgets.children) == 0:
-            self._hwidgets.children += (
+        if len(self._hwidgets_left.children) == 0:
+            self._hwidgets_left.children += (
                 self._logo,
                 self._title
                 )
@@ -122,7 +142,7 @@ class Header:
     
     def add_widget(self, widget, horizontal=True):
         if horizontal:
-            self._hwidgets.children += (widget,)
+            self._hwidgets_left.children += (widget,)
         else:
             self._vwidgets.children += (widget,)
         
@@ -130,3 +150,4 @@ class Header:
     
     def show(self):
         return self._header
+
