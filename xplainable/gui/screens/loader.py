@@ -31,6 +31,10 @@ def get_time_string(dt):
 
 def load_preprocessor(preprocessor_id=None, version_id=None):
 
+    if xplainable.client is None:
+        print("visit https://www.xplainable.io/sign-up to access this service")
+        return
+
     def build_transformer(stage):
         """Build transformer from metadata"""
 
@@ -48,24 +52,23 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
             stages.options = []
             return
 
-        matches = [
-            i[0] for i in preprocessor_content if i[1] == preprocessors.value]
-            
-        if len(matches) > 0:
-            preprocessors.preprocessor = matches[0]
+        idx = preprocessors.index-1
+
+        if idx > 0:
+            preprocessors.preprocessor = preprocessor_content[idx]['preprocessor_id']
 
             versions_response = xplainable.client.__session__.get(
                 f"{xplainable.client.hostname}/v1/preprocessors/{preprocessors.preprocessor}/versions")
             
             preprocessors.metadata = get_response_content(versions_response)
 
-            dts = [datetime.strptime(i[1], '%Y-%m-%dT%H:%M:%S.%f') \
+            dts = [datetime.strptime(i['created'], '%Y-%m-%dT%H:%M:%S.%f') \
                 for i in preprocessors.metadata]
 
             time_strings = [f'{get_time_string(dt)}' for dt in dts]
 
             version_options = [
-                f"Version {i[0]} ({time_string})" for i, time_string in \
+                f"Version {i['version_number']} ({time_string})" for i, time_string in \
                     zip(preprocessors.metadata, time_strings)]
 
             versions.options = [None]+version_options
@@ -76,12 +79,13 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
         if versions.value is None:
             stages.options = []
             return
-        selected_version = preprocessors.metadata[versions.index-1][0]
-        versions_response = xplainable.client.__session__.get(
-                f"{xplainable.client.hostname}/v1/preprocessors/\
-                    {preprocessors.preprocessor}/versions/{selected_version}/pipeline"
-            )
-        preprocessors.version_data = get_response_content(versions_response)
+        selected_version = preprocessors.metadata[versions.index-1]['version_id']
+
+        preprocessors.version_data = xplainable.client.load_preprocessor(
+            preprocessors.preprocessor,
+            selected_version,
+            response_only=True
+        )
 
         stages.options = [
             f'{i}: {v["feature"]} --> {v["name"]} --> {v["params"]}' for \
@@ -100,9 +104,11 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
             "transformer": build_transformer(i)} for i \
                 in preprocessors.version_data['stages']]
         xp.df_delta = preprocessors.version_data['deltas']
-
         xp.state = len(xp.pipeline.stages)
+        p = preprocessors.preprocessor
+        v = preprocessors.metadata[versions.index-1]['version_id']
         clear_output()
+        print(f"Successfully loaded preprocessor {p} version {v}")
 
     if preprocessor_id is not None:
         version_id = 'latest' if version_id is None else version_id
@@ -115,15 +121,12 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
     # --- BODY ---
     # SELECTOR
     # Init Dropdown data
-    preprocessors_response = xplainable.client.__session__.get(
-        f'{xplainable.client.hostname}/v1/preprocessors'
-    )
-
     selector_heading = widgets.HTML("<h5>Select</h5>")
 
-    preprocessor_content = get_response_content(preprocessors_response)
-
-    preprocessor_options = [i[1] for i in preprocessor_content]
+    preprocessor_content = xplainable.client.list_preprocessors()
+    preprocessor_options = [
+        f"ID: {i['preprocessor_id']} | {i['preprocessor_name']}" for \
+            i in preprocessor_content]
 
     preprocessors = PreprocessorDropdown(options=[None]+preprocessor_options)
     preprocessors.observe(on_preprocessor_change, names=['value'])

@@ -35,6 +35,8 @@ def regressor(df):
     part_progress.window_layout.margin = '10px 0 0 0'
 
     header.add_widget(part_progress.show())
+
+
     
     column_names = df.columns.tolist()
     numeric_columns = df.select_dtypes(include=np.number).columns.tolist()

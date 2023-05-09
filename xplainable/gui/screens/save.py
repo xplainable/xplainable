@@ -7,7 +7,7 @@ from ...utils.encoders import NpEncoder
 import json
 
 import ipywidgets as widgets
-from IPython.display import display
+from IPython.display import display, clear_output
 
 from xplainable.utils.api import get_response_content
 from xplainable.utils.xwidgets import TextInput
@@ -53,12 +53,12 @@ class ModelPersist:
             f'', layout=widgets.Layout(margin='12px 0 0 15px', width='250px'))
 
         model_details = widgets.HBox([model_name(), model_description()])
-        loader_dropdown = widgets.Dropdown(options=[None])
+        model_loader_dropdown = widgets.Dropdown(options=[None])
         description_output = widgets.HTML(
             f'', layout=widgets.Layout(margin='0 0 0 15px'))
 
-        loader = widgets.HBox(
-            [loader_dropdown, description_output],
+        model_loader = widgets.HBox(
+            [model_loader_dropdown, description_output],
             layout=widgets.Layout(display='none'))
 
         buttons = widgets.ToggleButtons(options=['New Model', 'Existing Model'])
@@ -77,28 +77,28 @@ class ModelPersist:
                 (i['model_name'], i['model_description'], i['model_id']) for i in models if \
                     i['model_type'] == self.model_type]
 
-            loader_dropdown.options = [None]+[
+            model_loader_dropdown.options = [None]+[
                 f"ID: {i['model_id']} | {i['model_name']}" for i in models if \
                     i['model_type'] == self.model_type]
 
         def on_select(_):
             if buttons.index == 0:
-                loader.layout.display = 'none'
+                model_loader.layout.display = 'none'
                 model_name.value = ''
                 model_description.value = ''
                 model_details.layout.display = 'flex'
                 self.selected_model_id = None
 
             else:
-                loader_dropdown.index = 0
-                loader.layout.display = 'flex'
+                model_loader_dropdown.index = 0
+                model_loader.layout.display = 'flex'
                 model_details.layout.display = 'none'
                 get_models()
                 model_name.value = ''
                 model_description.value = ''
 
         def model_selected(_):
-            idx = loader_dropdown.index
+            idx = model_loader_dropdown.index
             if idx is None:
                 model_name.value = ''
                 description_output.value = ''
@@ -115,7 +115,7 @@ class ModelPersist:
         def close(_):
             button_display.close()
             model_details.close()
-            loader.close()
+            model_loader.close()
             divider.close()
             action_buttons.close()
 
@@ -126,6 +126,12 @@ class ModelPersist:
                 confirm_button.disabled = False
 
         def save_clicked(_):
+
+            if xplainable.client is None:
+                print("visit https://www.xplainable.io/sign-up to access this service")
+                save_button.disabled = True
+                return
+
             action_buttons.layout.display = 'none'
             button_display.layout.display = 'flex'
             apply_buttons.layout.display = 'flex'
@@ -133,17 +139,17 @@ class ModelPersist:
             idx = buttons.index
             if idx == 0:
                 model_details.layout.display = 'flex'
-                loader.layout.display = 'none'
+                model_loader.layout.display = 'none'
             else:
                 model_details.layout.display = 'none'
-                loader.layout.display = 'flex'
+                model_loader.layout.display = 'flex'
 
         def cancel_clicked(_):
             action_buttons.layout.display = 'flex'
             button_display.layout.display = 'none'
             model_details.layout.display = 'none'
             apply_buttons.layout.display = 'none'
-            loader.layout.display = 'none'
+            model_loader.layout.display = 'none'
 
         def get_health_data():
             scanner = XScan()
@@ -219,8 +225,7 @@ class ModelPersist:
                     time.sleep(0.5)
                     break
 
-
-                # Increment loader after logging partition
+                # Increment model_loader after logging partition
                 loading.value = loading.value + 1
 
             loading_status.value = ''
@@ -236,7 +241,7 @@ class ModelPersist:
             button_display.layout.display = 'none'
             model_details.layout.display = 'none'
             apply_buttons.layout.display = 'none'
-            loader.layout.display = 'none'
+            model_loader.layout.display = 'none'
             action_buttons.layout.display = 'flex'
 
             confirm_button.description = "Confirm"
@@ -244,7 +249,7 @@ class ModelPersist:
             confirm_button.disabled = False
 
         buttons.observe(on_select, names=['value'])
-        loader_dropdown.observe(model_selected, names=['value'])
+        model_loader_dropdown.observe(model_selected, names=['value'])
         button_display = widgets.HBox([buttons])
 
         divider = widgets.HTML(f'<hr class="solid">')
@@ -287,7 +292,7 @@ class ModelPersist:
 
         action_buttons = widgets.HBox([close_button, save_button])
         
-        screen = widgets.VBox([action_buttons, button_display, model_details, loader, apply_buttons])
+        screen = widgets.VBox([action_buttons, button_display, model_details, model_loader, apply_buttons])
         
         action_buttons.layout.display = 'flex'
         button_display.layout.display = 'none'
@@ -297,95 +302,265 @@ class ModelPersist:
         return screen
 
 
-def set_preprocessor_details(preprocessor):
-
-    preprocessor_name = TextInput(
-        label="Preprocessor name: ",
-        label_type='h5',
-        label_margin='2px 10px 0 0',
-        box_width='220px')
-
-    preprocessor_description = TextInput(
-        label="Preprocessor description: ",
-        label_type='h5',
-        label_margin='2px 10px 0 15px',
-        box_width='350px'
-        )
+class PreprocessorPersist:
     
-    preprocessor_details = widgets.HBox(
-        [preprocessor_name(), preprocessor_description()]
-        )
+    def __init__(self, preprocessor):
 
-    loader_dropdown = widgets.Dropdown(options=[None])
-    description_output = widgets.HTML(
-        f'', layout=widgets.Layout(margin='0 0 0 15px'))
+        self.preprocessor = preprocessor
+        self.selected_preprocessor_id = None
 
-    loader = widgets.HBox(
-        [loader_dropdown, description_output],
-        layout=widgets.Layout(display='none'))
+    def save(self):
 
-    buttons = widgets.ToggleButtons(options=['New', 'Existing'])
-    buttons.layout = widgets.Layout(margin="0 0 20px 0")
+        preprocessor_name = TextInput(
+            label="Name: ",
+            label_type='h5',
+            label_margin='2px 10px 0 0',
+            box_width='220px')
 
-    class Options:
-        options = []
-    
-    preprocessor_options = Options()
+        preprocessor_description = TextInput(
+            label="Description: ",
+            label_type='h5',
+            label_margin='2px 10px 0 15px',
+            box_width='350px'
+            )
 
-    def get_preprocessors():
-        preprocessor_response = xplainable.client.__session__.get(
-            f'{xplainable.client.hostname}/v1/preprocessors'
-        )
-        
-        preprocessors = get_response_content(preprocessor_response)
-        
-        preprocessor_options.options = preprocessors
+        preprocessor_details = widgets.HBox([preprocessor_name(), preprocessor_description()])
+        preprocessor_loader_dropdown = widgets.Dropdown(options=[None])
+        description_output = widgets.HTML(
+            f'', layout=widgets.Layout(margin='0 0 0 15px'))
 
-        loader_dropdown.options = [None]+[i[1] for i in preprocessors]
+        preprocessor_loader = widgets.HBox(
+            [preprocessor_loader_dropdown, description_output],
+            layout=widgets.Layout(display='none'))
 
-    def on_select(_):
-        if buttons.index == 1:
-            preprocessor_name.hide()
-            preprocessor_description.hide()
-            loader_dropdown.index = 0
-            loader.layout.display = 'flex'
-            get_preprocessors()
-            preprocessor_name.value = ''
-            preprocessor_description.value = ''
-        else:
-            loader.layout.display = 'none'
-            preprocessor_name.value = ''
-            preprocessor_description.value = ''
-            preprocessor_name.show()
-            preprocessor_description.show()
+        buttons = widgets.ToggleButtons(options=['New preprocessor', 'Existing preprocessor'])
+        buttons.layout = widgets.Layout(margin="0 0 20px 0")
+
+        class Options:
+            options = []
+
+        preprocessor_options = Options()
+
+        def get_preprocessors():
+
+            preprocessors = xplainable.client.list_preprocessors()
+
+            preprocessor_options.options = [
+                (i['preprocessor_name'], i['preprocessor_description'], i['preprocessor_id']) for i in preprocessors]
+
+            preprocessor_loader_dropdown.options = [None]+[
+                f"ID: {i['preprocessor_id']} | {i['preprocessor_name']}" for i in preprocessors]
+
+        def on_select(_):
+            if buttons.index == 0:
+                preprocessor_loader.layout.display = 'none'
+                preprocessor_name.value = ''
+                preprocessor_description.value = ''
+                preprocessor_details.layout.display = 'flex'
+                self.selected_preprocessor_id = None
+
+            else:
+                preprocessor_loader_dropdown.index = 0
+                preprocessor_loader.layout.display = 'flex'
+                preprocessor_details.layout.display = 'none'
+                get_preprocessors()
+                preprocessor_name.value = ''
+                preprocessor_description.value = ''
+
+        def preprocessor_selected(_):
+            idx = preprocessor_loader_dropdown.index
+            if idx is None:
+                preprocessor_name.value = ''
+                description_output.value = ''
+                preprocessor_description.value = ''
+                self.selected_preprocessor_id = None
+                
+            elif len(preprocessor_options.options) > 0:
+                self.selected_preprocessor_id = preprocessor_options.options[idx-1][2]
+                preprocessor_name.value = preprocessor_options.options[idx-1][0]
+                desc = preprocessor_options.options[idx-1][1]
+                description_output.value = f'{desc}'
+                preprocessor_description.value = desc
+
+        def close(_):
+            clear_output()
+
+        def name_change(_):
+            if preprocessor_name.value is None or preprocessor_name.value == '':
+                confirm_button.disabled = True
+            else:
+                confirm_button.disabled = False
+
+        def save_clicked(_):
+
+            if xplainable.client is None:
+                print("visit https://www.xplainable.io/sign-up to access this service")
+                save_button.disabled = True
+                return
+
+            if len(self.preprocessor.pipeline.stages) == 0:
+                save_button.disabled = True
+                save_button.style.button_color = "#e14067"
+                save_button.description = "Empty pipeline"
+                time.sleep(2)
+                save_button.description = "Save"
+                save_button.style.button_color = "#0080ea"
+                save_button.disabled = False
+                return
+
+            action_buttons.layout.display = 'none'
+            button_display.layout.display = 'flex'
+            apply_buttons.layout.display = 'flex'
+
+            idx = buttons.index
+            if idx == 0:
+                preprocessor_details.layout.display = 'flex'
+                preprocessor_loader.layout.display = 'none'
+            else:
+                preprocessor_details.layout.display = 'none'
+                preprocessor_loader.layout.display = 'flex'
+
+        def done_clicked(_):
+            action_buttons.layout.display = 'flex'
+            button_display.layout.display = 'none'
+            preprocessor_details.layout.display = 'none'
+            apply_buttons.layout.display = 'none'
+            preprocessor_loader.layout.display = 'none'
             
-    def _selected(_):
-        idx = loader_dropdown.index
-        if idx is None:
-            preprocessor_name.value = ''
-            description_output.value = ''
-            preprocessor_description.value = ''
-        elif len(preprocessor_options.options) > 0:
-            preprocessor_name.value = preprocessor_options.options[idx-1][1]
-            desc = preprocessor_options.options[idx-1][2]
-            description_output.value = f'{desc}'
-            preprocessor_description.value = desc
+        def save_preprocessor_df(_):
+            """Saves current state dataframe"""
+            save_df_button.description = "Saving..."
+            ts = str(int(time.time()))
+            
+            self.preprocessor._df_trans.to_csv(
+                f'preprocessed_{ts}.csv',
+                index=False)
 
-    def name_change(_):
-        preprocessor.preprocessor_name = preprocessor_name.value
+            save_df_button.description = "Saved"
+            save_df_button.disabled = True
+            time.sleep(1)
+            save_df_button.disabled = False
+            save_df_button.description = "Save DataFrame"
+
+        def get_health_data():
+            scanner = XScan()
+            scanner.scan(self.df)
+
+            results = []
+            for i, v in scanner.profile.items():
+                feature_info = {
+                    "feature": i,
+                    "description": None,
+                    "health_info": json.dumps(v, cls=NpEncoder)
+                }
+                results.append(feature_info)
+
+            return results
+
+        def on_confirm(_):
+
+            confirm_button.description = "Saving..."
+            confirm_button.disabled = True
+            
+            if buttons.index == 0:
+                preprocessor_id = xplainable.client.create_preprocessor_id(
+                    preprocessor_name.value,
+                    preprocessor_description.value,
+                )
+
+            else:
+                preprocessor_id = self.selected_preprocessor_id
+            
+            try:
+                metadata = []
+                for stage in self.preprocessor.pipeline.stages:
+                    step = {
+                        'feature': stage['feature'],
+                        'name': stage['name'],
+                        'params': stage['transformer'].__dict__
+                    }
+
+                metadata.append(step)
+
+                # Create preprocessor version
+                preprocessor_id = xplainable.client.create_preprocessor_version(
+                    preprocessor_id, metadata, self.preprocessor.df_delta)
+            
+            except Exception as e:
+                print(e)
+                confirm_button.description = "Error"
+                confirm_button.style.button_color = '#e14067'
+                time.sleep(0.5)
+                
+            if confirm_button.description != "Error":
+                confirm_button.description = "Saved"
+                confirm_button.style.button_color = '#12b980'
+
+            time.sleep(0.5)
+
+            button_display.layout.display = 'none'
+            preprocessor_details.layout.display = 'none'
+            apply_buttons.layout.display = 'none'
+            preprocessor_loader.layout.display = 'none'
+            action_buttons.layout.display = 'flex'
+
+            confirm_button.description = "Confirm"
+            confirm_button.style.button_color = '#0080ea'
+            confirm_button.disabled = False
+
+        buttons.observe(on_select, names=['value'])
+        preprocessor_loader_dropdown.observe(preprocessor_selected, names=['value'])
+        button_display = widgets.HBox([buttons])
+
+        divider = widgets.HTML(f'<hr class="solid">')
+        save_button = widgets.Button(description="Save", disabled=False)
+        save_button.layout = widgets.Layout(margin=' 10px 0 10px 10px')
+        save_button.style = {
+                "button_color": '#0080ea',
+                "text_color": 'white'
+                }
+        save_button.on_click(save_clicked)
+
+        done_button = widgets.Button(description="Cancel", disabled=False)
+        done_button.layout = widgets.Layout(margin=' 10px 0 10px 10px')
+        done_button.style = {
+                 "button_color": '#e14067',
+                 "text_color": 'white'
+                 }
+        done_button.on_click(done_clicked)
+    
+        save_df_button = widgets.Button(description="Save as csv", disabled=False)
+        save_df_button.layout = widgets.Layout(margin=' 10px 0 10px 10px')
+        save_df_button.style = {
+                "button_color": '#12b980',
+                "text_color": 'white'
+                }
+        save_df_button.on_click(save_preprocessor_df)
+
+        confirm_button = widgets.Button(description="Confirm", disabled=True)
+        confirm_button.on_click(on_confirm)
+        close_button = widgets.Button(description="Close")
+        close_button.on_click(close)
+
+        close_button.layout = widgets.Layout(margin=' 10px 0 10px 0')
+
+        confirm_button.layout = widgets.Layout(margin=' 10px 0 10px 10px')
+        confirm_button.style = {
+                "button_color": '#0080ea',
+                "text_color": 'white'
+                }
+
+        apply_buttons = widgets.HBox([done_button, confirm_button])
+
+        preprocessor_name.w_text_input.observe(name_change, names=['value'])
+
+        action_buttons = widgets.HBox([close_button, save_df_button, save_button])
         
-    def description_change(_):
-        preprocessor.description = preprocessor_description.value
+        screen = widgets.VBox([action_buttons, button_display, preprocessor_details, preprocessor_loader, apply_buttons])
+        
+        action_buttons.layout.display = 'flex'
+        button_display.layout.display = 'none'
+        preprocessor_details.layout.display = 'none'
+        apply_buttons.layout.display = 'none'
 
-    buttons.observe(on_select, names=['value'])
-    loader_dropdown.observe(_selected, names=['value'])
-    button_display = widgets.HBox([buttons])
-
-    divider = widgets.HTML(f'<hr class="solid">')
-
-    preprocessor_name.w_text_input.observe(name_change, names=['value'])
-    preprocessor_description.w_text_input.observe(description_change, names=['value'])
-
-    screen = widgets.VBox([button_display, preprocessor_details, loader, divider])
-
-    display(screen)
+        return screen

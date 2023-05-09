@@ -4,7 +4,8 @@ from ...preprocessing import transformers as tf
 from ...quality import XScan
 from ...preprocessing.pipeline import XPipeline
 from ...utils.api import *
-#from .save import set_preprocessor_details
+from ...gui.screens import Header
+from .save import PreprocessorPersist
 
 import pandas as pd
 from ipywidgets import interactive
@@ -14,12 +15,10 @@ import matplotlib.pyplot as plt
 import inspect
 from pandas.api.types import is_numeric_dtype, is_string_dtype
 import pandas.api.types as pdtypes
-import warnings
 import matplotlib.pyplot as plt
 import seaborn as sns
-import time
 import dill
-from ..components.connectivity import ConnectionButton
+
 
 class Preprocessor:
 
@@ -37,7 +36,7 @@ class Preprocessor:
         self.df_delta = []
 
         self.preprocessor_options = None
-        self.__connection_button = ConnectionButton()
+        self.screen = None
 
     def _scan_df(self, df):
         """ Scans dataframe for summary statistics
@@ -87,122 +86,7 @@ class Preprocessor:
             pandas.DataFrame: The transformed dataframe
         """
         return self.pipeline.transform(df)
-
-    @staticmethod
-    def get_preprocessors():
-        preprocessor_response = xplainable.client.__session__.get(
-            f'{xplainable.client.hostname}/v1/preprocessors'
-        )
-        
-        preprocessors = get_response_content(preprocessor_response)
-
-        return preprocessors
-
-    def _set_preprocessor_details(self):
-
-        preprocessor_name = TextInput(
-            label="Name: ",
-            label_type='h5',
-            label_margin='2px 10px 0 0',
-            box_width='220px')
-
-        preprocessor_description = TextInput(
-            label="Description: ",
-            label_type='h5',
-            label_margin='2px 10px 0 15px',
-            box_width='350px'
-            )
-        
-        preprocessor_details = widgets.HBox(
-            [preprocessor_name(), preprocessor_description()]
-            )
-
-        loader_dropdown = widgets.Dropdown(options=[None])
-        description_output = widgets.HTML(
-            f'', layout=widgets.Layout(margin='0 0 0 15px'))
-
-        loader = widgets.HBox(
-            [loader_dropdown, description_output],
-            layout=widgets.Layout(display='none'))
-
-        buttons = widgets.ToggleButtons(options=['New', 'Existing'])
-        buttons.layout = widgets.Layout(margin="0 0 20px 0")
-
-        class Options:
-            options = []
-        
-        self.preprocessor_options = Options()
-
-        def get_preprocessors():
-            try:
-                preprocessors = self.get_preprocessors()
-                self.preprocessor_options.options = preprocessors
-                loader_dropdown.options = [None]+[i[1] for i in preprocessors]
-            except Exception:
-                return
-
-        def on_select(_):
-            if buttons.index == 1:
-                preprocessor_name.hide()
-                preprocessor_description.hide()
-                loader_dropdown.index = 0
-                loader.layout.display = 'flex'
-                get_preprocessors()
-                preprocessor_name.value = ''
-                preprocessor_description.value = ''
-            else:
-                loader.layout.display = 'none'
-                preprocessor_name.value = ''
-                preprocessor_description.value = ''
-                preprocessor_name.show()
-                preprocessor_description.show()
-                
-        def _selected(_):
-            idx = loader_dropdown.index
-            if idx is None:
-                preprocessor_name.value = ''
-                description_output.value = ''
-                preprocessor_description.value = ''
-            elif len(self.preprocessor_options.options) > 0:
-                preprocessor_name.value = self.preprocessor_options.options[idx-1][1]
-                desc = self.preprocessor_options.options[idx-1][2]
-                description_output.value = f'{desc}'
-                preprocessor_description.value = desc
-
-        def name_change(_):
-            self.preprocessor_name = preprocessor_name.value
-            
-        def description_change(_):
-            self.description = preprocessor_description.value
-
-        buttons.observe(on_select, names=['value'])
-        loader_dropdown.observe(_selected, names=['value'])
-
-        self.__connection_button.layout = widgets.Layout(
-        height='25px', width='80px', margin='0 0 0 10px')
-
-        self.__connection_button.style = {
-                "text_color": 'white',
-                "font_size": "11.5px"
-                }
-
-        def conn_click(_):
-            self.__connection_button._check_connection()
-
-        self.__connection_button.on_click(conn_click)
-        self.__connection_button._check_connection()
-
-        button_display = widgets.HBox([buttons, self.__connection_button])
-
-        divider = widgets.HTML(f'<hr class="solid">')
-
-        preprocessor_name.w_text_input.observe(name_change, names=['value'])
-        preprocessor_description.w_text_input.observe(description_change, names=['value'])
-
-        screen = widgets.VBox([button_display, preprocessor_details, loader, divider])
-
-        return screen
-
+    
     def preprocess(self, df):
         """ GUI for easily preprocessing data.
 
@@ -244,15 +128,6 @@ class Preprocessor:
             refresh_dataset()
             refresh_dropdown_options()
 
-            if save_pp.disabled:
-                save_pp.description = "Save Preprocessor"
-                if self.__connection_button.connected:
-                    save_pp.disabled = False
-
-            if save_df.disabled:
-                save_df.description = "Save Dataframe"
-                save_df.disabled = False
-
         def sync_feature_dropdowns_a(_):
             dist_plot_feature.value = feature.value
 
@@ -274,7 +149,7 @@ class Preprocessor:
                         return
 
                 elif pdtypes.is_bool_dtype(ser):
-                    ser = ser.astype(str).lower()
+                    ser = ser.astype(str).apply(lambda x: x.lower())
                 sns.set(rc={'figure.figsize':(10,4)})
                 sns.histplot(ser)
                 plt.show()
@@ -567,100 +442,6 @@ class Preprocessor:
                 update_scan_on_drop(pipeline_features)
 
             reset_charts()
-
-        def close_button_clicked(_):
-            """Clears all output on close"""
-            clear_output()
-
-        def save_preprocessor_df(_):
-            """Saves current state dataframe"""
-            save_df.description = "Saving..."
-            ts = str(int(time.time()))
-            
-            self._df_trans.to_csv(
-                f'{self.preprocessor_name}_{ts}.csv',
-                index=False)
-
-            save_df.description = "Saved"
-            save_df.disabled = True
-            time.sleep(1)
-            save_df.disabled = False
-            save_df.description = "Save DataFrame"
-
-        def save_preprocessor(_):
-            """ Saves preprocessor to cloud"""
-            save_pp.description = "Saving..."
-            metadata = []
-            for stage in self.pipeline.stages:
-                step = {
-                    'feature': stage['feature'],
-                    'name': stage['name'],
-                    'params': stage['transformer'].__dict__
-                }
-                
-                metadata.append(step)
-
-            try:
-
-                # Get user preprocessors
-                response = xplainable.client.__session__.get(
-                    f'{xplainable.client.hostname}/v1/preprocessors'
-                    )
-
-                # Prepare params
-                user_preprocessors = get_response_content(response)
-
-                api_params = {
-                    "preprocessor_name": self.preprocessor_name,
-                    "preprocessor_description": self.description
-                    }
-
-                # Create model if model name doesn't exist
-                if not any(
-                    m[1] == self.preprocessor_name for m in user_preprocessors):
-                    # Create preprocessor
-                    response = xplainable.client.__session__.post(
-                        f'{xplainable.client.hostname}/v1/create-preprocessor',
-                        params=api_params
-                        )
-                    # Check response content and fetch id
-                    preprocessor_id = get_response_content(response)
-
-                else:
-                    api_params.pop('preprocessor_description')
-                    response = xplainable.client.__session__.get(
-                        f'{xplainable.client.hostname}/v1/get-preprocessor-id',
-                        params=api_params
-                    )
-                    preprocessor_id = get_response_content(response)
-
-
-                # Prepare params and insert data
-                api_params = {"preprocessor_id": preprocessor_id}
-
-                insert_data = {
-                    "stages": metadata,
-                    "deltas": self.df_delta
-                }
-                # Create preprocessor version
-                response = xplainable.client.__session__.post(
-                    f'{xplainable.client.hostname}/v1/preprocessors/{preprocessor_id}/add-version',
-                        params=api_params,
-                        json=insert_data
-                    )
-                # Check response content and fetch id
-                preprocessor_id = get_response_content(response)
-
-                save_pp.description = "Saved"
-                save_pp.disabled = True
-
-            except Exception as e:
-                print(e)
-                save_pp.description = "Failed"
-                save_pp.disabled = True
-                time.sleep(2)
-                save_pp.description = "Try again"
-                save_pp.disabled = False
 
         def reset_value():
             """ Updates Distplot value on data scan"""
@@ -956,9 +737,8 @@ class Preprocessor:
 
 
         # //------- HEADER -------//
-        preprocessor_details = self._set_preprocessor_details()
-        header = widgets.HBox([preprocessor_details])
-        header.layout = widgets.Layout(margin = ' 5px 0 15px 25px ')
+        header = Header(title='Preprocessor', logo_size=40, font_size=18)
+        header.title = {'margin': '10px 15px 0 10px'}
 
         # //---------------------------------//
 
@@ -979,7 +759,6 @@ class Preprocessor:
         feature.observe(sync_feature_dropdowns_a, names=['value'])
         feature.observe(feature_dropdown_selected, names=['value'])
         
-
         # Instantiate transformer selection
         single_feature_transformers = TransformerDropdown(
             layout=selector_layout)
@@ -1342,52 +1121,16 @@ class Preprocessor:
 
 
         # //------- FOOTER -------//
-        done = widgets.Button(description='Done')
-        done.style = {
-            "button_color": '#0080ea',
-            "text_color": 'white'
-            }
-        done.layout = widgets.Layout(margin=' 0 0 10px 25px')
-        done.on_click(close_button_clicked)
-
-        save_pp = widgets.Button(description='Save Preprocessor', disabled=True)
-        save_pp.style.button_color = '#12b980'
-        save_pp.layout = widgets.Layout(margin=' 0 0 10px 10px')
-        save_pp.on_click(save_preprocessor)
-        
-        widgets.jslink((save_pp, 'disabled'), (self.__connection_button, 'link_disabled'))
-
-        save_df = widgets.Button(description='Save Dataframe', disabled=False)
-        save_df.style.button_color = '#12b980'
-        save_df.layout = widgets.Layout(margin=' 0 0 10px 10px')
-        save_df.on_click(save_preprocessor_df)
-
-        footer = widgets.HBox([done, save_pp, save_df])
+        save = PreprocessorPersist(self)
+        footer = save.save()
 
         # //---------------------------------//
         err_display = widgets.Output()
 
         # //------- COMPILE SCREEN -------//
-        screen = widgets.VBox([header, body, err_display, display_tabs, footer])
+        self.screen = widgets.VBox([header.show(), body, err_display, display_tabs, footer])
 
         # //---------------------------------//
         
         # DISPLAY ALL
-        display(screen)
-
-        try:
-            preprocessors = self.get_preprocessors()
-            class Options:
-                options = []
-            self.preprocessor_options = Options()
-
-            self.preprocessor_options.options = preprocessors
-            header.children[0].children[2].children[0].options = [None]+[i[1] for i in preprocessors]
-        except:
-            pass
-
-        if (self.preprocessor_name is not None) and\
-            (self.preprocessor_name in header.children[0].children[2].children[0].options):
-            header.children[0].children[0].children[0].index = 1
-            header.children[0].children[2].children[0].value = self.preprocessor_name
-            
+        display(self.screen)
