@@ -101,10 +101,12 @@ class Client:
                 version_id = versions[-1][0]
 
             preprocessor_response = self.__session__.get(
-                url=f'{self.hostname}/v1/preprocessors/{preprocessor_id}/versions/{version_id}'
+                url=f'{self.hostname}/v1/preprocessors/{preprocessor_id}/versions/{version_id}/pipeline'
                 )
 
-            stages = get_response_content(preprocessor_response)['stages']
+            response = get_response_content(preprocessor_response)
+            stages = response['stages']
+            deltas = response['deltas']
             
         except Exception as e:
             raise ValueError(
@@ -115,6 +117,7 @@ class Client:
         xp.description = preprocessor_meta['preprocessor_description']
         xp.pipeline.stages = [{"feature": i["feature"], "name": i["name"], \
             "transformer": build_transformer(i)} for i in stages]
+        xp.df_delta = deltas
 
         xp.state = len(xp.pipeline.stages)
 
@@ -136,7 +139,6 @@ class Client:
 
             model_meta = get_response_content(meta_response)
 
-            
             versions_response = self.__session__.get(
                 f'{self.hostname}/v1/models/{model_id}/versions')
 
@@ -190,6 +192,24 @@ class Client:
         else:
             raise AuthenticationError("API key has expired or is invalid.")
 
+    def create_model_id(self, model_name, model_description, target, model_type):
+
+        payoad = {
+            "model_name": model_name,
+            "model_description": model_description,
+            "model_type": model_type,
+            "target_name": target
+        }
+        
+        response = self.__session__.post(
+            url=f'{self.hostname}/v1/create-model',
+            json=payoad
+        )
+        
+        model_id = get_response_content(response)
+            
+        return model_id
+
     def create_or_fetch_model_id(self, model_name, model_description, target, model_type):
 
         # Get user models
@@ -201,7 +221,7 @@ class Client:
         # Create model if model name doesn't exist
         if not any(m['model_name'] == model_name for m in user_models):
             
-            params = {
+            payoad = {
                 "model_name": model_name,
                 "model_description": model_description,
                 "model_type": model_type,
@@ -210,7 +230,7 @@ class Client:
             
             response = self.__session__.post(
                 url=f'{self.hostname}/v1/create-model',
-                params=params
+                json=payoad
             )
             
             model_id = get_response_content(response)
@@ -228,43 +248,82 @@ class Client:
 
         return model_id
 
-    def create_model_version(self, model_id, partition_on):
+    def create_model_version(
+        self, model_id, partition_on, ruleset, health_info):
 
-        params = {"partition_on": partition_on}
+        payload = {
+            "partition_on": partition_on,
+            "ruleset": json.dumps(ruleset, cls=NpEncoder),
+            "health_info": json.dumps(health_info, cls=NpEncoder)
+            }
 
         # Create a new version and fetch id
         response = self.__session__.post(
                 url=f'{self.hostname}/v1/models/{model_id}/add-version',
-            params=params
+            json=payload
         )
 
         version_id = get_response_content(response)
 
         return version_id
 
-    def log_partition(self, partition_name, model, model_id, version_id):
+    def log_partition(
+        self,
+        model_type,
+        partition_name,
+        model,
+        model_id,
+        version_id,
+        evaluation=None,
+        training_metadata=None
+        ):
 
+        
         data = {
+            "partition": str(partition_name),
             "profile": json.dumps(model._profile, cls=NpEncoder),
-            "calibration_map": json.loads(json.dumps(model._calibration_map, cls=NpEncoder)),
-            "feature_importances": json.loads(json.dumps(model.get_feature_importances(), cls=NpEncoder)),
-            "id_columns": json.loads(json.dumps(model.id_columns, cls=NpEncoder)),
-            "columns": json.loads(json.dumps(model.columns, cls=NpEncoder)),
-            "target_map": json.loads(json.dumps(model.target_map_inv, cls=NpEncoder)),
-            "support_map": json.loads(json.dumps(model._support_map, cls=NpEncoder)),
-            "parameters": json.loads(json.dumps(model.get_params(), cls=NpEncoder)),
-            "base_value": json.loads(json.dumps(model.base_value, cls=NpEncoder)),
-            "feature_map": json.loads(json.dumps(model.feature_map, cls=NpEncoder))
-        }
-
-        params = {
-            "partition": str(partition_name)
+            "feature_importances": json.loads(
+                json.dumps(model.get_feature_importances(), cls=NpEncoder)),
+            "id_columns": json.loads(
+                json.dumps(model.id_columns, cls=NpEncoder)),
+            "columns": json.loads(
+                json.dumps(model.columns, cls=NpEncoder)),
+            "target_map": json.loads(
+                json.dumps(model.target_map_inv, cls=NpEncoder)),
+            "parameters": json.loads(
+                json.dumps(model.get_params(), cls=NpEncoder)),
+            "base_value": json.loads(
+                json.dumps(model.base_value, cls=NpEncoder)),
+            "feature_map": json.loads(
+                json.dumps(model.feature_map, cls=NpEncoder)),
+            "category_meta": json.loads(
+                json.dumps(model.category_meta, cls=NpEncoder)),
+            "calibration_map": None,
+            "support_map": None
             }
+
+        if model_type == 'binary_classification':
+            data.update({
+                "calibration_map": json.loads(
+                    json.dumps(model._calibration_map, cls=NpEncoder)),
+                "support_map": json.loads(
+                json.dumps(model._support_map, cls=NpEncoder))
+            })
+
+        if evaluation is not None:
+            data.update({
+                "evaluation": json.loads(json.dumps(evaluation, cls=NpEncoder))
+                })
+
+        if training_metadata is not None:
+            data.update({
+                "training_metadata": json.loads(
+                    json.dumps(training_metadata, cls=NpEncoder))
+                })
 
         try:
             response = self.__session__.post(
                 url=f'{self.hostname}/v1/models/{model_id}/versions/{version_id}/add-partition',
-                params=params,
                 json=data
             )
         except Exception as e:
@@ -274,26 +333,26 @@ class Client:
 
         return partition_id
 
-    def log_evaluation(self, model_id, version_id, partition_id, evaluation, tags):
+    # def log_evaluation(self, model_id, version_id, partition_id, evaluation, tags):
         
-        assert type(evaluation) == dict, "evaluation must be JSON serialisable"
+    #     assert type(evaluation) == dict, "evaluation must be JSON serialisable"
 
-        data = {
-            'evaluation': json.dumps(evaluation, cls=NpEncoder),
-            'tags': tags
-        }
+    #     data = {
+    #         'evaluation': json.dumps(evaluation, cls=NpEncoder),
+    #         'tags': tags
+    #     }
 
-        try:
-            response = self.__session__.post(
-                url=f'{self.hostname}/v1/models/{model_id}/versions/{version_id}/partitions/{partition_id}/log-evaluation',
-                json=data
-            )
-        except Exception as e:
-            raise ValueError(e)
+    #     try:
+    #         response = self.__session__.post(
+    #             url=f'{self.hostname}/v1/models/{model_id}/versions/{version_id}/partitions/{partition_id}/log-evaluation',
+    #             json=data
+    #         )
+    #     except Exception as e:
+    #         raise ValueError(e)
 
-        evaluation_id = get_response_content(response)
+    #     evaluation_id = get_response_content(response)
 
-        return evaluation_id
+    #     return evaluation_id
 
     def deploy(self, model_id, version_id, partition_id, raw_output=False):
         url = f'{self.hostname}/v1/models/{model_id}/versions/{version_id}/partitions/{partition_id}/deploy'
@@ -307,7 +366,7 @@ class Client:
                 "deployment_id": deployment_id,
                 "status": "active",
                 "location": "sydney",
-                "endpoint": "https://inference.xplainable.io/predict"
+                "endpoint": "https://inference.xplainable.io/v1/predict"
             }
 
             if raw_output:
@@ -351,8 +410,6 @@ class Client:
         else:
             return {"message": f"Failed with status code {response.status_code}"}
         
-        
-
     def generate_deploy_key(
         self,
         description: str,
