@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xplainable"
-version = "0.1.1"
+version = "0.0.1.dev1"
 authors = [
   { name="xplainable pty ltd", email="contact@xplainable.io" },
 ]
-description = "Explainable Machine Learning API"
+description = "A suite of explainable machine learning algorithms for business optimisation"
 readme = "README.md"
 license = { file="LICENSE" }
 requires-python = ">=3.8"
