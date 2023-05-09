@@ -65,7 +65,7 @@ def initialise():
         data = {
             "xplainable version": xplainable.__version__,
             "python version": f'{pyinf.major}.{pyinf.minor}.{pyinf.micro}',
-            "user": xplainable.client._user
+            "user": xplainable.client._user['username']
         }
 
         try:
@@ -82,7 +82,7 @@ def initialise():
                 cell_font_color= '#374151'
                 )
 
-            header = Header('Initialised', 30, 16)
+            header = Header('Initialised', 30, 16, avatar=False)
             header.divider.layout.display = 'none'
             header.title = {'margin':'4px 0 0 8px'}
             output = widgets.VBox([header.show(), table.html_widget])

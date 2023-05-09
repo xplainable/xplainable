@@ -6,6 +6,7 @@ from requests.packages.urllib3.util.retry import Retry
 from ..gui.screens.preprocessor import Preprocessor
 from ..preprocessing import transformers as tf
 from ..exceptions import AuthenticationError
+from ..gui.components.cards import render_user_avatar
 import json
 import numpy as np
 import pyperclip
@@ -21,10 +22,11 @@ class Client:
 
     def __init__(self, api_key):
         self.__api_key = api_key
-        self.hostname = 'https://api.xplainable.io'
+        self.hostname = 'http://localhost:8001'#'https://api.xplainable.io'
         self.machines = {}
         self.__session__ = requests.Session()
         self._user = None
+        self.avatar = None
         self.init()
 
     def init(self):
@@ -47,7 +49,8 @@ class Client:
         ADAPTER = HTTPAdapter(max_retries=RETRY_STRATEGY)
         self.__session__.mount(self.hostname, ADAPTER)
 
-        self._user = self.get_user_data()['username']
+        self._user = self.get_user_data()
+        self.avatar = render_user_avatar(self._user)
 
     def list_models(self):
         """ Lists models of active user.
@@ -62,7 +65,7 @@ class Client:
 
         return get_response_content(response)
 
-    def list_versions(self, model_id):
+    def list_model_versions(self, model_id):
         """ Lists models of active user.
 
         Returns:
@@ -74,9 +77,36 @@ class Client:
             )
 
         return get_response_content(response)
+    
+    def list_preprocessors(self):
+        """ Lists models of active user.
+
+        Returns:
+            dict: Dictionary of trained models.
+        """
+
+        response = self.__session__.get(
+            url=f'{self.hostname}/v1/preprocessors'
+            )
+
+        return get_response_content(response)
+
+    def list_preprocessor_versions(self, preprocessor_id):
+        """ Lists models of active user.
+
+        Returns:
+            dict: Dictionary of trained models.
+        """
+
+        response = self.__session__.get(
+            url=f'{self.hostname}/v1/preprocessors/{preprocessor_id}/versions'
+            )
+
+        return get_response_content(response)
 
 
-    def load_preprocessor(self, preprocessor_id, version_id='latest'):
+    def load_preprocessor(
+            self, preprocessor_id, version_id='latest', response_only=False):
 
         def build_transformer(stage):
             """Build transformer from metadata"""
@@ -101,10 +131,14 @@ class Client:
                 version_id = versions[-1][0]
 
             preprocessor_response = self.__session__.get(
-                url=f'{self.hostname}/v1/preprocessors/{preprocessor_id}/versions/{version_id}/pipeline'
+                url=f'{self.hostname}/v1/preprocessors/{preprocessor_id}/versions/{version_id}'
                 )
 
             response = get_response_content(preprocessor_response)
+
+            if response_only:
+                return response
+
             stages = response['stages']
             deltas = response['deltas']
             
@@ -191,6 +225,40 @@ class Client:
             return get_response_content(response)
         else:
             raise AuthenticationError("API key has expired or is invalid.")
+        
+    def create_preprocessor_id(
+            self, preprocessor_name, preprocessor_description):
+
+        payoad = {
+            "preprocessor_name": preprocessor_name,
+            "preprocessor_description": preprocessor_description
+        }
+        
+        response = self.__session__.post(
+            url=f'{self.hostname}/v1/create-preprocessor',
+            json=payoad
+        )
+        
+        preprocessor_id = get_response_content(response)
+            
+        return preprocessor_id
+    
+    def create_preprocessor_version(self, preprocessor_id, stages, deltas):
+
+        payload = {
+            "stages": stages,
+            "deltas": deltas
+            }
+
+        # Create a new version and fetch id
+        response = self.__session__.post(
+                url=f'{self.hostname}/v1/preprocessors/{preprocessor_id}/add-version',
+            json=payload
+        )
+
+        version_id = get_response_content(response)
+
+        return version_id
 
     def create_model_id(self, model_name, model_description, target, model_type):
 
