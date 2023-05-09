@@ -1,8 +1,5 @@
 from .client._client import Client
-from .gui.screens.classifier import *
-from .gui.screens.preprocessor import *
-from .gui.screens.loader import *
-from .gui.screens.save import *
+from .gui import *
 from .client.access import initialise
 import warnings
 
