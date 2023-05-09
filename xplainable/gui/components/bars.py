@@ -1,12 +1,15 @@
 import ipywidgets as widgets
+from IPython.display import clear_output, display
+import matplotlib.pyplot as plt
 from ...utils.xwidgets import IDButton
 
 class BarGroup:
     
-    def __init__(self, items=[], heading=None):
+    def __init__(self, items=[], heading=None, footer=False):
         self.items = items
         self.displays = {i: {} for i in items}
-        self.heading=heading
+        self.heading = heading
+        self.footer = footer
         
         self.suffix={i: '' for i in items}
         self.prefix={i: '' for i in items}
@@ -25,10 +28,30 @@ class BarGroup:
         self.displays_layout = widgets.Layout()
         
         self._initialise_bars()
-        
+
         self.window = widgets.VBox(
             [widgets.HTML(f"<h4>{self.heading}<h4>")]+
-            [v['display'] for i, v in self.displays.items()])
+            [v['display'] for i, v in self.displays.items()]
+            )
+
+        if self.footer:
+            self.footer_label = widgets.HTML(
+                f"metric: ", layout=self.label_layout)
+
+            self.footer_bar = widgets.FloatProgress(
+                    min=0, max=100, value=0, layout=self.bar_layout)
+
+            self.footer_val = widgets.HTML("-")
+
+            self.footer_display = widgets.HBox(
+                    [self.footer_label, self.footer_bar, self.footer_val],
+                    layout=self.displays_layout)
+
+            self.window.children = self.window.children + (
+                widgets.HTML(f'<hr class="solid">'),
+                self.footer_display
+            )
+
         self.window_layout = widgets.Layout()
         self.window.layout = self.window_layout
 
@@ -99,6 +122,20 @@ class BarGroup:
         for item in items:
             self.displays[item]['display'].layout.display = 'flex'
 
+    def set_footer_label(self, label):
+        self.footer_label.value = label
+
+    def set_footer_bounds(self, min_val, max_val):
+        self.footer_bar.min = min_val
+        self.footer_bar.max = max_val
+    
+    def set_footer_value(self, value):
+        self.footer_val.value = str(value)
+        self.footer_bar.value = value
+
+    def close(self):
+        self.window.close()
+
     def add_button(self, items=None, text='button', side='right', on_click=None, height=25, width=50):
         if items is None:
             items = self.items
@@ -115,3 +152,45 @@ class BarGroup:
                 self.displays[item]['display'].children = (button,) + self.displays[item]['display'].children
             else:
                 self.displays[item]['display'].children = self.displays[item]['display'].children + (button,)
+
+
+class IncrementalBarPlot:
+    def __init__(self, output):
+        self.output = output
+        self.labels = []
+        self.values = []
+        self.width = 0.35
+
+    def add_bar(self, label, value):
+        self.labels.append(label)
+        self.values.append(value)
+        with self.output:
+            self._update_plot()
+
+    def _update_plot(self):
+        min_height = 1
+        max_height = 5
+        bar_height = 0.8
+        spacing = 0.1
+
+        num_bars = len(self.labels)
+        dynamic_height = max(min_height, min(max_height, num_bars * (bar_height + spacing)))
+
+        fig, ax = plt.subplots()
+        fig.set_size_inches(6, dynamic_height)
+
+        x = range(num_bars)
+        ax.barh(x, self.values, self.width, color='#0080ea')
+        ax.set_yticks(x)
+        ax.set_yticklabels(self.labels)
+        ax.set_title('Partition Metrics')
+
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+
+        clear_output(wait=True)
+        display(fig)
+        plt.close(fig)
+
+    def show(self):
+        self._update_plot()
