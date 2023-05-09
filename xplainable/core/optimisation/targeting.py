@@ -181,8 +181,8 @@ def generate_ruleset(
             rule_data[col] = pd.Series([tuple(x) for x in zip(left, right)])
 
     else:
-        keep_cols = [col for col in cols if col not in num_cols]
-        rule_data = rule_data[keep_cols]
+        cols = [col for col in cols if col not in num_cols]
+        rule_data = rule_data[cols]
         
     dummied = pd.get_dummies(rule_data, dummy_na=False, prefix_sep='___')
 
