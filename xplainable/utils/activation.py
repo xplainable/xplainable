@@ -1,7 +1,7 @@
 
 import numpy as np
 
-def huntley_activation(v, weight, power_degree, sigmoid_exponent):
+def flex_activation(v, weight, power_degree, sigmoid_exponent):
     val = (v ** weight) / (10 ** (weight*2))
     
     value = ((val*100 - 50)**power_degree + 50**power_degree) / \
