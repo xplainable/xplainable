@@ -239,13 +239,6 @@ def regressor(df):
             layer = generate_evolve_layer()
             selector_idx = 1
 
-        try:
-            vp.box.children[idx].children[1].style = {
-                        "button_color": "#EEEEEE"
-                    }
-        except:
-            pass
-        
         def focus_box(b):
             layer_selector.index = selector_idx
             params = xnet.future_layers[vp._selected_index].get_params()
