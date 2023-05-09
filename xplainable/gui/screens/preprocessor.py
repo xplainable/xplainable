@@ -392,12 +392,19 @@ class Preprocessor:
         # Get the difference in dataframes from dataset transformers
         def get_df_delta(df1, df2):
             """ Gets the delta between two dataframs"""
+            changed_features = [c for c in df1.columns.intersection(
+                df2.columns) if not df1[c].head(10).equals(df2[c].head(10))]
+
             output = {
                 "drop": [col for col in df1.columns if col not in df2.columns],
-                "add": [{"feature": col, "values": df2[col].head(10).to_json(
-                    orient='records')} for col in df2.columns if \
-                        col not in df1.columns]
-            }
+                "add": [{"feature": col, "values": json.loads(df2[col].head(10).to_json(
+                    orient='records'))} for col in df2.columns if \
+                        col not in df1.columns],
+                "update": [{
+                    "feature": col,
+                    "values": json.loads(df2[col].head(10).to_json(orient='records'))
+                    } for col in changed_features]}
+
             return output
 
         def get_tf_description(name):
@@ -503,21 +510,17 @@ class Preprocessor:
                 o for o in pipeline_list.options if o != "")
 
             dataset_changed()
-
-            # Store delta change
-            if tf_feature == '__dataset__':
-                self.df_delta.append(
-                    get_df_delta(head_before, head_after)
+            
+            # record delta changes
+            self.df_delta.append(
+                    get_df_delta(head_before.copy(), head_after.copy())
                     )
+
+            if tf_feature == '__dataset__':
                 #rescan data
                 if always_rescan_dataset.value:
                     scan_data(None)
             else:
-                self.df_delta.append({"update": {
-                    "feature": tf_feature,
-                    "values": head_after[tf_feature].to_json(orient='records')
-                    }})
-
                 #rescan data
                 if always_rescan_feature.value:
                     dist_plot_feature.value = tf_feature
@@ -549,6 +552,9 @@ class Preprocessor:
             pipeline_list.options = [
                 f'{i}: {s["feature"]} --> {s["name"]} --> {s["transformer"].__dict__}' \
                     for i, s in enumerate(self.pipeline.stages)]
+
+            for i in sorted(list(idx), reverse=True):
+                del self.df_delta[i+1]
 
             rerun_pipeline()
             dataset_changed()
@@ -596,7 +602,7 @@ class Preprocessor:
 
             try:
 
-                # Get user models
+                # Get user preprocessors
                 response = xplainable.client.__session__.get(
                     f'{xplainable.client.hostname}/v1/preprocessors'
                     )
@@ -941,7 +947,7 @@ class Preprocessor:
         # Instantiate delta tracking
         if len(self.df_delta) == 0:
             self.df_delta.append(
-                {"start": df.head(10).to_json(orient='records')})
+                {"start": json.loads(df.head(10).to_json(orient='records'))})
 
         # Retrieve all transformers
         clsmembers = inspect.getmembers(tf, inspect.isclass)

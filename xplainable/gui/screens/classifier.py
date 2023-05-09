@@ -4,26 +4,25 @@ from ...core.ml.partitions.classification import PartitionedClassifier
 from ...core.models import XClassifier
 from ...core.optimisation.bayesian import XParamOptimiser
 from ...utils import TrainButton
-from ...utils.activation import huntley_activation
+from ...utils.activation import flex_activation
 from ...quality import XScan
 from ..components import Header
 from .evaluate import EvaluateClassifier
 from .save import ModelPersist
+from ...metrics.metrics import evaluate_classification
+from ...callbacks import OptCallback
+from ..components import BarGroup
+
 import time
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
+import time
 
 import os
 os.environ['KMP_WARNINGS'] = '0'
-
-#import ray
-#ray.init()
-
-from ...callbacks import OptCallback
-from ..components import BarGroup
 
 def classifier(df):
     """ Trains an xplainable classifier via a simple GUI.
@@ -327,14 +326,14 @@ def classifier(df):
     sigmoid_exponent_display = widgets.HBox(
         [sigmoid_exponent_space, sigmoid_exponent_step])
 
-    def plot_huntley_activation():
+    def plot_activation():
     
         @widgets.interactive
         def _activation(weight=weight, power_degree=power_degree,\
             sigmoid_exponent=sigmoid_exponent):
 
             freq = np.arange(0, 101, 1)
-            _nums = [huntley_activation(i, weight, power_degree, sigmoid_exponent) for i in freq]
+            _nums = [flex_activation(i, weight, power_degree, sigmoid_exponent) for i in freq]
 
             data = pd.DataFrame({
                 "freq": freq,
@@ -351,9 +350,9 @@ def classifier(df):
             
         return w.children[-1]
 
-    huntley_display = widgets.Output()
-    with huntley_display:
-        display(plot_huntley_activation())
+    activation_display = widgets.Output()
+    with activation_display:
+        display(plot_activation())
 
     hyperparameter_box = widgets.VBox([
         widgets.HTML(f"<h5>Hyperparameters</h5>"),
@@ -367,7 +366,7 @@ def classifier(df):
         weight,
         power_degree,
         sigmoid_exponent,
-        huntley_display
+        activation_display
     ])
 
     parameter_box = widgets.HBox([hyperparameter_box, activation_box])
@@ -538,6 +537,8 @@ def classifier(df):
 
             eval_screens = {}
             eval_objects = {}
+            metadata_objects = {}
+            training_metadata = {}
 
             if optimise.value:
                 _max_depth_space = list(max_depth_space.value) + \
@@ -594,10 +595,24 @@ def classifier(df):
                 model.power_degree = power_degree.value
                 model.sigmoid_exponent = sigmoid_exponent.value
 
+                training_metadata[p] = {
+                    "optimisation_time": None,
+                    "training_time": None,
+                    "optimised": optimise.value,
+                    "optimise_on": None,
+                    "n_trials": None,
+                    "early_stopping": None
+                }
+
                 try:
                     if optimise.value:
                         desc_partition.value = f'<strong>Partition: </strong>{p}'
                         callback.reset()
+                        training_metadata.update({
+                            "optimise_on": optimise_metric.value,
+                            "n_trials": n_trials.value,
+                            "early_stopping": early_stopping.value
+                        })
                         
                     if p != '__dataset__':
                         part = df[df[partition_on.value] == p].drop(columns=[partition_on.value])
@@ -637,14 +652,20 @@ def classifier(df):
                             sigmoid_exponent_space=_sigmoid_exponent_space,
                             verbose=False
                         )
-
+                        start = time.time()
                         params = opt.optimise(
                             X_train, y_train, verbose=False, callback=callback)
+                        training_metadata[p]['optimisation_time'] = round(
+                            time.time()-start, 4)
 
                         model.set_params(**params)
 
                     # Train model
+                    start = time.time()
                     model.fit(X_train, y_train, id_columns=id_cols)
+                    training_metadata[p]['training_time'] = round(
+                            time.time()-start, 4)
+
                     partitioned_model.add_partition(model, p)
                     
                     if len(model.target_map) > 0:
@@ -655,10 +676,12 @@ def classifier(df):
                     eval_screens[p] = e.profile(X_test, y_test)
 
                     eval_items = {
-                        'y_true': e.y_val,
-                        'y_prob': e.y_val_prob
+                        'train': evaluate_classification(e.y, e.y_prob),
+                        'validation': evaluate_classification(
+                            e.y_val, e.y_val_prob)
                     }
                     eval_objects[p] = eval_items
+                    metadata_objects[p] = training_metadata
                     part_progress.set_value('Partitions', i+1)
                     
                 except Exception as e:
@@ -674,7 +697,13 @@ def classifier(df):
             header.title = {'title': 'Profile'}
             divider.close()
 
-            save = ModelPersist(partitioned_model, eval_objects)
+            save = ModelPersist(
+                partitioned_model,
+                'binary_classification',
+                eval_objects,
+                metadata_objects,
+                df
+                )
 
             partition_select = widgets.Dropdown(
                 options = eval_screens.keys()

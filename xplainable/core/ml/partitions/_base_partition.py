@@ -8,13 +8,14 @@ class BasePartition:
         self.partitions = {}
 
     def __verify_mappings(self, model):
-        assert model.target_map == self.partitions['__dataset__'].target_map, "Target mappings are mismatched"
+        assert model.target_map == self.partitions['__dataset__'].target_map, \
+            "Target mappings are mismatched"
 
     def add_partition(self, model , partition):
         partition = str(partition)
         self.partitions[partition] = model
-
-        self.__verify_mappings(model)
+        if hasattr(model, 'target_map'):
+            self.__verify_mappings(model)
             
     def drop_partition(self, partition):
         self.partitions.pop(partition)
@@ -22,6 +23,7 @@ class BasePartition:
     def _encode(self, x, y=None, partition='__dataset__'):
 
         x = x.copy()
+        partition = str(partition)
 
         # Apply encoding
         for f, m in self.partitions[partition].feature_map.items():
@@ -58,11 +60,12 @@ class BasePartition:
         """
 
         assert(
-            partition in self.partitions.keys(),
+            str(partition) in self.partitions.keys(),
             f'Partition {partition} does not exist'
         )
 
         x = x.copy()
+        partition = str(partition)
 
         x = self._encode(x, None, partition)
         x = self._preprocess(x).values

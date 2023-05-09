@@ -79,7 +79,7 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
         selected_version = preprocessors.metadata[versions.index-1][0]
         versions_response = xplainable.client.__session__.get(
                 f"{xplainable.client.hostname}/v1/preprocessors/\
-                    {preprocessors.preprocessor}/versions/{selected_version}"
+                    {preprocessors.preprocessor}/versions/{selected_version}/pipeline"
             )
         preprocessors.version_data = get_response_content(versions_response)
 
@@ -99,6 +99,7 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
         xp.pipeline.stages = [{"feature": i["feature"], "name": i["name"], \
             "transformer": build_transformer(i)} for i \
                 in preprocessors.version_data['stages']]
+        xp.df_delta = preprocessors.version_data['deltas']
 
         xp.state = len(xp.pipeline.stages)
         clear_output()

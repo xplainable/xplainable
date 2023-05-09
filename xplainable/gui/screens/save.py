@@ -1,6 +1,10 @@
 import xplainable
 from ...utils.api import get_response_content
 from ...utils.xwidgets import TextInput
+from ...core.optimisation.targeting import generate_ruleset
+from ...quality.scanner import XScan
+from ...utils.encoders import NpEncoder
+import json
 
 import ipywidgets as widgets
 from IPython.display import display
@@ -13,11 +17,17 @@ import time
 
 class ModelPersist:
     
-    def __init__(self, model, eval_objects=None):
-        self.model=model
+    def __init__(self, model, model_type,
+    eval_objects=None, metadata_objects=None, df=None):
+
+        self.model = model
+        self.model_type = model_type
         self.partition_on = model.partition_on
         self.partitions = list(self.model.partitions.keys())
         self.eval_objects = eval_objects
+        self.metadata_objects = metadata_objects
+        self.df = df
+        self.selected_model_id = None
 
     def save(self):
 
@@ -35,7 +45,8 @@ class ModelPersist:
             )
 
         loading = widgets.IntProgress(min=0, max=8, value=0)
-        loading.layout = widgets.Layout(height='20px', width='100px', display='none', margin=' 15px 0 0 10px')
+        loading.layout = widgets.Layout(height='20px', width='100px',
+        display='none', margin=' 15px 0 0 10px')
         loading.style = {'bar_color': '#0080ea'}
 
         loading_status = widgets.HTML(
@@ -59,17 +70,16 @@ class ModelPersist:
         model_options = Options()
 
         def get_models():
-            models_response = xplainable.client.__session__.get(
-                f'{xplainable.client.hostname}/v1/models'
-            )
 
-            models = get_response_content(models_response)
+            models = xplainable.client.list_models()
 
             model_options.options = [
-                (i['model_name'], i['model_description']) for i in models if \
-                    i['model_type'] == 'binary_classification']
+                (i['model_name'], i['model_description'], i['model_id']) for i in models if \
+                    i['model_type'] == self.model_type]
 
-            loader_dropdown.options = [None]+[i['model_name'] for i in models]
+            loader_dropdown.options = [None]+[
+                f"ID: {i['model_id']} | {i['model_name']}" for i in models if \
+                    i['model_type'] == self.model_type]
 
         def on_select(_):
             if buttons.index == 0:
@@ -77,6 +87,7 @@ class ModelPersist:
                 model_name.value = ''
                 model_description.value = ''
                 model_details.layout.display = 'flex'
+                self.selected_model_id = None
 
             else:
                 loader_dropdown.index = 0
@@ -92,7 +103,10 @@ class ModelPersist:
                 model_name.value = ''
                 description_output.value = ''
                 model_description.value = ''
+                self.selected_model_id = None
+                
             elif len(model_options.options) > 0:
+                self.selected_model_id = model_options.options[idx-1][2]
                 model_name.value = model_options.options[idx-1][0]
                 desc = model_options.options[idx-1][1]
                 description_output.value = f'{desc}'
@@ -131,22 +145,55 @@ class ModelPersist:
             apply_buttons.layout.display = 'none'
             loader.layout.display = 'none'
 
+        def get_health_data():
+            scanner = XScan()
+            scanner.scan(self.df)
+
+            results = []
+            for i, v in scanner.profile.items():
+                feature_info = {
+                    "feature": i,
+                    "description": None,
+                    "health_info": json.dumps(v, cls=NpEncoder)
+                }
+                results.append(feature_info)
+
+            return results
+
         def on_confirm(_):
 
             confirm_button.description = "Saving..."
             confirm_button.disabled = True
-            loading.max = len(self.partitions)
-            if self.eval_objects is not None: loading.max = loading.max * 2
+            loading.max = len(self.partitions) + 3
             loading.layout.display = 'flex'
+            
+            if buttons.index == 0:
+                model_id = xplainable.client.create_model_id(
+                    model_name.value,
+                    model_description.value,
+                    self.model.partitions['__dataset__'].target,
+                    self.model_type
+                )
 
-            model_id = xplainable.client.create_or_fetch_model_id(
-                model_name.value,
-                model_description.value,
+            else:
+                model_id = self.selected_model_id
+            
+            loading_status.value = f'Calculating dataset rules...'
+            ruleset = generate_ruleset(
+                self.df,
                 self.model.partitions['__dataset__'].target,
-                "binary_classification"
-            )
+                self.model.partitions['__dataset__'].id_columns
+                )
+            loading.value = loading.value + 1
 
-            version_id = xplainable.client.create_model_version(model_id, self.partition_on)
+            loading_status.value = f'Scanning data health...'
+            health_info = get_health_data()
+            loading.value = loading.value + 1
+
+            loading_status.value = f'Creating model version...'
+            version_id = xplainable.client.create_model_version(
+                model_id, self.partition_on, ruleset, health_info)
+            loading.value = loading.value + 1
             
             for part in self.partitions:
                 
@@ -156,10 +203,13 @@ class ModelPersist:
                     mdl = self.model.partitions[part]
 
                     partition_id = xplainable.client.log_partition(
+                        self.model_type,
                         part,
                         mdl,
                         model_id,
-                        version_id
+                        version_id,
+                        self.eval_objects[part],
+                        self.metadata_objects[part]
                     )
                 except Exception as e:
                     print(e)
@@ -173,31 +223,6 @@ class ModelPersist:
                 # Increment loader after logging partition
                 loading.value = loading.value + 1
 
-                if self.eval_objects is not None:
-
-                    loading_status.value = f'logging {part} evaluation'
-
-                    try:
-                        evaluation_copy = {
-                            'y_true': self.eval_objects[part]['y_true'].copy().values,
-                            'y_prob': self.eval_objects[part]['y_prob'],
-
-                        }
-
-                        xplainable.client.log_evaluation(
-                            model_id,
-                            version_id,
-                            partition_id,
-                            evaluation_copy,
-                            'validation'
-                            )
-                    except:
-                        loading_status.value = f'something went wrong'
-                        time.sleep(0.5)
-
-                    # Increment loader after logging partition evaluation
-                    loading.value = loading.value + 1
-            
             loading_status.value = ''
             loading.layout.display = 'none'
             loading.value = 0

@@ -15,12 +15,12 @@ class XClassifier(BaseModel):
     def __init__(
         self,
         max_depth=8,
-        min_info_gain=0.02,
-        min_leaf_size=0.02,
-        alpha=0.01,
-        weight=1,
+        min_info_gain=-1,
+        min_leaf_size=-1,
+        alpha=0.1,
+        weight=0.05,
         power_degree=1,
-        sigmoid_exponent=0,
+        sigmoid_exponent=1,
         map_calibration=True
         ):
         
@@ -144,8 +144,12 @@ class XClassifier(BaseModel):
         s = s.fillna(0)
         self._support_map.update(dict(s[0]))
 
+        wp = wp.rolling(smooth, center=True, min_periods=3).mean()[0]
+        wp.fillna(method='ffill')
+        wp.fillna(0)
+
         # Store results dict to class variable
-        return dict(wp.rolling(smooth, center=True, min_periods=5).mean()[0])
+        return dict(wp)
     
     def _normalise_score(self, score, _sum_min, _sum_max):
         """ Normalise the scores to fit between 0 - 1 relative to base value.
@@ -196,10 +200,13 @@ class XClassifier(BaseModel):
         
         return self
 
-    def fit(self, x, y, id_columns=[]):
+    def fit(self, x, y, id_columns=[], column_names=None, target_name='target'):
 
         x = x.copy()
         y = y.copy()
+
+        # casts ndarray to pandas
+        x, y = self._cast_to_pandas(x, y, target_name, column_names)
         
         if self.map_calibration:
             x_cal = x.copy()
@@ -213,9 +220,9 @@ class XClassifier(BaseModel):
 
         x = x.drop(columns=id_columns)
 
-        self._fetch_meta(x, y)
-        
         # Preprocess data
+        x, y = self._coerce_dtypes(x, y)
+        self._fetch_meta(x, y)
         self._learn_encodings(x, y)
         x, y = self._encode(x, y)
         x, y = self._preprocess(x, y)
@@ -223,6 +230,14 @@ class XClassifier(BaseModel):
         x = x.values
         y = y.values
         self.base_value = np.mean(y)
+
+        # Dynamic min_leaf_size
+        if self.min_leaf_size == -1:
+            self.min_leaf_size = self.base_value / 10
+
+        # Dynamic min_info_gain
+        if self.min_info_gain == -1:
+            self.min_info_gain = self.base_value / 10
         
         for i in range(x.shape[1]):
             f = x[:, i]
@@ -272,13 +287,7 @@ class XClassifier(BaseModel):
                 tail_sensitivity = tail_sensitivity
             )
 
-        self._build_profile()
-
-        if self.map_calibration and x is not None and y is not None:
-            y_prob = self.predict_score(x)
-            self._calibration_map = self._map_calibration(y, y_prob, 15)
-
-        self.feature_params[feature].update({
+            self.feature_params[feature].update({
             'max_depth': max_depth,
             'min_info_gain': min_info_gain,
             'min_leaf_size': min_leaf_size,
@@ -287,7 +296,13 @@ class XClassifier(BaseModel):
             'power_degree': power_degree,
             'sigmoid_exponent': sigmoid_exponent
         })
-        
+
+        self._build_profile()
+
+        if self.map_calibration and x is not None and y is not None:
+            y_prob = self.predict_score(x)
+            self._calibration_map = self._map_calibration(y, y_prob, 15)
+
         return self
 
     def predict_score(self, x):
@@ -335,7 +350,7 @@ class XClassifier(BaseModel):
         # Calculate metrics
         cm = confusion_matrix(y, y_pred).tolist()
         cr = classification_report(y, y_pred, output_dict=True)
-        roc_auc = roc_auc_score(y, y_pred)
+        roc_auc = roc_auc_score(y, y_prob)
         brier_loss = 1 - brier_score_loss(y, y_prob)
         cohen_kappa = cohen_kappa_score(y, y_pred)
         log_loss_score = log_loss(y, y_pred)
