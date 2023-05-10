@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xplainable"
-version = "0.0.1.dev1"
+version = "0.0.2.dev1"
 authors = [
   { name="xplainable pty ltd", email="contact@xplainable.io" },
 ]
