@@ -35,6 +35,8 @@ def regressor(df):
     part_progress.window_layout.margin = '10px 0 0 0'
 
     header.add_widget(part_progress.show())
+
+
     
     column_names = df.columns.tolist()
     numeric_columns = df.select_dtypes(include=np.number).columns.tolist()
@@ -237,13 +239,6 @@ def regressor(df):
             layer = generate_evolve_layer()
             selector_idx = 1
 
-        try:
-            vp.box.children[idx].children[1].style = {
-                        "button_color": "#EEEEEE"
-                    }
-        except:
-            pass
-        
         def focus_box(b):
             layer_selector.index = selector_idx
             params = xnet.future_layers[vp._selected_index].get_params()

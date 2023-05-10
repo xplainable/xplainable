@@ -8,6 +8,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 from ..components import CardWidget
+from ...utils.handlers import add_thousands_separator
         
 
 class ScenarioClassification:
@@ -88,9 +89,9 @@ class ScenarioClassification:
         support = self.model._support_map[int(s)]
 
         self.proba_card.set_value(f'{round(p, 2)}%')
-        self.score_card.set_value(str(s))
+        self.score_card.set_value(s)
         self.multi_card.set_value(f'{m}x')
-        self.support_card.set_value(str(support))
+        self.support_card.set_value(support)
 
         self.score, metadata = self.get_prediction_breakdown()
         
@@ -439,7 +440,7 @@ class ScenarioRegression:
         
 
         pred = self.get_predictions()
-        self.prediction_card.set_value(str(pred))
+        self.prediction_card.set_value(pred)
 
         self.score, metadata = self.get_prediction_breakdown()
         

@@ -181,9 +181,12 @@ def generate_ruleset(
             rule_data[col] = pd.Series([tuple(x) for x in zip(left, right)])
 
     else:
-        keep_cols = [col for col in cols if col not in num_cols]
-        rule_data = rule_data[keep_cols]
-        
+        cols = [col for col in cols if col not in num_cols]
+        rule_data = rule_data[cols]
+    
+    if len(cols) == 0:
+        return []
+
     dummied = pd.get_dummies(rule_data, dummy_na=False, prefix_sep='___')
 
     support_rules = {i: [u for u in rule_data[i].value_counts()[

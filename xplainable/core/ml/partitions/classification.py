@@ -6,7 +6,7 @@ from ..classification import XClassifier
 
 class PartitionedClassifier(BasePartition):
 
-    def __init__(self, partition_on, *args, **kwargs):
+    def __init__(self, partition_on=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.partition_on = partition_on
 
