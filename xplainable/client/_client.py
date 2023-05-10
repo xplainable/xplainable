@@ -6,6 +6,10 @@ from requests.packages.urllib3.util.retry import Retry
 from ..gui.screens.preprocessor import Preprocessor
 from ..preprocessing import transformers as tf
 from ..exceptions import AuthenticationError
+from ..core.ml.classification import XClassifier
+from ..core.ml.regression import XRegressor
+from ..core.ml.partitions.regression import PartitionedRegressor
+from ..core.ml.partitions.classification import PartitionedClassifier
 from ..gui.components.cards import render_user_avatar
 import json
 import numpy as np
@@ -22,7 +26,7 @@ class Client:
 
     def __init__(self, api_key):
         self.__api_key = api_key
-        self.hostname = 'https://api.xplainable.io'
+        self.hostname = 'http://localhost:8001'#'https://api.xplainable.io'#
         self.machines = {}
         self.__session__ = requests.Session()
         self._user = None
@@ -63,7 +67,10 @@ class Client:
             url=f'{self.hostname}/v1/models'
             )
 
-        return get_response_content(response)
+        data = get_response_content(response)
+        [i.pop('user') for i in data]
+
+        return data
 
     def list_model_versions(self, model_id):
         """ Lists models of active user.
@@ -76,7 +83,10 @@ class Client:
             url=f'{self.hostname}/v1/models/{model_id}/versions'
             )
 
-        return get_response_content(response)
+        data = get_response_content(response)
+        [i.pop('user') for i in data]
+
+        return data
     
     def list_preprocessors(self):
         """ Lists models of active user.
@@ -89,7 +99,10 @@ class Client:
             url=f'{self.hostname}/v1/preprocessors'
             )
 
-        return get_response_content(response)
+        data = get_response_content(response)
+        [i.pop('user') for i in data]
+
+        return data
 
     def list_preprocessor_versions(self, preprocessor_id):
         """ Lists models of active user.
@@ -101,12 +114,15 @@ class Client:
         response = self.__session__.get(
             url=f'{self.hostname}/v1/preprocessors/{preprocessor_id}/versions'
             )
+        
+        data = get_response_content(response)
+        [i.pop('user') for i in data]
 
-        return get_response_content(response)
+        return data
 
 
     def load_preprocessor(
-            self, preprocessor_id, version_id='latest', response_only=False):
+            self, preprocessor_id, version_id, response_only=False):
 
         def build_transformer(stage):
             """Build transformer from metadata"""
@@ -117,19 +133,6 @@ class Client:
             return trans
         
         try:
-            meta_response = self.__session__.get(
-                    f'{self.hostname}/v1/preprocessors/{preprocessor_id}')
-
-            preprocessor_meta = get_response_content(meta_response)
-
-            versions_response = self.__session__.get(
-                f'{self.hostname}/v1/preprocessors/{preprocessor_id}/versions')
-
-            versions = get_response_content(versions_response)
-            
-            if version_id == 'latest':
-                version_id = versions[-1][0]
-
             preprocessor_response = self.__session__.get(
                 url=f'{self.hostname}/v1/preprocessors/{preprocessor_id}/versions/{version_id}'
                 )
@@ -147,18 +150,15 @@ class Client:
             f'Preprocessor with ID {preprocessor_id}:{version_id} does not exist')
             
         xp = Preprocessor()
-        xp.preprocessor_name = preprocessor_meta['preprocessor_name']
-        xp.description = preprocessor_meta['preprocessor_description']
         xp.pipeline.stages = [{"feature": i["feature"], "name": i["name"], \
             "transformer": build_transformer(i)} for i in stages]
         xp.df_delta = deltas
-
         xp.state = len(xp.pipeline.stages)
 
         return xp
     
-    def load_model(self, model_id, version_id='latest'):
-        """ Loads a model by model_id
+    def load_classifier(self, model_id, version_id, model=None):
+        """ Loads a binary classification model by model_id
 
         Args:
             model_id (str): A valid model_id
@@ -166,49 +166,86 @@ class Client:
         Returns:
             xplainable.model: The loaded xplainable model
         """
+        response = self.__get_model__(model_id, version_id)
 
+        if response['model_type'] != 'binary_classification':
+            raise ValueError(f'Model with ID {model_id}:{version_id} is not a binary classification model')
+
+        if model is None:
+            partitioned_model = PartitionedClassifier(response['partition_on'])
+        else:
+            partitioned_model = model
+
+        for p in response['partitions']:
+            model = XClassifier()
+            model._profile = np.array([
+                np.array(i) for i in json.loads(p['profile'])])
+            model._calibration_map = p['calibration_map']
+            model._support_map = p['support_map']
+            model.base_value = p['base_value']
+            model.target_map = p['target_map']
+            model.feature_map = p['feature_map']
+            model.feature_map_inv = {idx: {v: i} for idx, val in p['feature_map'].items() for i, v in val.items()}
+            model.columns = p['columns']
+            model.id_columns = p['id_columns']
+            model.categorical_columns = p['feature_map'].keys()
+            model.numeric_columns = [c for c in model.columns if c not \
+                                     in model.categorical_columns]
+            model.category_meta = p['category_meta']
+
+            partitioned_model.add_partition(model, p['partition'])
+
+        return partitioned_model
+
+    def load_regressor(self, model_id, version_id, model=None):
+        """ Loads a regression model by model_id
+
+        Args:
+            model_id (str): A valid model_id
+
+        Returns:
+            xplainable.model: The loaded xplainable model
+        """
+        response = self.__get_model__(model_id, version_id)
+
+        if response['model_type'] != 'regression':
+            raise ValueError(f'Model with ID {model_id}:{version_id} is not a regression model')
+
+        if model is None:
+            partitioned_model = PartitionedRegressor(response['partition_on'])
+        else:
+            partitioned_model = model
+
+        for p in response['partitions']:
+            model = XRegressor()
+            model._profile = np.array([
+                np.array(i) for i in json.loads(p['profile'])])
+            model.base_value = p['base_value']
+            model.target_map = p['target_map']
+            model.feature_map = p['feature_map']
+            model.feature_map_inv = {idx: {v: i} for idx, val in p['feature_map'].items() for i, v in val.items()}
+            model.columns = p['columns']
+            model.id_columns = p['id_columns']
+            model.categorical_columns = p['feature_map'].keys()
+            model.numeric_columns = [c for c in model.columns if c \
+                                     not in model.categorical_columns]
+            model.category_meta = p['category_meta']
+
+            partitioned_model.add_partition(model, p['partition'])
+
+        return partitioned_model
+
+    def __get_model__(self, model_id, version_id):
         try:
-            meta_response = self.__session__.get(
-                    f'{self.hostname}/v1/models/{model_id}')
-
-            model_meta = get_response_content(meta_response)
-
-            versions_response = self.__session__.get(
-                f'{self.hostname}/v1/models/{model_id}/versions')
-
-            versions = get_response_content(versions_response)
-            
-            if version_id == 'latest':
-                version_id = versions[-1]['version_id']
-
-            partition_on = [v['partition_on'] for v in versions if \
-                v['version_id'] == version_id][0]
-
-            model_response = self.__session__.get(
+            response = self.__session__.get(
                 url=f'{self.hostname}/v1/models/{model_id}/versions/{version_id}'
-                )
-
-            model_data = {
-                i['partition']: i for i in get_response_content(model_response)}
-            
-            model_data['__dataset__']['data']['partition_on'] = partition_on
+            )
+            return get_response_content(response)
 
         except Exception as e:
             raise ValueError(
             f'Model with ID {model_id}:{version_id} does not exist')
-            
-        
-        if model_meta['model_type'] == 'binary_classification':
-            from xplainable.core.models.classification import XClassifier
-            model = XClassifier(model_name=model_meta['model_name'])
 
-        elif model_meta['model_type'] == 'regression':
-            from xplainable.core.models.regression import XRegressor
-            model = XRegressor(model_name=model_meta['model_name'])
-        
-        model._load_metadata(model_data)
-
-        return model
 
     def get_user_data(self):
         """ Retrieves the user data for the active user.
