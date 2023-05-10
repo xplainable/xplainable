@@ -442,21 +442,6 @@ class PreprocessorPersist:
             save_df_button.disabled = False
             save_df_button.description = "Save DataFrame"
 
-        def get_health_data():
-            scanner = XScan()
-            scanner.scan(self.df)
-
-            results = []
-            for i, v in scanner.profile.items():
-                feature_info = {
-                    "feature": i,
-                    "description": None,
-                    "health_info": json.dumps(v, cls=NpEncoder)
-                }
-                results.append(feature_info)
-
-            return results
-
         def on_confirm(_):
 
             confirm_button.description = "Saving..."
@@ -480,7 +465,7 @@ class PreprocessorPersist:
                         'params': stage['transformer'].__dict__
                     }
 
-                metadata.append(step)
+                    metadata.append(step)
 
                 # Create preprocessor version
                 preprocessor_id = xplainable.client.create_preprocessor_version(

@@ -669,7 +669,10 @@ def classifier(df):
                     partitioned_model.add_partition(model, p)
                     
                     if len(model.target_map) > 0:
-                        y_train = y_train.map(model.target_map)
+                        if y_train.dtype == 'object':
+                            y_train = y_train.map(model.target_map)
+                        if y_test.dtype == 'object':
+                            y_test = y_test.map(model.target_map)
 
                     e = EvaluateClassifier(model, X_train, y_train)
                     
@@ -680,6 +683,7 @@ def classifier(df):
                         'validation': evaluate_classification(
                             e.y_val, e.y_val_prob)
                     }
+
                     eval_objects[p] = eval_items
                     metadata_objects[p] = training_metadata
                     part_progress.set_value('Partitions', i+1)
