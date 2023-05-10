@@ -107,6 +107,7 @@ class XRegressor(BaseModel):
         self._fetch_meta(x, y)
         self._learn_encodings(x, y)
         x, y = self._encode(x, y)
+        self._calculate_category_meta(x, y)
         x, y = self._preprocess(x, y)
 
         x = x.values

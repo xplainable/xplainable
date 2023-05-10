@@ -225,6 +225,7 @@ class XClassifier(BaseModel):
         self._fetch_meta(x, y)
         self._learn_encodings(x, y)
         x, y = self._encode(x, y)
+        self._calculate_category_meta(x, y)
         x, y = self._preprocess(x, y)
 
         x = x.values
@@ -344,7 +345,7 @@ class XClassifier(BaseModel):
         y_prob = np.clip(y_prob, 0, 1) # because of rounding errors
         y_pred = (y_prob > threshold).astype(int)
 
-        if len(self.target_map) > 0:
+        if (len(self.target_map) > 0) and (y.dtype == 'object'):
             y = y.copy().map(self.target_map)
 
         # Calculate metrics

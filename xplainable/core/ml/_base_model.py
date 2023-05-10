@@ -91,7 +91,6 @@ class BaseModel:
         self.target_map = {
             value: key for key, value in self.target_map_inv.items()}
 
-        # Encode the labels
         return
 
     def _fetch_meta(self, x, y):
@@ -106,6 +105,7 @@ class BaseModel:
 
         self.columns = list(x.columns)
 
+    def _calculate_category_meta(self, x, y):
         # calculate mean and frequency information for categories
         self.category_meta = {c: {} for c in self.categorical_columns}
         for col in self.categorical_columns:
@@ -252,16 +252,16 @@ class BaseModel:
                 leaf_nodes.append(_prof)
 
             if _key == 'categorical':
-                mapp = self.feature_map_inv[c]
-                for k in np.array(list(mapp.keys())):
+                mapp_inv = self.feature_map_inv[c]
+                for k in np.array(list(mapp_inv.keys())):
                     idx = np.where((p[:, 0] < k) & (k < p[:, 1]))
-                    leaf_nodes[idx[0][0]]['categories'].append(mapp[k])
+                    leaf_nodes[idx[0][0]]['categories'].append(mapp_inv[k])
                     
                     leaf_nodes[idx[0][0]]['means'].append(
-                        self.category_meta[c]["means"][mapp[k]])
+                        self.category_meta[c]["means"][k])
 
                     leaf_nodes[idx[0][0]]['frequencies'].append(
-                        self.category_meta[c]["freqs"][mapp[k]])
+                        self.category_meta[c]["freqs"][k])
 
             profile[_key][c] = leaf_nodes
 
