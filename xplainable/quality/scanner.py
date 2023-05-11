@@ -1,9 +1,8 @@
 from pandas.api.types import is_string_dtype, is_datetime64_dtype, is_numeric_dtype, is_bool_dtype
-from statsmodels.stats.outliers_influence import variance_inflation_factor
-from statsmodels.tools.tools import add_constant
+# from statsmodels.stats.outliers_influence import variance_inflation_factor
+# from statsmodels.tools.tools import add_constant
 import pandas as pd
 import numpy as np
-import copy
 import ipywidgets as widgets
 from IPython.display import display
 
@@ -315,49 +314,49 @@ class XScan:
 
         return sub_profile
 
-    @staticmethod
-    def _vif(X, max_categories: int = 10):
+    # @staticmethod
+    # def _vif(X, max_categories: int = 10):
 
-        X = X.copy()
-        X.dropna(inplace=True)
+    #     X = X.copy()
+    #     X.dropna(inplace=True)
         
-        categorical_columns = X.select_dtypes(
-            include=['object', 'category']).columns.to_list()
+    #     categorical_columns = X.select_dtypes(
+    #         include=['object', 'category']).columns.to_list()
 
-        for col in list(categorical_columns):
-            if X[col].nunique() > max_categories:
-                categorical_columns.remove(col)
+    #     for col in list(categorical_columns):
+    #         if X[col].nunique() > max_categories:
+    #             categorical_columns.remove(col)
 
-        X = pd.get_dummies(
-            X, columns=categorical_columns, drop_first=True)
+    #     X = pd.get_dummies(
+    #         X, columns=categorical_columns, drop_first=True)
 
-        X = X.select_dtypes(include=[np.number])
+    #     X = X.select_dtypes(include=[np.number])
 
-        # Add constant for vif calculation
-        X = add_constant(X)
+    #     # Add constant for vif calculation
+    #     X = add_constant(X)
 
-        # calculating VIF for each feature
-        vif = {X.columns[i]: variance_inflation_factor(
-            X.values, i) for i in range(X.shape[1])}
+    #     # calculating VIF for each feature
+    #     vif = {X.columns[i]: variance_inflation_factor(
+    #         X.values, i) for i in range(X.shape[1])}
 
-        if 'const' in vif:
-            vif.pop('const')
+    #     if 'const' in vif:
+    #         vif.pop('const')
 
-        vif_report = {}
+    #     vif_report = {}
 
-        # Add categories to map
-        for col in categorical_columns:
-            sub = {}
-            for i, v in copy.deepcopy(vif).items():
-                if i.startswith(col):
-                    sub[i.replace(f'{col}_', "")] = v
-                    vif.pop(i)
+    #     # Add categories to map
+    #     for col in categorical_columns:
+    #         sub = {}
+    #         for i, v in copy.deepcopy(vif).items():
+    #             if i.startswith(col):
+    #                 sub[i.replace(f'{col}_', "")] = v
+    #                 vif.pop(i)
             
-            vif_report[col] = sub
+    #         vif_report[col] = sub
             
-        vif_report.update(vif)
+    #     vif_report.update(vif)
 
-        return vif_report
+    #     return vif_report
 
     def _scan_feature(self, ser):
 

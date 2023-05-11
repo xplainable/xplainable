@@ -198,6 +198,9 @@ def generate_ruleset(
 
         t = dummied.groupby(col).sum().T
 
+        if len(t) == 0:
+            continue
+
         matches = t[(t[0] > 0) & (t[1] == 0)]
         _c, _v = col.split('___')
         
