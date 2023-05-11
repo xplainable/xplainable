@@ -17,7 +17,7 @@ from pandas.api.types import is_numeric_dtype, is_string_dtype
 import pandas.api.types as pdtypes
 import matplotlib.pyplot as plt
 import seaborn as sns
-import dill
+import pickle
 
 
 class Preprocessor:
@@ -74,7 +74,7 @@ class Preprocessor:
             filename (str): The filepath to save to.
         """
         with open(filename, 'wb') as outp:
-            dill.dump(self, outp)
+            pickle.dump(self, outp)
 
     def transform(self, df):
         """ Applies pipeline transformers to dataframe

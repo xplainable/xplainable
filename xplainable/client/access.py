@@ -1,27 +1,27 @@
 from ._client import Client
 import xplainable
 from IPython.display import clear_output
-import os
 import sys
 from getpass import getpass
-import warnings
-import logging
 from ..gui.components import KeyValueTable, Header
 from IPython.display import display, clear_output
 import keyring
 
+vs = sys.version_info
+version = f'{vs.major}_{vs.minor}_{vs.micro}'
+KEY = f'XPLAINABLE_{version}'
 
 def initialise():
     
     has_set = False
-    api_key = keyring.get_password('XPLAINABLE', 'api_key')
+    api_key = keyring.get_password('XPLAINABLE', version)
     if not api_key:
         api_key = getpass("Paste a valid API Key: ")
         has_set = True
     
     try:
         xplainable.client = Client(api_key)
-        keyring.set_password('XPLAINABLE', 'api_key', api_key)
+        keyring.set_password('XPLAINABLE', version, api_key)
         clear_output()
 
         pyinf = sys.version_info
@@ -60,5 +60,5 @@ def initialise():
         api_key = getpass(text)
         clear_output()
         xplainable.client = Client(api_key)
-        keyring.set_password('XPLAINABLE', 'api_key', api_key)
+        keyring.set_password('XPLAINABLE', version, api_key)
         return "Initialised"

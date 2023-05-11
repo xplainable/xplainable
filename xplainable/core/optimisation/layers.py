@@ -1,6 +1,5 @@
 import numpy as np
 import random
-from tqdm.auto import trange
 import math
 from numba import njit, prange
 

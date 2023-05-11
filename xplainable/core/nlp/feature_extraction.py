@@ -1,13 +1,9 @@
-from nltk.corpus import stopwords
+from ...utils.collections import stopwords
 from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import CountVectorizer
 import re
 import pandas as pd
 import numpy as np
-import spacy
-from collections import Counter
-from joblib import Parallel, delayed
-import psutil
 
 
 class NLPExtractor:
@@ -22,7 +18,8 @@ class NLPExtractor:
     """
 
     def __init__(self, urls=True, uppercase=True, punctuation=True, chars=True,\
-        numbers=True, emojis=True, entities=False, words=True, sentiment=True, drop_stopwords=True, ngrams=1):
+        numbers=True, emojis=True, words=True, sentiment=True, \
+            drop_stopwords=True, ngrams=1):
 
         super().__init__()
 
@@ -34,17 +31,16 @@ class NLPExtractor:
         self.numbers = numbers
         self.emojis = emojis
         self.words = words
-        self.entities = entities
         self.sentiment = sentiment
         self.drop_stopwords = drop_stopwords
         self.ngrams = ngrams
 
         # Load spacy model if required
-        if entities:
-            self.nlp = spacy.load('en_core_web_sm', disable=[])
+        # if entities:
+        #     self.nlp = spacy.load('en_core_web_sm', disable=[])
 
         # Load stop words for text parsing
-        self.stop_words = set(stopwords.words('english'))
+        self.stop_words = set(stopwords)
 
         # Instantiate meta data stores
         self.base_value = None
@@ -153,70 +149,70 @@ class NLPExtractor:
 
         return [item for sublist in lists for item in sublist]
 
-    def _get_named_entities(self, text):
-        """ Extracts named entities from a string.
+    # def _get_named_entities(self, text):
+    #     """ Extracts named entities from a string.
 
-        Args:
-            text (str): A non-empty string to be processed.
+    #     Args:
+    #         text (str): A non-empty string to be processed.
 
-        Returns:
-            collections.Counter: The counts of each named entity type.
-        """
+    #     Returns:
+    #         collections.Counter: The counts of each named entity type.
+    #     """
 
-        # Get all named entities from string
-        ne = [ent.label_ for ent in self.nlp(text).ents]
+    #     # Get all named entities from string
+    #     ne = [ent.label_ for ent in self.nlp(text).ents]
 
-        return Counter(ne)
+    #     return Counter(ne)
 
-    def batch_process(self, texts):
-        """ Batch processes named entities recognition.
+    # def batch_process(self, texts):
+    #     """ Batch processes named entities recognition.
 
-        Args:
-            texts (pd.Series): A series containing strings to be processed.
+    #     Args:
+    #         texts (pd.Series): A series containing strings to be processed.
 
-        Returns:
-            list: A list of processed batches.
-        """
+    #     Returns:
+    #         list: A list of processed batches.
+    #     """
 
-        # Instantiate pipeline
-        _pipe = []
+    #     # Instantiate pipeline
+    #     _pipe = []
 
-        # Add batches to pipeline
-        for doc in self.nlp.pipe(texts, batch_size=100):
-            _pipe.append(self._get_named_entities(str(doc)))
+    #     # Add batches to pipeline
+    #     for doc in self.nlp.pipe(texts, batch_size=100):
+    #         _pipe.append(self._get_named_entities(str(doc)))
 
-        return _pipe
+    #     return _pipe
 
-    def _preprocess_parallel(self, texts, chunk_size=200):
-        """ Distributes NLP pipeline processes across all available cores.
+    # def _preprocess_parallel(self, texts, chunk_size=200):
+    #     """ Distributes NLP pipeline processes across all available cores.
 
-        Args:
-            texts (pd.Series): A series of texts to be processed.
-            chunk_size (int, optional): Size of chunks. Defaults to 200.
+    #     Args:
+    #         texts (pd.Series): A series of texts to be processed.
+    #         chunk_size (int, optional): Size of chunks. Defaults to 200.
 
-        Returns:
-            list: Flattened list of results.
-        """
+    #     Returns:
+    #         list: Flattened list of results.
+    #     """
 
-        # Get the number of machine cores
-        cpu_count = psutil.cpu_count(logical=False)
+    #     # Get the number of machine cores
+    #     cpu_count = psutil.cpu_count(logical=False)
 
-        print(f'Running on {cpu_count} CPUs.')
+    #     print(f'Running on {cpu_count} CPUs.')
 
-        # Instantiate the executor
-        executor = Parallel(n_jobs=cpu_count,
-                            backend='multiprocessing',
-                            prefer="processes")
+    #     # Instantiate the executor
+    #     executor = Parallel(n_jobs=cpu_count,
+    #                         backend='multiprocessing',
+    #                         prefer="processes")
 
-        # Prepare batch processing
-        do = delayed(self.batch_process)
+    #     # Prepare batch processing
+    #     do = delayed(self.batch_process)
 
-        # Process chunks in batches
-        tasks = (do(chunk) for chunk in
-                 self._chunker(texts, len(texts), chunk_size=chunk_size))
-        result = executor(tasks)
+    #     # Process chunks in batches
+    #     tasks = (do(chunk) for chunk in
+    #              self._chunker(texts, len(texts), chunk_size=chunk_size))
+    #     result = executor(tasks)
 
-        return self._flatten(result)
+    #     return self._flatten(result)
 
     def _count_upper(self, text):
         """ Counts uppercase letters in a string.
@@ -608,7 +604,7 @@ class NLPExtractor:
         
         return
             
-    def transform(self, x, parallelise=False):
+    def transform(self, x):
         """ Extracts NLP features from text column.
 
         Args:
@@ -653,18 +649,18 @@ class NLPExtractor:
             df['nlp_char'] = x.apply(len)
 
         # Extract named entities with spacy model
-        if self.entities:
+        # if self.entities:
 
-            # Normal extraction
-            if not parallelise:
-                print('Running on single CPU.')
-                df['nlp_entities'] = x.apply(
-                    self._get_named_entities)
+        #     # Normal extraction
+        #     if not parallelise:
+        #         print('Running on single CPU.')
+        #         df['nlp_entities'] = x.apply(
+        #             self._get_named_entities)
 
-            # Distributed extraction for large datasets
-            else:
-                df['nlp_entities'] = \
-                    self._preprocess_parallel(x, chunk_size=1024)
+        #     # Distributed extraction for large datasets
+        #     else:
+        #         df['nlp_entities'] = \
+        #             self._preprocess_parallel(x, chunk_size=1024)
 
         # Split and lemmatize words
         x = self._split_column(x)#.apply(self._lemmatize)
@@ -680,31 +676,31 @@ class NLPExtractor:
             df['nlp_avg_word_len'] = df['nlp_avg_word_len'].replace(np.inf, 0)
 
         # Convert named entities to individual features
-        if self.entities:
+        # if self.entities:
 
-            # Record the initial column names
-            init_cols = df.columns
+        #     # Record the initial column names
+        #     init_cols = df.columns
 
-            # Create feature for each named entity
-            df = pd.concat([df.drop('nlp_entities', axis=1), pd.DataFrame(
-                df['nlp_entities'].tolist())], axis=1)
+        #     # Create feature for each named entity
+        #     df = pd.concat([df.drop('nlp_entities', axis=1), pd.DataFrame(
+        #         df['nlp_entities'].tolist())], axis=1)
 
-            # Get the list of entity names
-            ent_list = [col for col in df if col not in init_cols]
+        #     # Get the list of entity names
+        #     ent_list = [col for col in df if col not in init_cols]
 
-            # Drop the feature if less than 10% of rows contain the entity
-            drop_col = [col for col, val in df[
-                ent_list].sum().iteritems() if val < 0.1 * len(df)]
+        #     # Drop the feature if less than 10% of rows contain the entity
+        #     drop_col = [col for col, val in df[
+        #         ent_list].sum().iteritems() if val < 0.1 * len(df)]
 
-            df = df.drop(drop_col, axis=1)
+        #     df = df.drop(drop_col, axis=1)
 
-            # Fill remaining entities' na with 0
-            keep_col = [col for col in ent_list if col not in drop_col]
-            df[keep_col] = df[keep_col].fillna(0)
+        #     # Fill remaining entities' na with 0
+        #     keep_col = [col for col in ent_list if col not in drop_col]
+        #     df[keep_col] = df[keep_col].fillna(0)
 
-            # rename features to prefix with 'nlp_'
-            rename_cols = {ent: f'nlp_{ent.lower()}' for ent in ent_list}
-            df = df.rename(rename_cols)
+        #     # rename features to prefix with 'nlp_'
+        #     rename_cols = {ent: f'nlp_{ent.lower()}' for ent in ent_list}
+        #     df = df.rename(rename_cols)
 
         # Calculate text sentiment
         if self.sentiment:
