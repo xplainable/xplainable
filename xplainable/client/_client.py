@@ -56,6 +56,9 @@ class Client:
         self._user = self.get_user_data()
         self.avatar = render_user_avatar(self._user)
 
+        self.xplainable_version = None
+        self.python_version = None
+
     def list_models(self):
         """ Lists models of active user.
 
@@ -280,11 +283,12 @@ class Client:
             
         return preprocessor_id
     
-    def create_preprocessor_version(self, preprocessor_id, stages, deltas):
+    def create_preprocessor_version(self, preprocessor_id, stages, deltas, versions):
 
         payload = {
             "stages": stages,
-            "deltas": deltas
+            "deltas": deltas,
+            "versions": versions
             }
 
         # Create a new version and fetch id
@@ -354,12 +358,13 @@ class Client:
         return model_id
 
     def create_model_version(
-        self, model_id, partition_on, ruleset, health_info):
+        self, model_id, partition_on, ruleset, health_info, versions):
 
         payload = {
             "partition_on": partition_on,
             "ruleset": json.dumps(ruleset, cls=NpEncoder),
-            "health_info": json.dumps(health_info, cls=NpEncoder)
+            "health_info": json.dumps(health_info, cls=NpEncoder),
+            "versions": versions
             }
 
         # Create a new version and fetch id
@@ -433,10 +438,11 @@ class Client:
             )
         except Exception as e:
             raise ValueError(e)
+        
+        if response.status_code != 200:
+            raise ConnectionError("Failed to add partition data")
 
-        partition_id = get_response_content(response)
-
-        return partition_id
+        return
 
     # def log_evaluation(self, model_id, version_id, partition_id, evaluation, tags):
         
