@@ -120,12 +120,12 @@ def render_user_avatar(data):
             .username {{
                 font-size: 16px;
                 margin-top: 3px;
-                margin-bottom: -7px;
+                margin-bottom: -10px;
             }}
             .position {{
                 font-size: 12px;
                 color: grey;
-                margin-left: 12px;
+                margin-left: 2px;
             }}
             .default-avatar {{
                 display: flex;
