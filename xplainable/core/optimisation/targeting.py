@@ -198,7 +198,7 @@ def generate_ruleset(
 
         t = dummied.groupby(col).sum().T
 
-        if len(t) == 0:
+        if 0 not in t.columns:
             continue
 
         matches = t[(t[0] > 0) & (t[1] == 0)]
