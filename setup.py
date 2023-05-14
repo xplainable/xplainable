@@ -33,5 +33,7 @@ setup(
         'urllib3>=1.26.5',
         'psutil>=5.9.4',
         'joblib>=1.2.0',
+        'tornado==6.1',
+        'jupyter-client==7.3.2'
     ]
 )

@@ -3,6 +3,7 @@ import ipywidgets as widgets
 from ipywidgets import interactive
 from IPython.display import display
 import webbrowser
+from .svgs import docs_svg, offline_svg
 
 class LiveDF:
 
@@ -280,23 +281,49 @@ class TextInput:
         self.w_text_input.disabled = False
 
 # linking button for offline version
-offline_button = widgets.Button(description='offline')
-offline_button.layout = widgets.Layout(width='75px')
-offline_button.style.button_color = '#e14067'
-offline_button.style.text_color = 'white'
+# offline_button = widgets.Button(description='offline')
+# offline_button.layout = widgets.Layout(width='75px')
+# offline_button.style.button_color = '#e14067'
+# offline_button.style.text_color = 'white'
 
-def on_offline_button_click(b):
-    webbrowser.open_new_tab('https://www.xplainable.io/sign-up')
+# def on_offline_button_click(b):
+#     webbrowser.open_new_tab('https://www.xplainable.io/sign-up')
 
-offline_button.on_click(on_offline_button_click)
+# offline_button.on_click(on_offline_button_click)
 
 # linking button for offline version
-docs_button = widgets.Button(description='docs')
-docs_button.layout = widgets.Layout(width='75px', margin='0 15px 0 0')
-docs_button.style.button_color = '#0080ea'
-docs_button.style.text_color = 'white'
+# docs_button = widgets.Button(description='docs')
+# docs_button.layout = widgets.Layout(width='75px', margin='0 15px 0 0')
+# docs_button.style.button_color = '#0080ea'
+# docs_button.style.text_color = 'white'
 
-def on_docs_button_click(b):
-    webbrowser.open_new_tab('https://docs.xplainable.io')
+# def on_docs_button_click(b):
+#     webbrowser.open_new_tab('https://docs.xplainable.io')
 
-docs_button.on_click(on_docs_button_click)
+# docs_button.on_click(on_docs_button_click)
+
+
+docs_html = f"""
+<a href="https://docs.xplainable.io" target="_blank" rel="noopener noreferrer" style="cursor: pointer;" title="Docs">
+    {docs_svg}
+</a>
+"""
+
+docs_widget = widgets.HTML(value=docs_html)
+
+docs_button = widgets.Box(
+    [docs_widget],
+    layout = widgets.Layout(margin='5px 15px 0 0')
+    )
+
+offline_html = f"""
+<a href="https://www.xplainable.io/sign-up" target="_blank" rel="noopener noreferrer" style="cursor: pointer;" title="Sign up">
+    {offline_svg}
+</a>
+"""
+
+offline_widget = widgets.HTML(value=offline_html)
+offline_button = widgets.Box(
+    [offline_widget],
+    layout = widgets.Layout(margin='5px 15px 0 0')
+    )
