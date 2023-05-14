@@ -197,8 +197,14 @@ class ModelPersist:
             loading.value = loading.value + 1
 
             loading_status.value = f'Creating model version...'
+
+            versions = {
+                    "xplainable_version": xplainable.client.xplainable_version,
+                    "python_version": xplainable.client.python_version
+                }
+            
             version_id = xplainable.client.create_model_version(
-                model_id, self.partition_on, ruleset, health_info)
+                model_id, self.partition_on, ruleset, health_info, versions)
             loading.value = loading.value + 1
             
             for part in self.partitions:
@@ -208,7 +214,7 @@ class ModelPersist:
                 try:
                     mdl = self.model.partitions[part]
 
-                    partition_id = xplainable.client.log_partition(
+                    xplainable.client.log_partition(
                         self.model_type,
                         part,
                         mdl,
@@ -467,9 +473,18 @@ class PreprocessorPersist:
 
                     metadata.append(step)
 
+                versions = {
+                    "xplainable_version": xplainable.client.xplainable_version,
+                    "python_version": xplainable.client.python_version
+                }
+
                 # Create preprocessor version
                 preprocessor_id = xplainable.client.create_preprocessor_version(
-                    preprocessor_id, metadata, self.preprocessor.df_delta)
+                    preprocessor_id,
+                    metadata,
+                    self.preprocessor.df_delta,
+                    versions
+                    )
             
             except Exception as e:
                 print(e)

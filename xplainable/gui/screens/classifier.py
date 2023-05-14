@@ -150,7 +150,7 @@ def classifier(df):
     ]
 
     optimise_metric = widgets.Dropdown(
-        value='weighted-f1',
+        value='roc-auc',
         options=optimise_metrics,
         description='metric:',
         style=style,
@@ -522,6 +522,8 @@ def classifier(df):
 
     # Train model on click
     def train_button_clicked(b):
+        
+        header.loader.start()
 
         part_progress.set_bounds(min_val=0, max_val=len(b.partitions))
         part_progress.set_suffix(f'/{len(b.partitions)}')
@@ -727,7 +729,8 @@ def classifier(df):
 
             display(show_evaluation())
             display(save.save())
-
+            header.loader.stop()
+        
     # Listen for clicks
     train_button.on_click(train_button_clicked)
     train_button.style = {

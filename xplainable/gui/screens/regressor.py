@@ -62,7 +62,7 @@ def regressor(df):
 
     def partition_change(_):
         if _dropdown_partition_on.value is None:
-            train_button.partitions = {"__dataset__": XRegressor()}
+            _button_train.partitions = {"__dataset__": XRegressor()}
             return
         partitioned_model.partition_on = _dropdown_partition_on.value
         parts = {p: XRegressor() for p in df[_dropdown_partition_on.value].unique()}
@@ -322,6 +322,8 @@ def regressor(df):
     _dropdown_partition_on.observe(partition_change, names=['value'])
     
     def on_train(b):
+
+        header.loader.start()
         parts = b.partitions
         p_on = _dropdown_partition_on.value
         
@@ -476,6 +478,7 @@ def regressor(df):
         output_body.close()
         display(show_evaluation())
         display(save.save())
+        header.loader.stop()
     
     # BODY
     body = widgets.HBox([_col_selectors, tabs, vpipe])
