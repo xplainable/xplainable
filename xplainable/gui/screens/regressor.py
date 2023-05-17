@@ -13,6 +13,7 @@ from .evaluate import EvaluateRegressor
 from .save import ModelPersist
 from ..components import BarGroup
 from ...metrics.metrics import evaluate_regression
+from ...utils.handlers import check_df
 
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -24,6 +25,9 @@ from sklearn.metrics import *
 
 def regressor(df):
     
+    # Assert dataframe is valid
+    check_df(df)
+
     style = {'description_width': 'initial'}
     divider = widgets.HTML(f'<hr class="solid">')
     

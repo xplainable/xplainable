@@ -12,6 +12,7 @@ from .save import ModelPersist
 from ...metrics.metrics import evaluate_classification
 from ...callbacks import OptCallback
 from ..components import BarGroup
+from ...utils.handlers import check_df
 
 import time
 import numpy as np
@@ -36,6 +37,9 @@ def classifier(df):
     Returns:
         xplainale.models.XClassifier: The trained model
     """
+
+    # Assert dataframe is valid
+    check_df(df)
 
     # This allows widgets to show full label text
     style = {'description_width': 'initial'}
