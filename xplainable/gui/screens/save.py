@@ -170,7 +170,7 @@ class ModelPersist:
 
             confirm_button.description = "Saving..."
             confirm_button.disabled = True
-            loading.max = len(self.partitions) + 3
+            loading.max = len(self.partitions) + 2
             loading.layout.display = 'flex'
             
             if buttons.index == 0:
@@ -184,12 +184,14 @@ class ModelPersist:
             else:
                 model_id = self.selected_model_id
             
-            loading_status.value = f'Calculating dataset rules...'
-            ruleset = generate_ruleset(
-                self.df,
-                self.model.partitions['__dataset__'].target,
-                self.model.partitions['__dataset__'].id_columns
-                )
+            # loading_status.value = f'Calculating dataset rules...'
+            # ruleset = generate_ruleset(
+            #     self.df,
+            #     self.model.partitions['__dataset__'].target,
+            #     self.model.partitions['__dataset__'].id_columns
+            #     )
+            ruleset = '[]' # removed ruleset until we can build a handler for it
+
             loading.value = loading.value + 1
 
             loading_status.value = f'Scanning data health...'
