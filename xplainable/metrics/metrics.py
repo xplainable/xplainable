@@ -83,27 +83,52 @@ def evaluate_regression(y_true, y_pred):
     }
     
     # Mean Absolute Error (MAE)
-    results["mae"] = mean_absolute_error(y_true, y_pred)
+    try:
+        results["mae"] = mean_absolute_error(y_true, y_pred)
+    except:
+        results["mae"] = np.nan
     
     # Mean Squared Error (MSE)
-    results["mse"] = mean_squared_error(y_true, y_pred)
+    try:
+        results["mse"] = mean_squared_error(y_true, y_pred)
+    except:
+        results["mse"] = np.nan
     
     # Root Mean Squared Error (RMSE)
-    results["rmse"] = np.sqrt(mean_squared_error(y_true, y_pred))
-    
+    try:
+        results["rmse"] = np.sqrt(mean_squared_error(y_true, y_pred))
+    except:
+        results["rmse"] = np.nan
+
     # R-squared (R2) Score
-    results["r2_score"] = r2_score(y_true, y_pred)
+    try:
+        results["r2_score"] = r2_score(y_true, y_pred)
+    except:
+        results["r2_score"] = np.nan
     
     # Explained Variance Score
-    results["explained_variance_score"] = explained_variance_score(y_true, y_pred)
+    try:
+        results["explained_variance_score"] = explained_variance_score(
+            y_true, y_pred)
+    except:
+        results["explained_variance_score"] = np.nan
     
     # Mean Squared Logarithmic Error (MSLE)
-    results["msle"] = mean_squared_log_error(y_true, y_pred)
+    try:
+        results["msle"] = mean_squared_log_error(y_true, y_pred)
+    except:
+        results["msle"] = np.nan
     
     # Root Mean Squared Logarithmic Error (RMSLE)
-    results["rmsle"] = np.sqrt(mean_squared_log_error(y_true, y_pred))
+    try:
+        results["rmsle"] = np.sqrt(mean_squared_log_error(y_true, y_pred))
+    except:
+        results["rmsle"] = np.nan
     
     # Mean Absolute Percentage Error (MAPE)
-    results["mape"] = mean_absolute_percentage_error(y_true, y_pred)
+    try:
+        results["mape"] = mean_absolute_percentage_error(y_true, y_pred)
+    except:
+        results["mape"] = np.nan
     
     return results

@@ -185,10 +185,11 @@ class XRegressor(BaseModel):
         mse = round(mean_squared_error(y, y_pred), 4)
         rmse = round(np.sqrt(mse), 4)
         evs = round(explained_variance_score(y, y_pred), 4)
+        
         try:
             msle = round(mean_squared_log_error(y, y_pred), 4)
-        except ValueError:
-            msle = None
+        except Exception:
+            msle = np.nan
 
         metrics = {
             "Explained Variance": evs,
