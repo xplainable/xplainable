@@ -3,7 +3,7 @@ from ...utils.api import get_response_content
 from ...utils.xwidgets import TextInput
 from ...core.optimisation.targeting import generate_ruleset
 from ...quality.scanner import XScan
-from ...utils.encoders import NpEncoder
+from ...utils.encoders import NpEncoder, force_json_compliant
 import json
 
 import ipywidgets as widgets
@@ -165,7 +165,32 @@ class ModelPersist:
                 results.append(feature_info)
 
             return results
+        
+        def catch_errors(func):
+            def wrapper(*args, **kwargs):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    with error_output:
+                        clear_output(wait=True)
+                        print("Failed. \n")
+                        print(e)
+                        display(clear_error_button)
 
+                    confirm_button.description = "Error"
+                    confirm_button.style.button_color = '#e14067'
+                    loading.value = 0
+                    loading.layout.display = 'none'
+                    loading_status.value = ''
+
+                    time.sleep(1)
+                    confirm_button.description = "Try again"
+                    confirm_button.style.button_color = '#0080ea'
+                    confirm_button.disabled = False
+                    return 
+            return wrapper
+
+        @catch_errors
         def on_confirm(_):
 
             confirm_button.description = "Saving..."
@@ -205,6 +230,8 @@ class ModelPersist:
                     "python_version": xplainable.client.python_version
                 }
             
+            health_info = force_json_compliant(health_info)
+            
             version_id = xplainable.client.create_model_version(
                 model_id, self.partition_on, ruleset, health_info, versions)
             loading.value = loading.value + 1
@@ -213,25 +240,17 @@ class ModelPersist:
                 
                 loading_status.value = f'logging {part} model'
 
-                try:
-                    mdl = self.model.partitions[part]
+                mdl = self.model.partitions[part]
 
-                    xplainable.client.log_partition(
-                        self.model_type,
-                        part,
-                        mdl,
-                        model_id,
-                        version_id,
-                        self.eval_objects[part],
-                        self.metadata_objects[part]
-                    )
-                except Exception as e:
-                    print(e)
-                    loading_status.value = f'something went wrong'
-                    confirm_button.description = "Error"
-                    confirm_button.style.button_color = '#e14067'
-                    time.sleep(0.5)
-                    break
+                xplainable.client.log_partition(
+                    self.model_type,
+                    part,
+                    mdl,
+                    model_id,
+                    version_id,
+                    self.eval_objects[part],
+                    self.metadata_objects[part]
+                )
 
                 # Increment model_loader after logging partition
                 loading.value = loading.value + 1
@@ -240,9 +259,8 @@ class ModelPersist:
             loading.layout.display = 'none'
             loading.value = 0
 
-            if confirm_button.description != "Error":
-                confirm_button.description = "Saved"
-                confirm_button.style.button_color = '#12b980'
+            confirm_button.description = "Saved"
+            confirm_button.style.button_color = '#12b980'
 
             time.sleep(0.5)
 
@@ -299,8 +317,23 @@ class ModelPersist:
         model_name.w_text_input.observe(name_change, names=['value'])
 
         action_buttons = widgets.HBox([close_button, save_button])
+
+        error_output = widgets.Output()
+
+        def clear_error(_):
+            error_output.clear_output()
+
+        clear_error_button = widgets.Button(description="Clear")
+        clear_error_button.on_click(clear_error)
         
-        screen = widgets.VBox([action_buttons, button_display, model_details, model_loader, apply_buttons])
+        screen = widgets.VBox([
+            action_buttons,
+            button_display,
+            model_details,
+            model_loader,
+            apply_buttons,
+            error_output
+            ])
         
         action_buttons.layout.display = 'flex'
         button_display.layout.display = 'none'
@@ -450,12 +483,34 @@ class PreprocessorPersist:
             save_df_button.disabled = False
             save_df_button.description = "Save DataFrame"
 
+        def catch_errors(func):
+            def wrapper(*args, **kwargs):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    with error_output:
+                        clear_output(wait=True)
+                        print("Failed. \n")
+                        print(e)
+                        display(clear_error_button)
+
+                    confirm_button.description = "Error"
+                    confirm_button.style.button_color = '#e14067'
+                    time.sleep(1)
+                    confirm_button.description = "Try again"
+                    confirm_button.style.button_color = '#0080ea'
+                    confirm_button.disabled = False
+                    return 
+            return wrapper
+
+        @catch_errors
         def on_confirm(_):
 
             confirm_button.description = "Saving..."
             confirm_button.disabled = True
             
             if buttons.index == 0:
+
                 preprocessor_id = xplainable.client.create_preprocessor_id(
                     preprocessor_name.value,
                     preprocessor_description.value,
@@ -463,40 +518,33 @@ class PreprocessorPersist:
 
             else:
                 preprocessor_id = self.selected_preprocessor_id
-            
-            try:
-                metadata = []
-                for stage in self.preprocessor.pipeline.stages:
-                    step = {
-                        'feature': stage['feature'],
-                        'name': stage['name'],
-                        'params': stage['transformer'].__dict__
-                    }
 
-                    metadata.append(step)
 
-                versions = {
-                    "xplainable_version": xplainable.client.xplainable_version,
-                    "python_version": xplainable.client.python_version
+            metadata = []
+            for stage in self.preprocessor.pipeline.stages:
+                step = {
+                    'feature': stage['feature'],
+                    'name': stage['name'],
+                    'params': stage['transformer'].__dict__
                 }
 
-                # Create preprocessor version
-                preprocessor_id = xplainable.client.create_preprocessor_version(
-                    preprocessor_id,
-                    metadata,
-                    self.preprocessor.df_delta,
-                    versions
-                    )
-            
-            except Exception as e:
-                print(e)
-                confirm_button.description = "Error"
-                confirm_button.style.button_color = '#e14067'
-                time.sleep(0.5)
+                metadata.append(step)
+
+            versions = {
+                "xplainable_version": xplainable.client.xplainable_version,
+                "python_version": xplainable.client.python_version
+            }
+
+            # Create preprocessor version
+            preprocessor_id = xplainable.client.create_preprocessor_version(
+                preprocessor_id,
+                metadata,
+                self.preprocessor.df_delta,
+                versions
+                )
                 
-            if confirm_button.description != "Error":
-                confirm_button.description = "Saved"
-                confirm_button.style.button_color = '#12b980'
+            confirm_button.description = "Saved"
+            confirm_button.style.button_color = '#12b980'
 
             time.sleep(0.5)
 
@@ -558,7 +606,23 @@ class PreprocessorPersist:
 
         action_buttons = widgets.HBox([close_button, save_df_button, save_button])
         
-        screen = widgets.VBox([action_buttons, button_display, preprocessor_details, preprocessor_loader, apply_buttons])
+        # output used for more user friendly error messages
+        error_output = widgets.Output()
+
+        def clear_error(_):
+            error_output.clear_output()
+
+        clear_error_button = widgets.Button(description="Clear")
+        clear_error_button.on_click(clear_error)
+
+        screen = widgets.VBox([
+            action_buttons,
+            button_display,
+            preprocessor_details,
+            preprocessor_loader,
+            apply_buttons,
+            error_output
+            ])
         
         action_buttons.layout.display = 'flex'
         button_display.layout.display = 'none'

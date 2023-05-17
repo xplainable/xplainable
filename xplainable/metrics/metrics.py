@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from ..utils.encoders import force_json_compliant
 from sklearn.metrics import (
     roc_auc_score, matthews_corrcoef, log_loss, auc, mean_absolute_error,
     mean_squared_error, r2_score, explained_variance_score,
@@ -72,7 +73,7 @@ def evaluate_classification(y_true, y_pred):
     # Log Loss (Cross-Entropy Loss)
     results["log_loss"] = log_loss(y_true, y_pred)
 
-    return results
+    return force_json_compliant(results)
 
 def evaluate_regression(y_true, y_pred):
     results = {
@@ -131,4 +132,4 @@ def evaluate_regression(y_true, y_pred):
     except:
         results["mape"] = np.nan
     
-    return results
+    return force_json_compliant(results)
