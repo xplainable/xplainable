@@ -184,20 +184,18 @@ class XClassifier(BaseModel):
             _min_scores = np.append(_min_scores, xconst._min_score)
 
             # don't update the original leaf nodes
-            self._profile.append(list(xconst._nodes))
+            self._profile.append(np.array([list(x) for x in xconst._nodes]))
 
         _sum_min = np.sum(_min_scores)
         _sum_max = np.sum(_max_scores)
 
         for idx in range(len(self._profile)):
             v = self._profile[idx]
-            for i in range(len(v)):
-                node = list(v[i])
+            for i, node in enumerate(v):
                 self._profile[idx][i][2] = self._normalise_score(
                     node[5], _sum_min, _sum_max)
         
-        self._profile = np.array(
-            [np.array(x, dtype=object) for x in self._profile], dtype=object)
+        self._profile = np.array(self._profile, dtype=object)
 
         return self
 

@@ -84,10 +84,9 @@ class XRegressor(BaseModel):
                     xconst._nodes[n][2] = xconst._nodes[n][5] / len(self.columns)
             
             # don't update the original leaf nodes
-            self._profile.append(list(xconst._nodes))
+            self._profile.append(np.array([list(x) for x in xconst._nodes]))
 
-        self._profile = np.array(
-            [np.array(x, dtype=object) for x in self._profile], dtype=object)
+        self._profile = np.array(self._profile, dtype=object)
         
         return self
 
