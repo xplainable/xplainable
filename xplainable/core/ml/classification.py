@@ -350,10 +350,26 @@ class XClassifier(BaseModel):
         # Calculate metrics
         cm = confusion_matrix(y, y_pred).tolist()
         cr = classification_report(y, y_pred, output_dict=True)
-        roc_auc = roc_auc_score(y, y_prob)
-        brier_loss = 1 - brier_score_loss(y, y_prob)
-        cohen_kappa = cohen_kappa_score(y, y_pred)
-        log_loss_score = log_loss(y, y_pred)
+
+        try:
+            roc_auc = roc_auc_score(y, y_prob)
+        except Exception:
+            roc_auc = np.nan
+
+        try:
+            brier_loss = 1 - brier_score_loss(y, y_prob)
+        except Exception:
+            brier_loss = np.nan
+
+        try:
+            cohen_kappa = cohen_kappa_score(y, y_pred)
+        except Exception:
+            cohen_kappa = np.nan
+        
+        try:
+            log_loss_score = log_loss(y, y_pred)
+        except Exception:
+            log_loss_score = np.nan
 
         # Produce output
         evaluation = {
