@@ -18,7 +18,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install traitlets
+          pip install -r requirements.txt
           pip install sphinx sphinx_rtd_theme
 
       - name: Generate Sphinx Documentation
