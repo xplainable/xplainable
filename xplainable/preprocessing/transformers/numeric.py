@@ -1,14 +1,15 @@
-from ._base import XBaseTransformer
+from .base import XBaseTransformer
 from ipywidgets import interactive
 import ipywidgets as widgets
 from pandas.api.types import is_numeric_dtype
 import numpy as np
+import pandas as pd
 
 
 class MinMaxScale(XBaseTransformer):
     """Scales a numeric series between 0 and 1."""
 
-    # Attributes for ipywidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['numeric']
 
     def __init__(self, min_value=None, max_value=None):
@@ -16,18 +17,26 @@ class MinMaxScale(XBaseTransformer):
         self.min_value = min_value
         self.max_value = max_value
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Scale a numeric series between 0 and 1.
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
         
         return (ser - self.min_value) / self.max_value
 
-    def fit(self, ser):
+    def fit(self, ser: pd.Series) -> 'MinMaxScale':
         """ Extracts the min and max value from a series.
 
         Args:
             ser (pandas.Series): The series in which to analyse.
 
         Returns:
-            self
+            MinMaxScale: The fitted transformer.
         """
 
         # Store min and max from training data
@@ -39,16 +48,32 @@ class MinMaxScale(XBaseTransformer):
 class LogTransform(XBaseTransformer):
     """ Log transforms a given numeric series."""
 
-    # Attributes for ipywidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['numeric']
 
     def __init__(self):
         pass
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ 
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
         return np.log(ser, where=(ser.values != 0))
 
-    def _inverse_operations(self, ser):
+    def inverse_transform(self, ser: pd.Series) -> pd.Series:
+        """ 
+
+        Args:
+            ser (pd.Series): The series to inverse transform.
+
+        Returns:
+            pd.Series: The inverse transformed series.
+        """
         return np.exp(ser)
 
 
@@ -60,7 +85,7 @@ class Clip(XBaseTransformer):
         upper (float): The upper threshold value.
 
     """
-
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['numeric']
 
     def __init__(self, lower=None, upper=None):
@@ -79,7 +104,15 @@ class Clip(XBaseTransformer):
         
         return interactive(_set_params)
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ 
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
 
         if not is_numeric_dtype(ser):
             raise TypeError(f'Series must be numeric type.')
@@ -94,7 +127,7 @@ class FillMissingNumeric(XBaseTransformer):
     Args:
         fill_with (str): The strategy ['mean', 'median', 'mode'].
     """
-
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['numeric']
 
     def __init__(self, fill_with='mean', fill_value=None):
@@ -111,18 +144,26 @@ class FillMissingNumeric(XBaseTransformer):
         
         return interactive(_set_params)
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ 
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
 
         return ser.fillna(self.fill_value)
 
-    def fit(self, ser):
-        """ Calculates the fill_value from a given series.
+    def fit(self, ser: pd.Series) -> 'FillMissingNumeric':
+        """ Calculates the fill value from a series.
 
         Args:
-            ser (pandas.Series): The series in which to analyse.
+            ser (pandas.Series): The series to analyse.
 
         Returns:
-            self
+            FillMissingNumeric: The fitted transformer.
         """
 
         # Calculate fill_value if mean, median or mode
@@ -140,4 +181,3 @@ class FillMissingNumeric(XBaseTransformer):
             self.fill_value = int(self.fill_value)
 
         return self
-

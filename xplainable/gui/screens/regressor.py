@@ -1,5 +1,4 @@
-from ...core.ml.regression import XRegressor, _optimise_tail_sensitivity
-from ...core.ml.partitions.regression import PartitionedRegressor
+from ...core.models import PartitionedRegressor, XRegressor
 from ...core.optimisation.genetic import XEvolutionaryNetwork
 from ...core.optimisation.layers import Tighten, Evolve
 from ...quality import XScan
@@ -245,7 +244,7 @@ def regressor(df):
 
         def focus_box(b):
             layer_selector.index = selector_idx
-            params = xnet.future_layers[vp._selected_index].get_params()
+            params = xnet.future_layers[vp._selected_index].params
             if b.description == 'edit':
             
                 if 'iterations' in params:
@@ -411,7 +410,7 @@ def regressor(df):
                     'layers': f'{len(xnet.future_layers)}'
                 })
                 start = time.time()
-                _optimise_tail_sensitivity(model, X_train, y_train)
+                model.optimise_tail_sensitivity(X_train, y_train)
                 training_metadata[p]['tail_sensitivity_optimise_time'] = round(
                             time.time()-start, 4)
             

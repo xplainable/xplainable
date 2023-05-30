@@ -14,7 +14,9 @@ class XConstructor:
         weight=1,
         power_degree=1,
         sigmoid_exponent=0,
-        regressor=False
+        regressor=False,
+        *args,
+        **kwargs
     ):
     
         self.regressor = regressor
@@ -305,10 +307,12 @@ class XConstructor:
         min_info_gain,
         min_leaf_size,
         alpha,
-        weight,
-        power_degree,
-        sigmoid_exponent,
-        tail_sensitivity
+        weight=None,
+        power_degree=None,
+        sigmoid_exponent=None,
+        tail_sensitivity=None,
+        *args,
+        **kwargs
     ):
         """ Reconstructs nodes with new params without reinitiating splits """
     

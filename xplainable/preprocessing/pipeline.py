@@ -1,19 +1,26 @@
-from ..exceptions import TransformerError
-import warnings
+from ..utils.exceptions import TransformerError
+import pandas as pd
+import numpy as np
+
 
 class XPipeline:
     """Pipeline builder for xplainable transformers.
+
+    Args:
+        stages (list): list containing xplainable pipeline stages.
     """
 
     def __init__(self):
         self.stages = []
 
-    def add_stages(self, stages: list):
+    def add_stages(self, stages: list) -> 'XPipeline':
         """ Adds multiple stages to the pipeline.
+
         Args:
             stages (list): list containing xplainable pipeline stages.
+        
         Returns:
-            self
+            XPipeline: self
         """
 
         # Error handling
@@ -24,12 +31,27 @@ class XPipeline:
             # Searches for transformer funtion in stage class
             if 'transform' not in [f for f in dir(stage['transformer'])]:
                 raise TypeError(f'{type(stage)} type is not supported.')
+            
+            # Searches for dataset level transformers
+            stage['feature'] = stage.get('feature', None)
+            if stage['feature'] is None:
+                stage['feature'] = '__dataset__'
+
+            stage['name'] = stage['transformer'].__class__.__name__
 
             self.stages.append(stage)
 
-        return
+        return self
 
-    def drop_stage(self, stage: int):
+    def drop_stage(self, stage: int) -> 'XPipeline':
+        """ Drops a stage from the pipeline.
+
+        Args:
+            stage (int): index of the stage to drop.
+
+        Returns:
+            XPipeline: self
+        """
 
         if len(self.stages) == 0:
             raise ValueError(f"There are no stages for in the pipeline.")
@@ -39,15 +61,19 @@ class XPipeline:
 
         self.stages.pop(stage)
 
-        return
+        return self
 
-    def fit(self, X):
-        """ Iterates through pipeline stages and fitting data.
+    def fit(self, x: pd.DataFrame) -> 'XPipeline':
+        """ Sequentially iterates through pipeline stages and fits data.
+        
         Args:
-            X (pandas.DataFrame): A non-empty DataFrame to fit.
+            x (pd.DataFrame): A non-empty DataFrame to fit.
+
+        Returns:
+            XPipeline: The fitted pipeline.
         """
 
-        X = X.copy()
+        x = x.copy()
 
         for i, stage in enumerate(self.stages):
 
@@ -61,74 +87,117 @@ class XPipeline:
             # Apply previous transformation if appeared before (for chaining)
             if len(prev_feature_transformers) > 0:
                 tf = prev_feature_transformers[-1]['transformer']
-                X[stage['feature']] = tf.transform(X[stage['feature']])
+                x[stage['feature']] = tf.transform(x[stage['feature']])
 
             # Fit data to transformer
             
-            stage['transformer'].fit(X[stage['feature']])
+            stage['transformer'].fit(x[stage['feature']])
 
         return self
 
-    def fit_transform(self, X, start=0):
-        """ Iterates through pipeline stages and fitting data.
-        Args:
-            X (pandas.DataFrame): A non-empty DataFrame to fit.
-        """
-
-        X = X.copy()
-
-        for stage in self.stages[start:]:
-            try:
-                if stage['feature'] == '__dataset__':
-                    stage['transformer'].fit(X)
-                    X = stage['transformer'].transform(X)
-
-                    continue
-
-                # Fit data to transformer
-            
-                stage['transformer'].fit(X[stage['feature']])
-            
-                # Apply transformation for chaining
-                X[stage['feature']] = stage['transformer'].transform(
-                    X[stage['feature']])
-            
-            except Exception:
-                raise TransformerError(
-                    f"Transformer for {stage['feature']} failed. Ensure the datatypes are compatible") from None
-
-        return X
-
-    def transform(self, X):
+    def transform(self, x: pd.DataFrame):
         """ Iterates through pipeline stages applying transformations.
+        
         Args:
-            X (pandas.DataFrame): A non-empty DataFrame to transform.
+            x (pd.DataFrame): A non-empty DataFrame to transform.
+        
         Returns:
-            pandas.DataFrame: The transformed dataframe.
+            pd.DataFrame: The transformed dataframe.
         """
 
-        X = X.copy()
+        x = x.copy()
 
         # Apply all transformers to dataset
         for stage in self.stages:
             try:
                 if stage['feature'] == '__dataset__':
                 
-                    X = stage['transformer'].transform(X)
+                    x = stage['transformer'].transform(x)
                 
                     continue
             
-                if stage['feature'] not in X.columns:
+                if stage['feature'] not in x.columns:
                     continue
 
-                X[stage['feature']] = stage['transformer'].transform(X[stage['feature']])
+                x[stage['feature']] = stage['transformer'].transform(x[stage['feature']])
             except Exception:
                 raise TransformerError(
                     f"Transformer for feature {stage['feature']} failed. Ensure the datatypes are compatible") from None
 
-        return X
+        return x
+    
+    def fit_transform(self, x: pd.DataFrame, start: int = 0):
+        """ Runs the fit method followed by the transform method.
+        
+        Args:
+            x (pd.DataFrame): A non-empty DataFrame to fit.
+            start (int): index of the stage to start fitting from.
 
+        Returns:
+            pd.DataFrame: The transformed dataframe.
+        """
+
+        x = x.copy()
+
+        for stage in self.stages[start:]:
+            try:
+                if stage['feature'] == '__dataset__':
+                    stage['transformer'].fit(x)
+                    x = stage['transformer'].transform(x)
+
+                    continue
+
+                # Fit data to transformer
+            
+                stage['transformer'].fit(x[stage['feature']])
+            
+                # Apply transformation for chaining
+                x[stage['feature']] = stage['transformer'].transform(
+                    x[stage['feature']])
+            
+            except Exception:
+                raise TransformerError(
+                    f"Transformer for {stage['feature']} failed. Ensure the datatypes are compatible") from None
+
+        return x
+    
+    def inverse_transform(self, x: pd.DataFrame):
+        """ Iterates through pipeline stages applying inverse transformations.
+        
+        Args:
+            x (pd.DataFrame): A non-empty DataFrame to inverse transform.
+        
+        Returns:
+            pd.DataFrame: The inverse transformed dataframe.
+        """
+
+        x = x.copy()
+
+        # Apply all transformers to dataset
+        for stage in self.stages:
+            try:
+                if stage['feature'] == '__dataset__':
+                
+                    x = stage['transformer'].inverse_transform(x)
+                
+                    continue
+            
+                if stage['feature'] not in x.columns:
+                    continue
+
+                x[stage['feature']] = stage['transformer'].inverse_transform(x[stage['feature']])
+            except Exception:
+                raise TransformerError(
+                    f"Transformer for feature {stage['feature']} failed. Ensure the datatypes are compatible") from None
+
+        return x
+    
     def get_blueprint(self):
+        """ Returns a blueprint of the pipeline.
+
+        Returns:
+            list: A list containing the pipeline blueprint.
+        """
         
         blueprint = []
         for stage in self.stages:

@@ -1,15 +1,18 @@
 from ...utils import stopwords, xwidgets
 
-from ._base import XBaseTransformer, TransformError
+from .base import XBaseTransformer
 from pandas.api.types import is_string_dtype
 from ipywidgets import interactive
 import re
 import numpy as np
+import pandas as pd
 import ipywidgets as widgets
 
 
 class TextRemove(XBaseTransformer):
-    """ Remove specified values from string.
+    """ Remove specified values from a str type series.
+
+    This transformer cannot be inverse_transformed and does not require fitting.
 
     Args:
         numbers (bool, optional): Removes numbers from string.
@@ -23,13 +26,14 @@ class TextRemove(XBaseTransformer):
         custom_regex (str, optional): Removes matching regex text from string.
     """
 
-    # Attributes for ipywidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['categorical']
 
     def __init__(self, numbers=False, characters=False, uppercase=False, \
         lowercase=False, special=False, whitespace=False, stopwords=False, \
             text=None, custom_regex=None):
-
+        super().__init__()
+        
         self.numbers = numbers
         self.characters = characters
         self.uppercase = uppercase
@@ -75,13 +79,22 @@ class TextRemove(XBaseTransformer):
         right = widgets.VBox(w.children[4:7])
         buttons = widgets.HBox([left, right])
         
-        text = widgets.VBox(w.children[7:], layout=widgets.Layout(margin='20px 0 0 0'))
+        text = widgets.VBox(
+            w.children[7:], layout=widgets.Layout(margin='20px 0 0 0'))
         
         elements = widgets.VBox([buttons, text])
 
         return elements
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Removes specified values from a str type series.
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
         matches = []
         if self.numbers:
             matches.append(r'[0-9]')
@@ -107,13 +120,15 @@ class TextRemove(XBaseTransformer):
 
         if len(matches) > 0:
             regex = re.compile("|".join(matches))
-            ser[~ser.isna()] = ser[~ser.isna()].apply(lambda x: regex.sub('', x))
+            ser[~ser.isna()] = ser[~ser.isna()].apply(
+                lambda x: regex.sub('', x))
 
         if self.text:
             ser = ser.str.replace(self.text, "")
 
         if self.stopwords:
-            ser = ser.apply(lambda x: x if type(x) != str else " ".join([i for i in x.split() if i not in stopwords]))
+            ser = ser.apply(lambda x: x if type(x) != str else " ".join(
+                [i for i in x.split() if i not in stopwords]))
 
         return ser
 
@@ -125,7 +140,7 @@ class ChangeCase(XBaseTransformer):
         case (str): 'upper' or 'lower'
     """
 
-    # Attributes for ipywidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['categorical']
 
     def __init__(self, case='lower'):
@@ -139,24 +154,34 @@ class ChangeCase(XBaseTransformer):
         
         return interactive(_set_params)
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Changes the case of a string.
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
         if self.case == 'lower':
-            return ser.apply(lambda x: str(x).lower() if type(x) in [str, bool] else x)
+            return ser.apply(
+                lambda x: str(x).lower() if type(x) in [str, bool] else x)
 
         if self.case == 'upper':
-            return ser.apply(lambda x: str(x).upper() if type(x) in [str, bool] else x)
+            return ser.apply(
+                lambda x: str(x).upper() if type(x) in [str, bool] else x)
 
         else:
             raise ValueError("case change must be either 'lower' or 'upper'")
 
 
 class DetectCategories(XBaseTransformer):
-    """Detects categories from a string column.
+    """ Auto-detects categories from a string column.
 
     Args:
         max_categories (int): The maximum number of categories to extract.
     """
-
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['categorical']
 
     def __init__(self, max_categories=10, category_list=[]):
@@ -171,7 +196,18 @@ class DetectCategories(XBaseTransformer):
         
         return interactive(_set_params)
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Detects categories from a string column.
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Raises:
+            TypeError: If the series is not of type string.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
 
         if not is_string_dtype(ser):
             raise TypeError(f'Cannot detect categories for non-text field.')
@@ -188,14 +224,14 @@ class DetectCategories(XBaseTransformer):
 
         return ser
 
-    def fit(self, ser):
+    def fit(self, ser: pd.Series) -> 'DetectCategories':
         """ Identifies the top categories from a text series.
 
         Args:
             ser (pandas.Series): The series in which to analyse.
 
         Returns:
-            self
+            DetectCategories: The fitted transformer.
         """
 
         # Get the top n categories based on count
@@ -212,7 +248,7 @@ class Condense(XBaseTransformer):
     Args:
         pct (int): The minumum pct of observations the categories should cover.
     """
-
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['categorical']
 
     def __init__(self, pct=0.8, categories=[]):
@@ -227,7 +263,7 @@ class Condense(XBaseTransformer):
         
         return interactive(_set_params)
 
-    def fit(self, ser):
+    def fit(self, ser: pd.Series) -> 'Condense':
         """ Determines the categories that make up x pct of obserations.
 
         Args:
@@ -235,6 +271,9 @@ class Condense(XBaseTransformer):
 
         Raises:
             TypeError: If the series is not of type string.
+
+        Returns:
+            Condense: The fitted transformer.
         """
 
         if not is_string_dtype(ser):
@@ -258,7 +297,18 @@ class Condense(XBaseTransformer):
 
         return self      
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Condenses a feature into categories that make up x pct of obserations.
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Raises:
+            ValueError: If the series is not of type string.
+        
+        Returns:
+            pd.Series: The transformed series.
+        """
         if not is_string_dtype(ser):
             raise ValueError(f'Cannot condense categories for non-text field.')
 
@@ -273,7 +323,7 @@ class MergeCategories(XBaseTransformer):
         merge_from (list): List of categories to merge from.
         merge_to (str): The category to merge to.
     """
-
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['categorical']
 
     def __init__(self, merge_from=[], merge_to=''):
@@ -285,13 +335,22 @@ class MergeCategories(XBaseTransformer):
 
         unq = column.dropna().unique()
 
-        def _set_params(merge_from=widgets.SelectMultiple(options=unq), merge_to=unq):
+        def _set_params(
+                merge_from=widgets.SelectMultiple(options=unq), merge_to=unq):
             self.merge_from = list(merge_from)
             self.merge_to = merge_to
         
         return interactive(_set_params)
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Merges specified categories in a series into one category.
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
 
         # Apply merging
         return ser.apply(lambda x: self.merge_to if x in self.merge_from else x)
@@ -304,7 +363,7 @@ class ReplaceCategory(XBaseTransformer):
         target: The target value to replace.
         replace_with: The value to insert in place.
     """
-
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['categorical']
 
     def __init__(self, target=None, replace_with=''):
@@ -322,7 +381,15 @@ class ReplaceCategory(XBaseTransformer):
         
         return interactive(_set_params)
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Replaces a category in a series with specified value.
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
         # Apply value replacement
         return ser.replace(self.target, self.replace_with)
 
@@ -333,7 +400,7 @@ class FillMissingCategorical(XBaseTransformer):
     Args:
         fill_with (str): Text to fill with.
     """
-
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['categorical']
 
     def __init__(self, fill_with='missing'):
@@ -347,7 +414,16 @@ class FillMissingCategorical(XBaseTransformer):
         
         return interactive(_set_params)
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Fills missing values with a specified value.
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        
+        """
         # Converts "" into np.nan to be filled
         ser = ser.apply(lambda x: np.nan if str(x).strip() == "" else x)
 
@@ -357,7 +433,7 @@ class FillMissingCategorical(XBaseTransformer):
 class MapCategories(XBaseTransformer):
     """ Maps all categories of a string column to new values"""
 
-    # Attributes for ipywidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['categorical']
 
     def __init__(self, category_values={}):
@@ -374,7 +450,15 @@ class MapCategories(XBaseTransformer):
 
         return interactive(_set_params, **category_values)
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Maps all categories of a string column to new values
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
 
         return ser.map(self.category_values)
 
@@ -388,7 +472,7 @@ class TextContains(XBaseTransformer):
 
     """
 
-    # Attributes for ipywidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['categorical']
 
     def __init__(self, selector=None, value=None):
@@ -408,7 +492,15 @@ class TextContains(XBaseTransformer):
 
         return interactive(_set_params)
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Flags series values that contain, start with, or end with a value.
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
 
         if self.selector == "starts with":
             return ser.str.startswith(self.value)
@@ -429,7 +521,7 @@ class TextTrim(XBaseTransformer):
         action (str): [keep, drop] the identified characters.
     """
 
-    # Attributes for ipywidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['categorical']
 
     def __init__(self, selector=None, n=0, action='keep'):
@@ -451,7 +543,15 @@ class TextTrim(XBaseTransformer):
 
         return interactive(_set_params)
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Drops or keeps first/last n characters of a categorical column.
+
+        Args:
+            ser (pd.Series): The series to transform.
+        
+        Returns:
+            pd.Series: The transformed series.
+        """
 
         if self.action == 'keep':
             if self.selector == "first":
@@ -476,7 +576,7 @@ class TextSlice(XBaseTransformer):
         action (str): [keep, drop] selected slice.
     """
 
-    # Attributes for ipywidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['categorical']
 
     def __init__(self, start=None, end=None, action='keep'):
@@ -498,9 +598,57 @@ class TextSlice(XBaseTransformer):
 
         return interactive(_set_params)
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Selects slice from categorical column string.
+
+        Args:
+            ser (pd.Series): The series to transform.
+        
+        Returns:
+            pd.Series: The transformed series.
+        """
 
         if self.action == 'keep':
             return ser.str[self.start:self.end]
         else:
             return ser.str[:self.start] + ser.str[self.end:]
+
+
+class ReplaceWith(XBaseTransformer):
+    """ Replaces specified value in series
+
+    Args:
+        case (str): 'upper' or 'lower'
+
+    Attributes:
+        case (str): The case the string will convert to.
+    """
+
+    # Informs the embedded GUI which data types this transformer supports.
+    supported_types = ['categorical']
+
+    def __init__(self, target=None, replace_with=None):
+        super().__init__()
+        self.target = target
+        self.replace_with = replace_with
+
+    def __call__(self, *args, **kwargs):
+        
+        def _set_params(target = '', replace_with = ''):
+            self.target = target
+            self.replace_with = replace_with
+        
+        return interactive(_set_params)
+
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Replaces specified value in series
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
+        
+        return ser.str.replace(self.target, self.replace_with)
+    

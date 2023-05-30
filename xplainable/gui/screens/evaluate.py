@@ -38,7 +38,7 @@ class EvaluateClassifier:
         
         self._calibration_display = None
         
-        fimp = self.model.get_feature_importances()
+        fimp = self.model.feature_importances
         cols = list(fimp.keys())
         cols.reverse()
         cols.append(None)
@@ -106,7 +106,7 @@ class EvaluateClassifier:
                 f (str): Feature
                 p (str): Partition
             """
-            _profile = self.model.get_profile()
+            _profile = self.model.profile
             if f in _profile['numeric']:
                 prof = pd.DataFrame(_profile['numeric'][f])
 
@@ -149,7 +149,7 @@ class EvaluateClassifier:
         def explore(b):
             self.feature_selector.value = b.id
 
-        fimp = self.model.get_feature_importances()
+        fimp = self.model.feature_importances
         cols = list(fimp.keys())
         cols.reverse()
 
@@ -584,7 +584,7 @@ class EvaluateRegressor:
         
         self._calibration_display = None
         
-        fimp = self.model.get_feature_importances()
+        fimp = self.model.feature_importances
         cols = list(fimp.keys())
         cols.reverse()
         cols.append(None)
@@ -638,7 +638,7 @@ class EvaluateRegressor:
                 f (str): Feature
                 p (str): Partition
             """
-            _profile = self.model.get_profile()
+            _profile = self.model.profile
             if f in _profile['numeric']:
                 prof = pd.DataFrame(_profile['numeric'][f])
 
@@ -680,7 +680,7 @@ class EvaluateRegressor:
         def explore(b):
             self.feature_selector.value = b.id
 
-        fimp = self.model.get_feature_importances()
+        fimp = self.model.feature_importances
         cols = list(fimp.keys())
         cols.reverse()
 

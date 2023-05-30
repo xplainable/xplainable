@@ -2,47 +2,16 @@ import numpy as np
 import random
 import math
 from numba import njit, prange
+from ...utils.numba_funcs import *
+from .genetic import XEvolutionaryNetwork
 
-@njit(fastmath=False)
-def nansum_numba_1d(arr):
-    total = 0.0
-    for i in range(arr.shape[0]):
-        val = arr[i]
-        if not np.isnan(val):
-            total += float(val)
-    return total
-
-@njit(fastmath=False)
-def nansum_numba_2d_axis0(arr):
-    result = np.zeros(arr.shape[1], dtype=np.float64)
-    for i in range(arr.shape[0]):
-        for j in range(arr.shape[1]):
-            val = arr[i, j]
-            if not np.isnan(val):
-                result[j] += float(val)
-    return result
-
-@njit(fastmath=False, parallel=True)
-def nansum_numba_2d_axis1(arr):
-    result = np.zeros(arr.shape[0], dtype=np.float64)
-    for i in prange(arr.shape[0]):
-        for j in prange(arr.shape[1]):
-            val = arr[i, j]
-            if not np.isnan(val):
-                result[i] += float(val)
-    return result
-
-def nansum_numba(arr, axis=None):
-    if axis is None or arr.ndim == 1:
-        return nansum_numba_1d(arr)
-    elif axis == 0:
-        return nansum_numba_2d_axis0(arr)
-    elif axis == 1:
-        return nansum_numba_2d_axis1(arr)
-    else:
-        raise ValueError("Invalid axis value")
 
 class BaseLayer:
+    """ Base class for optimisation layers.
+
+    Args:
+        metric (str, optional): Metric to optimise on. Defaults to 'mae'.
+    """
 
     def __init__(self, metric='mae'):
         self.xnetwork = None
@@ -109,16 +78,28 @@ class BaseLayer:
 
 
 class Evolve(BaseLayer):
+    """ Evolutionary algorithm to optimise XRegressor leaf weights.
+
+    The Evolve layer uses a genetic algorithm to optimise the leaf weights
+    of an XRegressor model. The algorithm works by mutating the leaf weights
+    of the model and scoring the resulting predictions. The best mutations
+    are then selected to reproduce and mutate again. This process is repeated
+    until the maximum number of generations is reached, or the early stopping
+    threshold is reached.
+
+    Args:
+        mutations (int, optional): The number of mutations to generate per generation.
+        generations (int, optional): The number of generations to run.
+        max_generation_depth (int, optional): The maximum depth of a generation.
+        max_severity (float, optional): The maximum severity of a mutation.
+        max_leaves (int, optional): The maximum number of leaves to mutate.
+        early_stopping (int, optional): Stop early if no improvement after n iters.
+    """
 
     def __init__(
-        self,
-        mutations=100,
-        generations=50,
-        max_generation_depth=10,
-        max_severity=0.5,
-        max_leaves=20,
-        early_stopping=None
-        ):
+            self, mutations: int = 100, generations: int = 50,
+            max_generation_depth: int = 10, max_severity: float = 0.5, 
+            max_leaves: int = 20, early_stopping: int = None):
         super().__init__()
         
         self.mutations = mutations
@@ -136,7 +117,13 @@ class Evolve(BaseLayer):
 
         self.generation_id = 1
 
-    def get_params(self):
+    def _get_params(self) -> dict:
+        """ Returns the parameters of the layer.
+
+        Returns:
+            dict: The layer parameters.
+        """
+
         params = {
             'mutations': self.mutations,
             'generations': self.generations,
@@ -147,8 +134,26 @@ class Evolve(BaseLayer):
         }
 
         return params
+    
+    @property
+    def params(self) -> dict:
+        """ Returns the parameters of the layer.
 
-    def _mutate(self, chromosome):
+        Returns:
+            dict: The layer parameters.
+        """
+
+        return self._get_params()
+
+    def _mutate(self, chromosome: np.array) -> np.array:
+        """ Randomly mutates a chromosome.
+
+        Args:
+            chromosome (np.array): The chromosome to mutate.
+
+        Returns:
+            np.array: The mutated chromosome.
+        """
         
         new_chromosome = np.array(chromosome)#.copy()
         chrome_length = chromosome.shape[0]
@@ -172,7 +177,16 @@ class Evolve(BaseLayer):
 
         return new_chromosome, delta
 
-    def _n_mutations(self, chromosome, n):
+    def _n_mutations(self, chromosome: np.array, n: int) -> tuple:
+        """ Generates n mutations of a chromosome.
+
+        Args:
+            chromosome (np.array): The chromosome to mutate.
+            n (int): The number of mutations to generate.
+
+        Returns:
+            tuple: The mutated chromosomes and deltas.
+        """
 
         mutations = []
         deltas = []
@@ -214,7 +228,13 @@ class Evolve(BaseLayer):
                     
         return x
 
-    def score_mutation(self, x, delta):
+    def _score_mutation(self, x: np.ndarray, delta: dict) -> float:
+        """ Scores a mutation of a chromosome.
+
+        Args:
+            x (np.ndarray):  The input variables used for prediction.
+            delta (dict): The mutation to apply.
+        """
 
         # get the indices and delta changes for each mutation
         dkeys = np.array(list(delta.keys()))
@@ -232,8 +252,12 @@ class Evolve(BaseLayer):
         
         return score
 
-    def reproduce(self, pair):
-        """ Merges the genes of a chromosome pair """
+    def _reproduce(self, pair: tuple) -> dict:
+        """ Merges the genes of a chromosome pair
+        
+        Args:
+            pair (tuple): The pair of chromosomes to merge.
+        """
         
         # get parent chromosomes
         a, b = pair
@@ -242,19 +266,39 @@ class Evolve(BaseLayer):
 
         return child
 
-    def _get_delta(self, chromosome):
+    def _get_delta(self, chromosome: np.array) -> dict:
+        """ Gets the delta values for a chromosome.
+
+        Args:
+            chromosome (np.array): The chromosome to get deltas for.
+
+        Returns:
+            dict: The delta values.
+        """
 
         return {
             i: v / self.target_chromosome[i] for i, v in enumerate(
                 chromosome) if v != self.target_chromosome[i]
                 }
 
-    def _natural_selection(self, x, mutations, deltas):
+    def _natural_selection(
+            self, x: np.ndarray, mutations: np.array, deltas: dict
+            ) -> np.array:
+        """ Selects the best (superior) mutations from a pool.
+
+        Args:
+            x (np.ndarray): The input variables used for prediction.
+            mutations (np.array): The mutations to select from.
+            deltas (dict): The delta values for each mutation.
+
+        Returns:
+            np.array: The selected superior mutations.
+        """
 
         # Score mutations
         scores = np.array([])
         for delta in deltas:
-            scores = np.append(scores, self.score_mutation(x, delta))
+            scores = np.append(scores, self._score_mutation(x, delta))
 
         # Filter for superior mutations
         if self.objective == 'minimise':
@@ -283,12 +327,17 @@ class Evolve(BaseLayer):
 
         return superiors
 
-    def _reproduce_and_mutate(self, superiors):
+    def _reproduce_and_mutate(self, superiors: np.array) -> tuple:
+        """ Reproduces and mutates a pool of superior chromosomes.
+
+        Args:
+            superiors (np.array): The superior chromosomes to reproduce.
+        """
         # Pair mates together
         mates = [[superiors[i], superiors[i+1]] for i in range(0, superiors.shape[0] - 1, 2)]
         
         # Generate child chromosomes
-        offspring = [self.reproduce(mate) for mate in mates]
+        offspring = [self._reproduce(mate) for mate in mates]
         
         # Add most superior parent to pool
         offspring.append(superiors[0])
@@ -301,7 +350,12 @@ class Evolve(BaseLayer):
 
         return np.array(offspring), np.array(deltas)
 
-    def _run_generation(self, x):
+    def _run_generation(self, x: np.ndarray) -> np.array:
+        """ Runs a single optimisation generation.
+
+        Args:
+            x (np.ndarray): The input variables used for prediction.
+        """
         
         # Generate first n mutations
         m = self._n_mutations(self.target_chromosome, self.mutations)
@@ -317,7 +371,15 @@ class Evolve(BaseLayer):
 
         return parents[0]
 
-    def _re_map(self, x):
+    def _re_map(self, x: np.ndarray) -> np.ndarray:
+        """ Re-maps the optimised chromosome to the model profile.
+
+        Args:
+            x (np.ndarray): The input variables used for prediction.
+
+        Returns:
+            np.ndarray: A new optimised model profile.
+        """
 
         chromosome = np.nanmax(x, axis=0)
 
@@ -328,15 +390,20 @@ class Evolve(BaseLayer):
 
         return self.xnetwork.model._profile
 
-    def transform(self, xnetwork, x, y, callback=None):
-        """ Optimises a feature score map with respect to the true values.
+    def transform(
+            self, xnetwork: XEvolutionaryNetwork, x: np.ndarray,
+            y: np.array, callback=None):
+        """ Optimises an XRegressor profile given the set of parameters.
 
         Args:
-            x (pandas.DataFrame): The input variables used for prediction.
-            y (pandas.Series): The true values to fit to the x values.
+            xnetwork (XEvolutionaryNetwork): The evolutionary network.
+            x (np.ndarray): The input variables used for prediction.
+            y (np.array): The target values.
+            callbacks (list): Callback function for progress tracking.
 
         Returns:
-            dict: The optimised feature score map.
+            np.ndarray: The original x data to pass to the next layer.
+            np.ndarray: The final optimised chromosome to pass to the next layer.
         """
         
         self.xnetwork = xnetwork
@@ -413,22 +480,25 @@ class Evolve(BaseLayer):
 
 
 class Tighten(BaseLayer):
-    """ Optimises the feature score map for XRegressor Models.
+    """ A leaf boosting algorithm to optimise XRegressor leaf node weights.
+
+    The Tighten layer uses a novel leaf boosting algorithm to optimise the
+    leaf weights of an XRegressor model. The algorithm works by iteratively
+    identifying the leaf node that will have the greatest impact on the
+    overall model score, and then incrementally increasing or decreasing
+    the leaf node weight to improve the model score. This process is repeated
+    until the maximum number of iterations is reached, or the early stopping
+    threshold is reached.
 
         Args:
-            model (xplainable.XRegressor): The regression estimator.
             iterations (int): The number of iterations to run.
             learning_rate (float): How fast the model learns. Between 0.001 - 1
             early_stopping (int): Stop early if no improvement after n iters.
-            use_cython (bool): Use cython splitting function if True.
     """
 
     def __init__(
-        self,
-        iterations=100,
-        learning_rate=0.03,
-        early_stopping=None
-        ):
+            self, iterations: int = 100, learning_rate: float = 0.03,
+            early_stopping: int = None):
         super().__init__()
 
         # store params
@@ -438,7 +508,13 @@ class Tighten(BaseLayer):
 
         self.xnetwork = None
 
-    def get_params(self):
+    def _get_params(self) -> dict:
+        """ Returns the parameters of the layer.
+
+        Returns:
+            dict: The layer parameters.
+        """
+
         params = {
             'iterations': self.iterations,
             'learning_rate': self.learning_rate,
@@ -447,12 +523,22 @@ class Tighten(BaseLayer):
         }
 
         return params
+    
+    @property
+    def params(self) -> dict:
+        """ Returns the parameters of the layer.
 
-    def _next_best_change(self, errors):
+        Returns:
+            dict: The layer parameters.
+        """
+
+        return self._get_params()
+
+    def _next_best_change(self, errors: np.array) -> tuple:
         """ Identifies the most effective leaf node change to improve model.
 
         Args:
-            errors (numpy.array): An array of errors for the current iteration.
+            errors (np.array): An array of errors for the current iteration.
 
         Returns:
             int: The index of the best leaf node.
@@ -516,12 +602,12 @@ class Tighten(BaseLayer):
         #change = get_change(bstloc) * self.learning_rate
         return bstloc, change
 
-    def _run_iteration(self, x, y):
+    def _run_iteration(self, x: np.ndarray, y: np.array):
         """ Runs a single optimisation iteration.
 
         Args:
-            x (numpy.array): An array of transformed values.
-            y (numpy.array): An array of the true values.
+            x (np.ndarray): An array of transformed values.
+            y (np.array): An array of the true values.
 
         Returns:
             numpy.array: An array of transformed values after opt iteration.
@@ -542,13 +628,15 @@ class Tighten(BaseLayer):
 
         return x
 
-    def transform(self, xnetwork, x, y, callback=None):
-        """ Optimises a feature score map with respect to the true values.
+    def transform(
+            self, xnetwork: XEvolutionaryNetwork, x: np.ndarray, y: np.array,
+            callback=None) -> tuple:
+        """ Optimises an XRegressor profile given the set of parameters.
 
         Args:
-            x (pandas.DataFrame): The input variables used for prediction.
-            y (pandas.Series): The true values to fit to the x values.
-            callbacks (list): Callback function
+            x (np.ndarray): The input variables used for prediction.
+            y (np.array): The target values.
+            callback (any): Callback function for progress tracking.
 
         Returns:
             dict: The optimised feature score map.

@@ -1,4 +1,4 @@
-from ._base import XBaseTransformer
+from .base import XBaseTransformer
 import pandas.api.types as pdtypes
 from ipywidgets import interactive
 import ipywidgets as widgets
@@ -8,7 +8,7 @@ import pandas as pd
 class SetDType(XBaseTransformer):
     """Changes the data type of a specified column."""
 
-    # Attributes for ipywidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['numeric', 'categorical']
 
     def __init__(self, to_type=None):
@@ -50,7 +50,15 @@ class SetDType(XBaseTransformer):
 
         return interactive(_set_params, **col_widget)
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Changes the data type of a specified column.
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
 
         if self.to_type == 'string':
             return ser.astype(str)
@@ -74,7 +82,7 @@ class Shift(XBaseTransformer):
         step (str): The number of steps to shift.
     """
 
-    # Attributes for ipywidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['categorical', 'numeric']
 
     def __init__(self, step=0):
@@ -90,7 +98,15 @@ class Shift(XBaseTransformer):
         
         return interactive(_set_params)
 
-    def _operations(self, ser):
+    def transform(self, ser: pd.Series) -> pd.Series:
+        """ Shifts a series up or down n steps.
+
+        Args:
+            ser (pd.Series): The series to transform.
+
+        Returns:
+            pd.Series: The transformed series.
+        """
         ser = ser.shift(self.step)
 
         return ser

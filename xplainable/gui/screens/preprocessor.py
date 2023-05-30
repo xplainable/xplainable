@@ -1,6 +1,6 @@
 import xplainable
 from ...utils import *
-from ...preprocessing import transformers as tf
+from ...preprocessing import transformers as xtf
 from ...quality import XScan
 from ...preprocessing.pipeline import XPipeline
 from ...utils.api import *
@@ -335,8 +335,7 @@ class Preprocessor:
                 tf_feature = feature.value
                 self.pipeline.add_stages([{
                     "feature": feature.value,
-                    "transformer": new_transformer,
-                    "name": v
+                    "transformer": new_transformer
                 }])
                 single_feature_transformers.value = ""
             
@@ -346,8 +345,7 @@ class Preprocessor:
                 tf_feature = '__dataset__'
                 self.pipeline.add_stages([{
                     "feature": "__dataset__",
-                    "transformer": new_transformer,
-                    "name": v
+                    "transformer": new_transformer
                 }])
                 multi_feature_transformers.value = ""
 
@@ -731,7 +729,7 @@ class Preprocessor:
                 {"start": json.loads(df.head(10).to_json(orient='records'))})
 
         # Retrieve all transformers
-        clsmembers = inspect.getmembers(tf, inspect.isclass)
+        clsmembers = inspect.getmembers(xtf, inspect.isclass)
 
         # //---------------------------------//
 

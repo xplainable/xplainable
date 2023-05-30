@@ -17,25 +17,54 @@ warnings.filterwarnings('ignore')
 
 
 class XParamOptimiser:
-    """ Baysian optimisation for hyperparameter tuning of xplainable models.
+    """ Baysian optimisation for hyperparameter tuning XClassifier models.
+
+        This optimiser is built on top of the Hyperopt library. It has
+        pre-configured optimisation objectives and an easy way to set the
+        search space for each parameter.
+
+        The accepted metrics are:
+            - 'macro-f1'
+            - 'weighted-f1'
+            - 'positive-f1'
+            - 'negative-f1'
+            - 'macro-precision'
+            - 'weighted-precision'
+            - 'positive-precision'
+            - 'negative-precision'
+            - 'macro-recall'
+            - 'weighted-recall'
+            - 'positive-recall'
+            - 'negative-recall'
+            - 'accuracy'
+            - 'brier-loss'
+            - 'log-loss'
+            - 'roc-auc'
 
         Args:
-            metric (str, optional): Optimisation metric. Defaults to 'f1'.
-            early_stopping (int, optional): Stops early if no improvement.
+            metric (str, optional): Optimisation metric. Defaults to 'roc-auc'.
             n_trials (int, optional): Number of trials to run. Defaults to 30.
-            folds (int, optional): Number of folds for CV split. Defaults to 5.
+            n_folds (int, optional): Number of folds for CV split. Defaults to 5.
+            early_stopping (int, optional): Stops early if no improvement after n trials.
             shuffle (bool, optional): Shuffle the CV splits. Defaults to False.
             subsample (float, optional): Subsamples the training data.
             alpha (float, optional): Sets the alpha of the model.
+            max_depth_space (list, optional): Sets the max_depth search space.
+            min_leaf_size_space (list, optional): Sets the min_leaf_size search space.
+            min_info_gain_space (list, optional): Sets the min_info_gain search space.
+            weight_space (list, optional): Sets the weight search space.
+            power_degree_space (list, optional): Sets the power_degree search space.
+            sigmoid_exponent_space (list, optional): Sets the sigmoid_exponent search space.
+            verbose (bool, optional): Sets output amount. Defaults to True.
             random_state (int, optional): Random seed. Defaults to 1.
     """
 
     def __init__(
         self,
-        metric='brier-loss',
-        early_stopping=30,
+        metric='roc-auc',
         n_trials=30,
         n_folds=5,
+        early_stopping=30,
         shuffle=False,
         subsample=1,
         alpha=0.01,
@@ -45,7 +74,8 @@ class XParamOptimiser:
         weight_space = [0, 5, 0.25],
         power_degree_space = [1, 7, 2],
         sigmoid_exponent_space = [0.5, 4, 0.25],
-        verbose=True, random_state=1
+        verbose=True,
+        random_state=1
         ):
 
         super().__init__()
@@ -86,7 +116,7 @@ class XParamOptimiser:
         """ Runs an iteration of cross-validation for a set of parameters.
 
         Args:
-            params (dict): The parameters to be tested in iteration.
+            params (dict): The parameters to be tested in the iteration.
 
         Returns:
             float: The average cross-validated score of the selected metric.
@@ -200,29 +230,6 @@ class XParamOptimiser:
 
         return score
 
-    def _convert_int_params(self, names, params):
-        """Converts a given set of parameters to integer values.
-
-        Args:
-            names (list): A list of params with integer values.
-            params (dict): The parameter dictionary to be updated.
-
-        Returns:
-            dict: The transformed dictionary of parameters.
-        """
-
-        # Iterate through names
-        for n in names:
-
-            # Get parameter value
-            val = params[n]
-
-            # Apply conversion if the param is a number
-            if isinstance(val, (int, float)):
-                params[n] = int(val)
-
-        return params
-
     def _objective(self, params):
         """ The objective function for hyperopt optimisation.
 
@@ -236,19 +243,17 @@ class XParamOptimiser:
         # Instantiate start timer for param set
         start = timer()
 
-        # Assert values are of int type before bayesian optimisation
-        int_types = ['max_depth']
-        params = self._convert_int_params(int_types, params)
-
-        # Set the alpha
+        # Set the alpha (this is never optimised)
         params['alpha'] = self.alpha
 
+        # Callback is used for jupyter gui
         if self.callback:
             self.callback.update_params(**params)
 
         # Run cross validation and get score
         score = self._cv_fold(params)
 
+        # Callback is used for jupyter gui
         if self.callback:
             # iteration callback
             self.callback.iteration(self.iteration)
@@ -291,14 +296,17 @@ class XParamOptimiser:
                 id_columns=self.id_columns
                 )
 
-    def optimise(self, x, y, id_columns=[], verbose=True, callback=None):
-        """ Get an optimised set of parameters for an xplainable model.
+    def optimise(
+            self, x: pd.DataFrame, y: pd.Series, id_columns: list = [],
+            verbose: bool = True, callback=None):
+        """ Get an optimised set of parameters for an XClassifier model.
 
         Args:
-            x (pandas.DataFrame): The x variables used for prediction.
-            y (pandas.Series): The true values used for validation.
+            x (pd.DataFrame): The x variables used for prediction.
+            y (pd.Series): The true values used for validation.
             id_columns (list, optional): ID columns in dataset. Defaults to [].
             verbose (bool, optional): Sets output amount. Defaults to True.
+            callback (any, optional): Callback for progress tracking.
 
         Returns:
             dict: The optimised set of parameters.
@@ -313,7 +321,6 @@ class XParamOptimiser:
         self.callback = callback
 
         # Encode target categories if not numeric
-        
         if self.y.dtype == 'object':
 
             # Cast as category
