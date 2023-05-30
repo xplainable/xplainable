@@ -22,6 +22,20 @@ def calculate_classification_metrics(tp, fp, tn, fn):
         "f1": f1
         }
 
+def calculate_probability_bins(y_true, y_prob):
+    output_data = []
+
+    for cls in np.unique(y_true):
+        counts = np.bincount((y_prob[y_true == cls]*100).round().astype(int))
+        counts = np.concatenate([counts, np.zeros(101 - len(counts), dtype=int)])
+
+        output_data.append({
+            "class": cls,
+            "values": list(counts)
+        })
+    
+    return output_data
+
 def evaluate_classification(y_true, y_pred):
     results = {}
     thresholds = np.linspace(0, 1, 101)
@@ -72,6 +86,9 @@ def evaluate_classification(y_true, y_pred):
     
     # Log Loss (Cross-Entropy Loss)
     results["log_loss"] = log_loss(y_true, y_pred)
+
+    # Calculates the number of predictions in each probability bin
+    results["probability_bins"] = calculate_probability_bins(y_true, y_pred)
 
     return force_json_compliant(results)
 
