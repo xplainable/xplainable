@@ -4,10 +4,9 @@ import xplainable
 import ipywidgets as widgets
 from IPython.display import display, clear_output
 from ...utils import *
-from ...preprocessing import transformers as tf
+from ...preprocessing import transformers as xtf
 from ..components import Header
-from ...core.ml.partitions.regression import PartitionedRegressor
-from ...core.ml.partitions.classification import PartitionedClassifier
+from ...core.models import PartitionedRegressor, PartitionedClassifier
 
 
 def get_time_string(dt):
@@ -31,7 +30,6 @@ def get_time_string(dt):
         else:
             return f'{int(seconds / 60 / 60)} hours ago'
 
-
 def load_preprocessor(preprocessor_id=None, version_id=None):
 
     if xplainable.client is None:
@@ -41,10 +39,13 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
     def build_transformer(stage):
         """Build transformer from metadata"""
 
-        params = str(stage['params'])
-        trans = eval(f'tf.{stage["name"]}(**{params})')
+        if not hasattr(xtf, stage["name"]):
+            raise ValueError(f"{stage['name']} does not exist in the transformers module")
 
-        return trans
+        # Get transformer function
+        func = getattr(xtf, stage["name"])
+
+        return func(**stage['params'])
 
     def on_preprocessor_change(_):
         """Loads versions when preprocessor is selected"""

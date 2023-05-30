@@ -4,7 +4,9 @@ from pandas.api.types import is_bool_dtype
 
 class BaseModel:
 
-    def __init__(self, max_depth=8, min_leaf_size=0.02, min_info_gain=0.02, alpha=0.01):
+    def __init__(
+            self, max_depth: int = 8, min_leaf_size: float = 0.02,
+            min_info_gain: float = 0.02, alpha: float = 0.01):
         self.max_depth = max_depth
         self.min_leaf_size = min_leaf_size
         self.min_info_gain = min_info_gain
@@ -19,6 +21,28 @@ class BaseModel:
         self.feature_map = {}
         self.feature_map_inv = {}
         self.category_meta = {}
+
+    @property
+    def feature_importances(self) -> dict:
+        """ Calculates the feature importances for the model decision process.
+
+        Returns:
+            dict: The feature importances.
+        """
+        return self._get_feature_importances()
+    
+    @property
+    def profile(self) -> dict:
+        """ Returns the model profile.
+
+        The model profile contains more granular information about the model and
+        how it makes decisions. It is the primary property for interpreting a
+        model and is used by the xplainable client to render the model.
+
+        Returns:
+            dict: The model profile.
+        """
+        return self._get_profile()
 
     def _encode_feature(self, x, y):
         """ Encodes features in order of their relationship with the target.
@@ -218,7 +242,7 @@ class BaseModel:
 
         return x.astype(int)
 
-    def get_profile(self):
+    def _get_profile(self):
         # instantiate Profile
         profile = {
             'base_value': self.base_value,
@@ -266,4 +290,122 @@ class BaseModel:
             profile[_key][c] = leaf_nodes
 
         return profile
+    
+    def _get_feature_importances(self):
+        """ Calculates the feature importances for the model decision process.
+
+        Returns:
+            dict: The feature importances.
+        """
+
+        importances = {}
+        total_importance = 0
+        profile = self.profile
+        for i in ["numeric", "categorical"]:
+            for feature, leaves in profile[i].items():        
+                importance = 0
+                for leaf in leaves:
+                    importance += abs(leaf['score']) * np.log2(leaf['freq']*100)
+                
+                importances[feature] = importance
+                total_importance += importance
+
+        return {k: v/total_importance for k, v in sorted(
+            importances.items(), key=lambda item: item[1])}
+
+
+class BasePartition:
+
+    def __init__(self):
+        self.partition_on = None
+        self.partitions = {}
+
+    def __verify_mappings(self, model):
+        assert model.target_map == self.partitions['__dataset__'].target_map, \
+            "Target mappings are mismatched"
+
+    def add_partition(self, model , partition: str):
+        """ Adds a partition to the model.
         
+        All partitions must be of the same type.
+
+        Args:
+            model (XClassifier | XRegressor): The model to add.
+            partition (str): The name of the partition to add.
+        """
+        partition = str(partition)
+        self.partitions[partition] = model
+        if hasattr(model, 'target_map'):
+            self.__verify_mappings(model)
+            
+    def drop_partition(self, partition: str):
+        """ Removes a partition from the model.
+
+        Args:
+            partition (str): The name of the partition to drop.
+        """
+        self.partitions.pop(partition)
+
+    def _encode(self, x, y=None, partition='__dataset__'):
+
+        x = x.copy()
+        partition = str(partition)
+
+        # Apply encoding
+        for f, m in self.partitions[partition].feature_map.items():
+            x.loc[:, f] = x.loc[:, f].map(m)
+
+        if y is not None:
+            if len(self.partitions[partition].target_map) > 0:
+                y = y.map(self.partitions[partition].target_map)
+                
+            y = y.astype(float)
+            return x, y
+        
+        return x
+
+    def _preprocess(self, x, y=None):
+        
+        x = x[self.partitions['__dataset__'].columns]
+
+        x = x.astype('float64')
+        if y is not None:
+            y = y.astype('float64')
+            return x, y
+        
+        return x
+
+    def _transform(self, x, partition):
+        """ Transforms a dataset into the model weights.
+        
+        Args:
+            x (pandas.DataFrame): The dataframe to be transformed.
+            
+        Returns:
+            pandas.DataFrame: The transformed dataset.
+        """
+
+        assert(
+            str(partition) in self.partitions.keys(),
+            f'Partition {partition} does not exist'
+        )
+
+        x = x.copy()
+        partition = str(partition)
+
+        x = self._encode(x, None, partition)
+        x = self._preprocess(x).values
+
+        profile = self.partitions[partition]._profile
+
+        for i in range(x.shape[1]):
+            nodes = np.array(profile[i])
+            idx = np.searchsorted(nodes[:, 1], x[:,i])
+
+            known = np.where(idx < len(nodes))
+            unknown = np.where(idx >= len(nodes)) # flag unknown categories
+            
+            x[unknown, i] = 0 # Set new categories to 0 contribution
+            x[known, i] = nodes[idx[known], 2]
+
+        return x

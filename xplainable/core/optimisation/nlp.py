@@ -6,7 +6,7 @@ from timeit import default_timer as timer
 import sklearn.metrics as skm
 import numpy as np
 import pandas as pd
-from ..ml.classification import Classifier
+from ..models import XClassifier
 
 
 class NLPOptimiser:
@@ -83,7 +83,7 @@ class NLPOptimiser:
         X_trans, y = self._preprocess(X_trans, y_)
         X_val_trans, y_val = self._preprocess(X_val_trans, y_val_)
 
-        model = Classifier(map_calibration=False)
+        model = XClassifier(map_calibration=False)
         model.fit(X_trans, y, id_columns=self.id_columns)
 
         y_pred = model.predict(X_val_trans)

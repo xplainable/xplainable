@@ -4,12 +4,10 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from ..gui.screens.preprocessor import Preprocessor
-from ..preprocessing import transformers as tf
-from ..exceptions import AuthenticationError
-from ..core.ml.classification import XClassifier
-from ..core.ml.regression import XRegressor
-from ..core.ml.partitions.regression import PartitionedRegressor
-from ..core.ml.partitions.classification import PartitionedClassifier
+from ..preprocessing import transformers as xtf
+from ..utils.exceptions import AuthenticationError
+from ..core.models import (XClassifier, XRegressor, PartitionedRegressor,
+                           PartitionedClassifier)
 from ..gui.components.cards import render_user_avatar
 import json
 import numpy as np
@@ -18,10 +16,17 @@ import time
 from IPython.display import clear_output, display
 from ..gui.components import KeyValueTable
 import ipywidgets as widgets
+from typing import Union
 
 
 class Client:
-    """ Client for interfacing with the xplainable web api.
+    """ A client for interfacing with the xplainable web api (xplainable cloud).
+
+    Access models, preprocessors and user data from xplainable cloud. API keys
+    can be generated at https://app.xplainable.io.
+
+    Args:
+        api_key (str): A valid api key.
     """
 
     def __init__(self, api_key):
@@ -31,9 +36,9 @@ class Client:
         self.__session__ = requests.Session()
         self._user = None
         self.avatar = None
-        self.init()
+        self._init()
 
-    def init(self):
+    def _init(self):
         """ Authorize access to xplainable API.
         
             Active API Key is required for authorization. 
@@ -59,11 +64,11 @@ class Client:
         self.xplainable_version = None
         self.python_version = None
 
-    def list_models(self):
-        """ Lists models of active user.
+    def list_models(self) -> list:
+        """ Lists all models of the active user's team.
 
         Returns:
-            dict: Dictionary of trained models.
+            dict: Dictionary of saved models.
         """
 
         response = self.__session__.get(
@@ -75,11 +80,14 @@ class Client:
 
         return data
 
-    def list_model_versions(self, model_id):
-        """ Lists models of active user.
+    def list_model_versions(self, model_id: int) -> list:
+        """ Lists all versions of a model.
+
+        Args:
+            model_id (int): The model id
 
         Returns:
-            dict: Dictionary of trained models.
+            dict: Dictionary of model versions.
         """
 
         response = self.__session__.get(
@@ -91,11 +99,11 @@ class Client:
 
         return data
     
-    def list_preprocessors(self):
-        """ Lists models of active user.
+    def list_preprocessors(self) -> list:
+        """ Lists all preprocessors of the active user's team.
 
         Returns:
-            dict: Dictionary of trained models.
+            dict: Dictionary of preprocessors.
         """
 
         response = self.__session__.get(
@@ -107,11 +115,14 @@ class Client:
 
         return data
 
-    def list_preprocessor_versions(self, preprocessor_id):
-        """ Lists models of active user.
+    def list_preprocessor_versions(self, preprocessor_id: int) -> list:
+        """ Lists all versions of a preprocessor.
+
+        Args:
+            preprocessor_id (int): The preprocessor id
 
         Returns:
-            dict: Dictionary of trained models.
+            dict: Dictionary of preprocessor versions.
         """
 
         response = self.__session__.get(
@@ -125,15 +136,29 @@ class Client:
 
 
     def load_preprocessor(
-            self, preprocessor_id, version_id, response_only=False):
+            self, preprocessor_id: int, version_id: int,
+            response_only: bool = False):
+        """ Loads a preprocessor by preprocessor_id and version_id.
+
+        Args:
+            preprocessor_id (int): The preprocessor id
+            version_id (int): The version id
+            response_only (bool, optional): Returns the preprocessor metadata.
+
+        Returns:
+            xplainable.preprocessing.Preprocessor: The loaded preprocessor
+        """
 
         def build_transformer(stage):
             """Build transformer from metadata"""
 
-            params = str(stage['params'])
-            trans = eval(f'tf.{stage["name"]}(**{params})')
+            if not hasattr(xtf, stage["name"]):
+                raise ValueError(f"{stage['name']} does not exist in the transformers module")
 
-            return trans
+            # Get transformer function
+            func = getattr(xtf, stage["name"])
+
+            return func(**stage['params'])
         
         try:
             preprocessor_response = self.__session__.get(
@@ -160,15 +185,18 @@ class Client:
 
         return xp
     
-    def load_classifier(self, model_id, version_id, model=None):
+    def load_classifier(self, model_id: int, version_id: int, model=None):
         """ Loads a binary classification model by model_id
 
         Args:
             model_id (str): A valid model_id
+            version_id (str): A valid version_id
+            model (xplainable.PartitionedClassifier, optional): An existing model to add partitions to
 
         Returns:
-            xplainable.model: The loaded xplainable model
+            xplainable.PartitionedClassifier: The loaded xplainable classifier
         """
+
         response = self.__get_model__(model_id, version_id)
 
         if response['model_type'] != 'binary_classification':
@@ -200,14 +228,16 @@ class Client:
 
         return partitioned_model
 
-    def load_regressor(self, model_id, version_id, model=None):
-        """ Loads a regression model by model_id
+    def load_regressor(self, model_id: int, version_id: int, model=None):
+        """ Loads a regression model by model_id and version_id
 
         Args:
             model_id (str): A valid model_id
+            version_id (str): A valid version_id
+            model (xplainable.PartitionedRegressor, optional): An existing model to add partitions to
 
         Returns:
-            xplainable.model: The loaded xplainable model
+            xplainable.PartitionedRegressor: The loaded xplainable regressor
         """
         response = self.__get_model__(model_id, version_id)
 
@@ -238,7 +268,7 @@ class Client:
 
         return partitioned_model
 
-    def __get_model__(self, model_id, version_id):
+    def __get_model__(self, model_id: int, version_id: int):
         try:
             response = self.__session__.get(
                 url=f'{self.hostname}/v1/models/{model_id}/versions/{version_id}'
@@ -250,7 +280,7 @@ class Client:
             f'Model with ID {model_id}:{version_id} does not exist')
 
 
-    def get_user_data(self):
+    def get_user_data(self) -> dict:
         """ Retrieves the user data for the active user.
 
         Returns:
@@ -267,7 +297,16 @@ class Client:
             raise AuthenticationError("API key has expired or is invalid.")
         
     def create_preprocessor_id(
-            self, preprocessor_name, preprocessor_description):
+            self, preprocessor_name: str, preprocessor_description: str) -> int:
+        """ Creates a new preprocessor and returns the preprocessor id.
+
+        Args:
+            preprocessor_name (str): The name of the preprocessor
+            preprocessor_description (str): The description of the preprocessor
+
+        Returns:
+            int: The preprocessor id
+        """
 
         payoad = {
             "preprocessor_name": preprocessor_name,
@@ -283,7 +322,20 @@ class Client:
             
         return preprocessor_id
     
-    def create_preprocessor_version(self, preprocessor_id, stages, deltas, versions):
+    def create_preprocessor_version(
+            self, preprocessor_id: int, stages: dict, deltas: dict,
+            versions: dict) -> int:
+        """ Creates a new preprocessor version and returns the version id.
+
+        Args:
+            preprocessor_id (int): The preprocessor id
+            stages (dict): The preprocessor stages
+            deltas (dict): The preprocessor deltas
+            versions (dict): Versions of current environment
+
+        Returns:
+            int: The preprocessor version id
+        """
 
         payload = {
             "stages": stages,
@@ -301,7 +353,20 @@ class Client:
 
         return version_id
 
-    def create_model_id(self, model_name, model_description, target, model_type):
+    def create_model_id(
+            self, model_name: str, model_description: str, target: str,
+            model_type: str) -> int:
+        """ Creates a new model and returns the model id.
+
+        Args:
+            model_name (str): The name of the model
+            model_description (str): The description of the model
+            target (str): The target column name
+            model_type (str): The model type
+
+        Returns:
+            int: The model id
+        """
 
         payoad = {
             "model_name": model_name,
@@ -319,46 +384,21 @@ class Client:
             
         return model_id
 
-    def create_or_fetch_model_id(self, model_name, model_description, target, model_type):
-
-        # Get user models
-        response = self.__session__.get(
-            url=f'{self.hostname}/v1/models')
-
-        user_models = get_response_content(response)
-        
-        # Create model if model name doesn't exist
-        if not any(m['model_name'] == model_name for m in user_models):
-            
-            payoad = {
-                "model_name": model_name,
-                "model_description": model_description,
-                "model_type": model_type,
-                "target_name": target
-            }
-            
-            response = self.__session__.post(
-                url=f'{self.hostname}/v1/create-model',
-                json=payoad
-            )
-            
-            model_id = get_response_content(response)
-            
-        else:
-            
-            params = {"model_name": model_name}
-
-            response = self.__session__.get(
-            url=f'{self.hostname}/v1/get-model-id',
-                params=params
-            )
-            
-            model_id = get_response_content(response)
-
-        return model_id
-
     def create_model_version(
-        self, model_id, partition_on, ruleset, health_info, versions):
+        self, model_id: int, partition_on: str, ruleset: Union[dict, str],
+        health_info: dict, versions: dict) -> int:
+        """ Creates a new model version and returns the version id.
+
+        Args:
+            model_id (int): The model id
+            partition_on (str): The partition column name
+            ruleset (dict | str): The feeature ruleset
+            health_info (dict): Feature health information
+            versions (dict): Versions of current environment
+
+        Returns:
+            int: The model version id
+        """
 
         payload = {
             "partition_on": partition_on,
@@ -378,22 +418,27 @@ class Client:
         return version_id
 
     def log_partition(
-        self,
-        model_type,
-        partition_name,
-        model,
-        model_id,
-        version_id,
-        evaluation=None,
-        training_metadata=None
-        ):
+            self, model_type: str, partition_name: str, model, model_id: int,
+            version_id: int, evaluation: dict = None,
+            training_metadata: dict = None) -> None:
+        """ Logs a partition to a model version.
 
-        
+        Args:
+            model_type (str): The model type
+            partition_name (str): The name of the partition column
+            model (mixed): The model to log
+            model_id (int): The model id
+            version_id (int): The version id
+            evaluation (dict, optional): Model evaluation data and metrics.
+            training_metadata (dict, optional): Model training metadata.
+
+        """
+
         data = {
             "partition": str(partition_name),
             "profile": json.dumps(model._profile, cls=NpEncoder),
             "feature_importances": json.loads(
-                json.dumps(model.get_feature_importances(), cls=NpEncoder)),
+                json.dumps(model.feature_importances, cls=NpEncoder)),
             "id_columns": json.loads(
                 json.dumps(model.id_columns, cls=NpEncoder)),
             "columns": json.loads(
@@ -401,7 +446,7 @@ class Client:
             "target_map": json.loads(
                 json.dumps(model.target_map_inv, cls=NpEncoder)),
             "parameters": json.loads(
-                json.dumps(model.get_params(), cls=NpEncoder)),
+                json.dumps(model.params, cls=NpEncoder)),
             "base_value": json.loads(
                 json.dumps(model.base_value, cls=NpEncoder)),
             "feature_map": json.loads(
@@ -444,28 +489,21 @@ class Client:
 
         return
 
-    # def log_evaluation(self, model_id, version_id, partition_id, evaluation, tags):
+    def deploy(
+            self, model_id: int, version_id: int, partition_id: int,
+            raw_output: bool=False) -> dict:
+        """ Deploys a model partition to xplainable cloud.
+
+        Args:
+            model_id (int): The model id
+            version_id (int): The version id
+            partition_id (int): The partition id
+            raw_output (bool, optional): returns a dictionary
+
+        Returns:
+            dict: deployment status and details.
+        """
         
-    #     assert type(evaluation) == dict, "evaluation must be JSON serialisable"
-
-    #     data = {
-    #         'evaluation': json.dumps(evaluation, cls=NpEncoder),
-    #         'tags': tags
-    #     }
-
-    #     try:
-    #         response = self.__session__.post(
-    #             url=f'{self.hostname}/v1/models/{model_id}/versions/{version_id}/partitions/{partition_id}/log-evaluation',
-    #             json=data
-    #         )
-    #     except Exception as e:
-    #         raise ValueError(e)
-
-    #     evaluation_id = get_response_content(response)
-
-    #     return evaluation_id
-
-    def deploy(self, model_id, version_id, partition_id, raw_output=False):
         url = f'{self.hostname}/v1/models/{model_id}/versions/{version_id}/partitions/{partition_id}/deploy'
         response = self.__session__.get(url)
         
@@ -522,12 +560,20 @@ class Client:
             return {"message": f"Failed with status code {response.status_code}"}
         
     def generate_deploy_key(
-        self,
-        description: str,
-        deployment_id: int,
-        days_until_expiry: float = 90,
-        surpress_output: bool = False
-        ):
+            self, description: str, deployment_id: int, 
+            days_until_expiry: float = 90, surpress_output: bool = False
+            ) -> None:
+        """ Generates a deploy key for a model deployment.
+
+        Args:
+            description (str): Description of the deploy key use case.
+            deployment_id (int): The deployment id.
+            days_until_expiry (float, optional): The number of days until the key expires. Defaults to 90.
+            surpress_output (bool, optional): Surpress output. Defaults to False.
+
+        Returns:
+            None: No key is returned. The key is copied to the clipboard.
+        """
 
         url = f'{self.hostname}/v1/create-deploy-key'
         

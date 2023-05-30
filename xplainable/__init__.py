@@ -1,6 +1,6 @@
-from .client._client import Client
+from .client.client import Client
 from .gui import *
-from .client.access import initialise
+from .client.init import initialise, reinitialise
 import warnings
 
 __author__ = 'xplainable pty ltd'

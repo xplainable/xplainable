@@ -1,22 +1,23 @@
 from ...utils import xwidgets as xwidgets
-from ._base import XBaseTransformer
+from .base import XBaseTransformer
 
 import pandas.api.types as pdtypes
 import pandas as pd
 from ipywidgets import interactive
 import ipywidgets as widgets
 import numpy as np
+import pandas as pd
 import scipy.signal as ss
 from IPython.display import display
 
 
 class DropCols(XBaseTransformer):
-    """Drops specified columns from a dataset.
+    """ Drops specified columns from a dataset.
 
     Args:
         columns (str): The columns to be dropped.
     """
-
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(self, columns=None):
@@ -31,7 +32,15 @@ class DropCols(XBaseTransformer):
 
         return interactive(_set_params)
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ Drops specified columns from a dataset.
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
         
         df = df.copy()
 
@@ -43,12 +52,12 @@ class DropCols(XBaseTransformer):
         return df
 
 class DropNaNs(XBaseTransformer):
-    """Drops nan rows from a dataset.
+    """ Drops nan rows from a dataset.
 
     Args:
         subset (list, optional): A subset of columns to apply the transfomer.
     """
-
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(self, subset=None):
@@ -64,7 +73,15 @@ class DropNaNs(XBaseTransformer):
 
         return interactive(_set_params)
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ Drops nan rows from a dataset.
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
 
         subset = list(df.columns) if self.subset is None else self.subset
         subset = [i for i in subset if i in df.columns]
@@ -80,7 +97,7 @@ class Operation(XBaseTransformer):
         drop (bool): Drops original columns if True
     """
     
-    # Attributes for ipyxwidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(self, columns=[], operation=None, alias: str = None, drop: bool = False):
@@ -131,7 +148,15 @@ class Operation(XBaseTransformer):
         
         return widget
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ Applies operation to multiple columns (in order) into new feature.
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
 
         df = df.copy()
 
@@ -171,7 +196,7 @@ class TextTrimMulti(XBaseTransformer):
         action (str): [keep, drop] the identified characters.
     """
 
-    # Attributes for ipywidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(
@@ -209,7 +234,15 @@ class TextTrimMulti(XBaseTransformer):
 
         return interactive(_set_params)
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ Drops or keeps first/last n characters of a categorical column.
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
         df = df.copy()
         ser = df[self.column]
 
@@ -233,9 +266,13 @@ class TextTrimMulti(XBaseTransformer):
 
 
 class ChangeNames(XBaseTransformer):
-    """Changes names of columns in a dataset"""
+    """ Changes names of columns in a dataset
+    
+    Args:
+        col_names (dict): Dictionary of old and new column names.
+    """
 
-    # Attributes for ipyxwidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(self, col_names={}):
@@ -257,7 +294,15 @@ class ChangeNames(XBaseTransformer):
         
         return w
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ Changes names of columns in a dataset
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
         df = df.copy()
         col_names = {i: v for i, v in self.col_names.items() if i in df.columns}
         return df.rename(columns=col_names)
@@ -271,7 +316,7 @@ class OrderBy(XBaseTransformer):
         ascending (bool): Orders in ascending order if True.
     """
 
-    # Attributes for ipyxwidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(self, order_by=None, ascending=True):
@@ -293,7 +338,15 @@ class OrderBy(XBaseTransformer):
 
         return interactive(_set_params)
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ Orders the dataset by the values of a given series.
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
 
         return df.sort_values(self.order_by, ascending=self.ascending)
 
@@ -310,7 +363,7 @@ class GroupbyShift(XBaseTransformer):
         descending (bool): Orders the value descending if True.
     """
 
-    # Attributes for ipyxwidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(self, columns=None, step=0, as_new=True, col_names=[], \
@@ -364,7 +417,15 @@ class GroupbyShift(XBaseTransformer):
 
         return interactive(_set_params)
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ Shifts a series up or down n steps within specified group.
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
 
         # Order values if
         if self.order_by and self.order_by[0] is not None:
@@ -383,7 +444,7 @@ class GroupbyShift(XBaseTransformer):
 class FillMissing(XBaseTransformer):
     """Fills missing values of all columns with a specified value/strategy."""
 
-    # Attributes for ipyxwidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(self, fill_with={}, fill_values={}):
@@ -407,7 +468,15 @@ class FillMissing(XBaseTransformer):
 
         return interactive(_set_params, **col_xwidgets)
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """  Fills missing values of all columns with a specified value/strategy.
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
         
         for i, v in self.fill_values.items():
             if i not in df.columns:
@@ -416,14 +485,16 @@ class FillMissing(XBaseTransformer):
 
         return df
 
-    def fit(self, df):
-        """ Calculates the fill_value from a given series.
+    def fit(self, df: pd.DataFrame) -> 'FillMissing':
+        """ Calculates the fill_value for all columns in the dataset.
+
+        The fill values are based on a specified strategy for each column.
 
         Args:
-            ser (pandas.Series): The series in which to analyse.
+            df (pd.DataFrame): The dataset to fit
 
         Returns:
-            self
+            FillMissing: The fitted transformer.
         """
 
         for i, v in self.fill_with.items():
@@ -448,9 +519,13 @@ class FillMissing(XBaseTransformer):
 
 
 class SetDTypes(XBaseTransformer):
-    """Sets the data type of all columns in the dataset."""
+    """Sets the data type of all columns in the dataset.
+    
+    Args:
+        types (dict): Dictionary of column names and data types.
+    """
 
-    # Attributes for ipyxwidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(self, types={}):
@@ -499,7 +574,15 @@ class SetDTypes(XBaseTransformer):
 
         return interactive(_set_params, **col_xwidgets)
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ Sets the data type of all columns in the dataset.
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
 
         for i, v in self.types.items():
             
@@ -531,7 +614,7 @@ class TextSplit(XBaseTransformer):
         max_splits (int): The maximum number of splits to make.
     """
 
-    # Attributes for ipyxwidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(self, target=None, separator=None, max_splits=0):
@@ -555,7 +638,15 @@ class TextSplit(XBaseTransformer):
 
         return interactive(_set_params)
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ Splits a string column into multiple columns on a specified separator.
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
 
         new_cols = df[self.target].astype(str).str.split(
             self.separator, expand=True, n=self.max_splits)
@@ -570,11 +661,11 @@ class ChangeCases(XBaseTransformer):
     """ Changes the case of all specified categorical columns.
 
     Args:
-        columns (list): The to apply the case change.
+        columns (list): To apply the case change to.
         case (str): 'upper' or 'lower'.
     """
 
-    # Attributes for ipyxwidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(self, columns=[], case='lower'):
@@ -599,7 +690,15 @@ class ChangeCases(XBaseTransformer):
         
         return interactive(_set_params)
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ Changes the case of all specified categorical columns.
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
 
         for col in self.columns:
             if col not in df.columns:
@@ -628,7 +727,7 @@ class GroupedSignalSmoothing(XBaseTransformer):
         descending (bool): Orders the value descending if True.
     """
 
-    # Attributes for ipyxwidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(self, target=None, group_by=None,\
@@ -659,7 +758,15 @@ class GroupedSignalSmoothing(XBaseTransformer):
 
         return interactive(_set_params)
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ Smooths signal data within specified group.
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
 
         # Order values if
         if self.order_by and self.order_by[0] is not None:
@@ -678,9 +785,22 @@ class GroupedSignalSmoothing(XBaseTransformer):
 
 
 class DateTimeExtract(XBaseTransformer):
-    """ Extracts Datetime values from datetime object. """
+    """ Extracts Datetime values from datetime object.
+    
+    Args:
+        target (str): The datetime column to extract from.
+        year (bool): Extracts year if True.
+        month (bool): Extracts month if True.
+        day (bool): Extracts day if True.
+        weekday (bool): Extracts weekday if True.
+        day_name (bool): Extracts day name if True.
+        hour (bool): Extracts hour if True.
+        minute (bool): Extracts minute if True.
+        second (bool): Extracts second if True.
+        drop (bool): Drops original datetime column if True.
+    """
 
-    # Attributes for ipywidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(self, target=None, year=False, month=False, day=False, \
@@ -735,7 +855,15 @@ class DateTimeExtract(XBaseTransformer):
                 
         return elements
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ Extracts Datetime values from datetime object.
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
 
         df = df.copy()
 
@@ -783,7 +911,7 @@ class RollingOperation(XBaseTransformer):
         drop (bool): Drops original columns if True
     """
     
-    # Attributes for ipyxwidgets
+    # Informs the embedded GUI which data types this transformer supports.
     supported_types = ['dataset']
 
     def __init__(
@@ -846,7 +974,15 @@ class RollingOperation(XBaseTransformer):
 
         return widget
 
-    def _operations(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ Applies operation to multiple columns (in order) into new feature.
+
+        Args:
+            df (pd.DataFrame): The dataset to transform.
+
+        Returns:
+            pd.DataFrame: The transformed dataset.
+        """
 
         df = df.copy()
 

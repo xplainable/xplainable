@@ -1,1 +1,1 @@
-from ._base import XBaseTransformer
+from .base import XBaseTransformer

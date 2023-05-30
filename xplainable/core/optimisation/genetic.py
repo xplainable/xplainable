@@ -1,9 +1,44 @@
 import numpy as np
 import pandas as pd
+from typing import Union
+from ..models import XRegressor
 
 class XEvolutionaryNetwork:
+    """ A layer-based optimisation framework for XRegressor models.
 
-    def __init__(self, model, apply_range=False):
+    XEvolutionaryNetwork is a novel optimisation framework for XRegressor
+    models that allows for flexibility and depth. It is inspired by deep
+    learning frameworks, but is applied over additive models for weight
+    optimisation.
+
+    It works by taking a pre-trained XRegressor model and fitting it,
+    along with the training data, to an evolutionary network. The
+    evolutionary network consists of a series of layers, each of which is
+    responsible for optimising the model weights given a set of constraints.
+
+    What are layers?:
+        There are currently two types of layers: Tighten() and Evolve().
+        
+        More information on each layer can be found in their respective
+        documentation.
+
+    There is no limit to the number of layers that can be added to the
+    network, and each layer can be customised for specific objectives.
+    Like other machine learning methods, the network can be prone to
+    over-fitting, so it is recommended to use a validation set to monitor
+    performance.
+
+    An XEvolutionaryNetwork can be stopped mid-training and resumed at any
+    time. This is useful for long-running optimisations and iterative work.
+    You can track the remaining and completed layers using the
+    `future_layers` and `completed_layers` attributes.
+
+    Args:
+        model (XRegressor): The model to optimise.
+        apply_range (bool): Whether to apply the model's prediction range to the output.
+    """
+
+    def __init__(self, model: 'XRegressor', apply_range: bool = False):
         
         self.model = model
         self.apply_range = apply_range
@@ -20,24 +55,42 @@ class XEvolutionaryNetwork:
         self.layer_id = 0
         self.checkpoint_score = None
 
-    def add_layer(self, layer, idx=None):
+    def add_layer(self, layer, idx:int = None):
+        """ Adds a layer to the network.
+
+        Args:
+            layer (Tighten | Evolve): The layer to add.
+            idx (int, optional): The index to add the layer at.
+        """
         idx = len(self.future_layers) if idx is None else idx
         self.future_layers.insert(idx, layer)
 
-    def drop_layer(self, idx):
+    def drop_layer(self, idx: int):
+        """ Removes a layer from the network.
+
+        Args:
+            idx (int): The index of the layer to remove.
+        """
         self.future_layers.pop(idx)
 
     def clear_layers(self):
+        """ Removes all layers from the network.
+        """
         self.future_layers = []
 
-    def fit(self, x, y, subset=[]):
-        """ Transforms input variables into an array of leaf nodes for opt.
+    def fit(
+            self, x: Union[pd.DataFrame, np.ndarray], 
+            y: Union[pd.Series, np.ndarray], subset: list = []
+            ) -> 'XEvolutionaryNetwork':
+        """ Fits the model and data to the evolutionary network.
 
         Args:
-            X (pandas.DataFrame): A dataframe of x values.
+            x (pd.DataFrame | np.ndarray): The data to fit.
+            y (pd.Series | np.ndarray): The target to fit.
+            subset (list, optional): A list of columns to subset for feature level optimisation.
 
         Returns:
-            numpy.array: An array of optimisable leaf nodes.
+            XEvolutionaryNetwork: The fitted network.
         """
 
         x = x.copy()
@@ -96,9 +149,17 @@ class XEvolutionaryNetwork:
         self.x = _df.values
         self.y = y.values
 
-        return self.model
+        return self
 
-    def optimise(self, callback=None):
+    def optimise(self, callback=None) -> 'XEvolutionaryNetwork':
+        """ Sequentially runs the layers in the network.
+
+        Args:
+            callback (any, optional): Callback for progress tracking.
+
+        Returns:
+            XEvolutionaryNetwork: The evolutionary network.
+        """
 
         if len(self.future_layers) == 0:
             raise ValueError('Must include at least one optimisation layer')

@@ -239,7 +239,7 @@ class ScenarioClassification:
     
     def get_prediction_breakdown(self):
        
-        profile = self.model.get_profile()
+        profile = self.model.profile
         
         score = self.model.base_value
         breakdown = {'base_value': self.model.base_value}
@@ -270,7 +270,7 @@ class ScenarioClassification:
     
     def run(self):
         
-        profile = self.model.get_profile()
+        profile = self.model.profile
         
         for f in profile['categorical']:
             feature = profile['categorical'][f]
@@ -546,7 +546,7 @@ class ScenarioRegression:
 
     def get_prediction_breakdown(self):
        
-        profile = self.model.get_profile()
+        profile = self.model.profile
         
         score = self.model.base_value
         breakdown = {'base_value': self.model.base_value}
@@ -577,7 +577,7 @@ class ScenarioRegression:
     
     def run(self):
         
-        profile = self.model.get_profile()
+        profile = self.model.profile
         
         for f in profile['categorical']:
             feature = profile['categorical'][f]

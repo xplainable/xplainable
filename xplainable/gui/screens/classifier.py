@@ -1,7 +1,6 @@
 from IPython.display import display, clear_output
 import ipywidgets as widgets
-from ...core.ml.partitions.classification import PartitionedClassifier
-from ...core.models import XClassifier
+from ...core.models import XClassifier, PartitionedClassifier
 from ...core.optimisation.bayesian import XParamOptimiser
 from ...utils import TrainButton
 from ...utils.activation import flex_activation

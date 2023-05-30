@@ -1,4 +1,4 @@
-from ._client import Client
+from .client import Client
 import xplainable
 from .._version import __version__ as XP_VERSION
 from IPython.display import clear_output
@@ -8,7 +8,7 @@ from ..gui.components import KeyValueTable, Header
 from IPython.display import display, clear_output
 import keyring
 
-def render_init_table(data):
+def _render_init_table(data):
     import ipywidgets as widgets
     table = KeyValueTable(
         data,
@@ -28,6 +28,17 @@ def render_init_table(data):
     display(output)
 
 def initialise():
+    """ Initialise the client with an API Key.
+
+    API Keys can be generated from https://app.xplainable.io with a valid
+    account.
+
+    Example:
+        >>> xp.initialise()
+
+    Returns:
+        dict: The users account information.
+    """
 
     version_info = sys.version_info
     PY_VERSION = f'{version_info.major}.{version_info.minor}.{version_info.micro}'
@@ -53,7 +64,7 @@ def initialise():
         }
 
         try:
-            render_init_table(data)
+            _render_init_table(data)
         except:
             return data
 
@@ -76,6 +87,19 @@ def initialise():
         }
 
         try:
-            render_init_table(data)
+            _render_init_table(data)
         except:
             return data
+
+def reinitialise():
+    """ Forgets the current API Key and reinitialises the client.
+
+    Example:
+        >>> xp.reinitialise()
+
+    """
+    version_info = sys.version_info
+    PY_VERSION = f'{version_info.major}.{version_info.minor}.{version_info.micro}'
+    keyring.delete_password('XPLAINABLE', PY_VERSION)
+
+    initialise()
