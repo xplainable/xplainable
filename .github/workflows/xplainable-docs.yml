@@ -28,8 +28,8 @@ jobs:
       - name: Upload Docs to DigitalOcean Spaces
         uses: BetaHuhn/do-spaces-action@v2
         with:
-          access_key: ${{ secrets.ACCESS_KEY }}
-          secret_key: ${{ secrets.SECRET_KEY }}
+          access_key: ${{ secrets.DO_KEY }}
+          secret_key: ${{ secrets.DO_SECRET }}
           space_name: xplainable-docs
           space_region: syd1
           source: docs/_build/html  # replace with the correct path to your sphinx build
