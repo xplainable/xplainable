@@ -149,11 +149,3 @@ Dataset Transformers
     :undoc-members:
     :show-inheritance:
 
-Custom Transformers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: xplainable.preprocessing.transformers.custom_transformers
-    :members:
-    :inherited-members:
-    :undoc-members:
-    :show-inheritance:
