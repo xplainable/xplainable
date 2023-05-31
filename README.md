@@ -9,7 +9,7 @@
 <h3 align="center">Explainable machine learning for business optimisation</h3>
     
 [![Python](https://img.shields.io/pypi/pyversions/xplainable)](https://pypi.org/project/xplainable/)
-[![PyPi](https://img.shields.io/pypi/v/xplainable?color=blue)](https://pypi.org/project/statsforecast/)
+[![PyPi](https://img.shields.io/pypi/v/xplainable?color=blue)](https://pypi.org/project/xplainable/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://github.com/xplainable/xplainable/blob/dev/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/xplainable)](https://pepy.tech/project/xplainable)
     
