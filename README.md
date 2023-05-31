@@ -5,8 +5,8 @@
 
 <div align="center">
 <img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/logo/xplainable-logo.png">
-<h1 align="center">Xplainable</h1>
-<h3 align="center">Explainable machine learning for business optimisation</h3>
+<h1 align="center">xplainable</h1>
+<h3 align="center">Real-time explainable machine learning for business optimisation</h3>
     
 [![Python](https://img.shields.io/pypi/pyversions/xplainable)](https://pypi.org/project/xplainable/)
 [![PyPi](https://img.shields.io/pypi/v/xplainable?color=blue)](https://pypi.org/project/xplainable/)
