@@ -22,9 +22,9 @@ class XRegressor(BaseModel):
     XRegressor is a feature-wise ensemble of decision trees. Each tree is
     constructed using a custom algorithm that optimises for information with
     respect to the target variable. The trees are then weighted and
-    normalised against one another to produce what is essentially a spline
-    for each feature. The summation of the splines produces a prediction
-    that can be explained in real time. The bounds of the prediction can
+    normalised against one another to produce a variable step function
+    for each feature. The summation of these functions produces a score that can
+    be explained in real time. The bounds of the prediction can
     be set using the prediction_range parameter.
 
     When the fit method is called, the specified params are set across all
@@ -120,7 +120,7 @@ class XRegressor(BaseModel):
 
     def set_params(
             self, max_depth: int , min_leaf_size: float, min_info_gain: float,
-            alpha: float, tail_sensitivity: float) -> None:
+            alpha: float, tail_sensitivity: float, *args, **kwargs) -> None:
         """ Sets the parameters of the model. Generally used for model tuning.
 
         Args:
@@ -284,8 +284,8 @@ class XRegressor(BaseModel):
 
     def update_feature_params(
             self, features: list, max_depth: int, min_info_gain: float,
-            min_leaf_size: float, alpha: float, tail_sensitivity: float
-            ) -> 'XRegressor':
+            min_leaf_size: float, alpha: float, tail_sensitivity: float,
+            *args, **kwargs) -> 'XRegressor':
         """ Updates the parameters for a subset of features.
 
         XRegressor allows you to update the parameters for a subset of features

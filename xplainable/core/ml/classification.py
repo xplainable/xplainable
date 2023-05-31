@@ -21,8 +21,8 @@ class XClassifier(BaseModel):
     XClassifier is a feature-wise ensemble of decision trees. Each tree is
     constructed using a custom algorithm that optimises for information with
     respect to the target variable. The trees are then weighted and
-    normalised against one another to produce what is essentially a spline
-    for each feature. The summation of the splines produces a score that can
+    normalised against one another to produce a variable step function
+    for each feature. The summation of these functions produces a score that can
     be explained in real time. The score is a float value between 0 and 1
     and represents the likelihood of the positive class occuring. The score
     can also be mapped to a probability when probability is important.
@@ -117,7 +117,7 @@ class XClassifier(BaseModel):
     def set_params(
             self, max_depth: int, min_leaf_size: float, min_info_gain: float,
             alpha: float, weight: float, power_degree: float,
-            sigmoid_exponent: float) -> None:
+            sigmoid_exponent: float, *args, **kwargs) -> None:
         """ Sets the parameters of the model. Generally used for model tuning.
 
         Args:
