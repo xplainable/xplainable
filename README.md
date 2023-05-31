@@ -4,13 +4,13 @@
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/logo/xplainable-logo.png">
+<img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/logo/xplainable-logo.png">
 <h1 align="center">Xplainable</h1>
 <h3 align="center">Explainable machine learning for business optimisation</h3>
     
 [![Python](https://img.shields.io/pypi/pyversions/xplainable)](https://pypi.org/project/xplainable/)
 [![PyPi](https://img.shields.io/pypi/v/xplainable?color=blue)](https://pypi.org/project/statsforecast/)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://github.com/xplainable/xplainable/blob/dev/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/xplainable)](https://pepy.tech/project/xplainable)
     
 **Xplainable** leverages explainable machine learning for fully transparent predictions and advanced data optimisation in production systems.
@@ -42,10 +42,7 @@ x, y = data.drop('target', axis=1), data['target']
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 
 # Train a model
-model = XClassifier()
-model.fit(x_train, y_train)
+model = xp.classifier(train)
 ```
+<img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/gui_classifier.gif">
 
-## Connect to Xplainable Cloud
-
-<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/screenshots/initialise.gif">
