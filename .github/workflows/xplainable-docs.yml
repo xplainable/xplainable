@@ -1,0 +1,37 @@
+name: Xplainable Docs CI
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install sphinx sphinx_rtd_theme
+
+      - name: Generate Sphinx Documentation
+        run: |
+          cd docs
+          make html
+
+      - name: Upload Docs to DigitalOcean Spaces
+        uses: BetaHuhn/do-spaces-action@v2
+        with:
+          access_key: ${{ secrets.DO_KEY }}
+          secret_key: ${{ secrets.DO_SECRET }}
+          space_name: xplainable-docs
+          space_region: syd1
+          source: docs/_build/html  # replace with the correct path to your sphinx build
+          permission: public-read
