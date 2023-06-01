@@ -133,6 +133,8 @@ surrogate models such as ``Shap`` or ``LIME``.
 model.explain()
 ```
 
+<img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/explain.gif">
+
 ### Action & Optimisation
 We leverage the explainability of our models to provide real-time
 recommendations on how to optimise predicted outcomes at a local and global
