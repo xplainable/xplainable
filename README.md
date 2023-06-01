@@ -112,7 +112,10 @@ model = xp.classifier(train)
 ```
 <img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/gui_classifier.gif">
 
-**Rapid Refitting**
+### Rapid Refitting
+Fine tune your models by refitting model parameters on the fly, even on
+individual features.
+
 <img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/recalibrate.gif">
 
 ### Explainability
