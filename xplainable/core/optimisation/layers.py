@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 import numpy as np
 import random
 import math
@@ -160,7 +162,7 @@ class Evolve(BaseLayer):
 
         # randomly select number of leaves to mutate
         num_leaves = random.sample(
-            [i for i in range(1, int(min([self.max_leaves, chrome_length])+1))], k=1)[0]
+            [i for i in range(1, int(min([self.max_leaves, chrome_length])+1))],k=1)[0]
 
         # identify features to mutate
         rand_indices = random.choices([i for i in range(int(chrome_length))], k=num_leaves)

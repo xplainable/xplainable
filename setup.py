@@ -21,6 +21,7 @@ setup(
         'ipywidgets>=8.0.5',
         'keyring>=23.2.1',
         'matplotlib>=3.4.2',
+        'altair>=5.0.1',
         'numba>=0.56.4',
         'numpy>=1.20.3,<=1.23.5',
         'pandas>=1.5.2,<=1.9.0',

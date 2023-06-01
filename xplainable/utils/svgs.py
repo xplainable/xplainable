@@ -1,3 +1,9 @@
+""" Copyright Xplainable Pty Ltd, 2023
+
+This logo is not to be copied, changed, or distributed without the express
+permission of Xplainable Pty Ltd.
+"""
+
 import drawsvg as draw
 
 def generate_xplainable_logo(size):

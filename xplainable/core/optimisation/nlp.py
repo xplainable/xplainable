@@ -24,11 +24,13 @@ class NLPOptimiser:
             random_state (int, optional): Random seed. Defaults to 1.
     """
 
-    def __init__(self, nlp, drop_cols=[], metric='weighted-f1', early_stopping=100, n_trials=30, n_folds=5,
-                       shuffle=False, subsample=1, random_state=1,
-                       min_word_freq_space = [0.0002, 0.005, 0.0002], max_word_freq_space = [0.005, 0.5, 0.005],
-                       min_ngram_freq_space = [0.0002, 0.005, 0.0002], max_ngram_freq_space=[0.005, 0.5, 0.005]
-                       ):
+    def __init__(self, nlp, drop_cols=[], metric='weighted-f1',
+                 early_stopping=100, n_trials=30, n_folds=5,
+                 shuffle=False, subsample=1, random_state=1,
+                 min_word_freq_space = [0.0002, 0.005, 0.0002],
+                 max_word_freq_space = [0.005, 0.5, 0.005],
+                 min_ngram_freq_space = [0.0002, 0.005, 0.0002],
+                 max_ngram_freq_space=[0.005, 0.5, 0.005]):
 
         super().__init__()
 

@@ -136,22 +136,28 @@ class BarGroup:
     def close(self):
         self.window.close()
 
-    def add_button(self, items=None, text='button', side='right', on_click=None, height=25, width=50):
+    def add_button(
+            self, items=None, text='button', side='right', on_click=None,
+            height=25, width=50):
         if items is None:
             items = self.items
         for item in items:
             button = IDButton(description=text, id=item)
             button_layout = widgets.Layout(
-                height=f'{height}px', width=f'{width}px', display='flex', margin='3px 0 0 10px')
+                height=f'{height}px', width=f'{width}px', display='flex',
+                margin='3px 0 0 10px')
+            
             button.layout = button_layout
 
             if on_click is not None:
                 button.on_click(on_click)
 
             if side == 'left':
-                self.displays[item]['display'].children = (button,) + self.displays[item]['display'].children
+                self.displays[item]['display'].children = (button,) + \
+                    self.displays[item]['display'].children
             else:
-                self.displays[item]['display'].children = self.displays[item]['display'].children + (button,)
+                self.displays[item]['display'].children = self.displays[
+                    item]['display'].children + (button,)
 
 
 class IncrementalBarPlot:
@@ -174,7 +180,8 @@ class IncrementalBarPlot:
         spacing = 0.1
 
         num_bars = len(self.labels)
-        dynamic_height = max(min_height, min(max_height, num_bars * (bar_height + spacing)))
+        dynamic_height = max(
+            min_height, min(max_height, num_bars * (bar_height + spacing)))
 
         fig, ax = plt.subplots()
         fig.set_size_inches(6, dynamic_height)

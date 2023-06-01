@@ -1,3 +1,4 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
 
 from ...gui.components.bars import BarGroup
 from ...utils.activation import flex_activation
@@ -170,7 +171,10 @@ class EvaluateClassifier:
     
     def _evaluation_screen(self, X, y):
         
-        group = BarGroup(['f1-score', 'precision', 'recall', 'accuracy', 'roc_auc', 'log_loss', 'neg_brier_loss'])
+        group = BarGroup([
+            'f1-score', 'precision', 'recall', 'accuracy',
+            'roc_auc', 'log_loss', 'neg_brier_loss'])
+        
         group.bar_layout.width = '275px'
         group.set_bounds(['neg_brier_loss'], 0, 1)
         group.label_layout.width = f'85px'
@@ -188,9 +192,11 @@ class EvaluateClassifier:
         cmap = LinearSegmentedColormap.from_list(
             'custom', ['#eeeeee', '#0080ea'], N=100, gamma=0.4)
 
-        def _plot(threshold=self.threshold,
-                  chart_type = widgets.ToggleButtons(options=['Confusion Matrix', 'Probability']),
-                  metric_type=toggle_buttons):
+        def _plot(
+                threshold=self.threshold,
+                chart_type = widgets.ToggleButtons(options=['Confusion Matrix',
+                                                            'Probability']),
+                metric_type=toggle_buttons):
 
             evaluation = self.model.evaluate(X, y, threshold=threshold)
 
@@ -203,7 +209,10 @@ class EvaluateClassifier:
 
             group.set_value('accuracy', round(report['accuracy']*100, 2))
             group.set_value('roc_auc', round(evaluation['roc_auc']*100, 2))
-            group.set_value('neg_brier_loss', round(evaluation['neg_brier_loss'], 4))
+
+            group.set_value('neg_brier_loss', round(
+                evaluation['neg_brier_loss'], 4))
+            
             group.set_value('log_loss', round(evaluation['log_loss'], 2))
             
             if chart_type == 'Confusion Matrix':
@@ -221,24 +230,34 @@ class EvaluateClassifier:
                 plt.show()
             
             else:
-                custom_params = {"axes.spines.right": False, "axes.spines.top": False}
+                custom_params = {"axes.spines.right": False,
+                                 "axes.spines.top": False}
+                
                 sns.set_theme(style="ticks", rc=custom_params)
 
                 fig, ax = plt.subplots(figsize=(5.7, 4))
-                plot_data = pd.DataFrame(self.model._calibration_map.items(), columns=['score', 'probability'])
+                plot_data = pd.DataFrame(
+                    self.model._calibration_map.items(),
+                    columns=['score', 'probability'])
 
-                ax1 = sns.lineplot(data=plot_data, y='probability', x='score', ax=ax)
+                ax1 = sns.lineplot(
+                    data=plot_data, y='probability', x='score', ax=ax)
 
                 v = int(threshold*100)
                 plt.vlines(x=v, ymin=0, ymax=1, ls='--', color='#374151', lw=1)
-                plt.hlines(y=self.model.base_value, xmin=0, xmax=100, ls=':', color='#374151', lw=1)
+                plt.hlines(y=self.model.base_value, xmin=0, xmax=100, ls=':',
+                           color='#374151', lw=1)
+
                 plt.plot([0, 100], [0, 1], ls=':', color='#0080ea', lw=1)
 
                 ax2 = ax.twinx()
-                bar_data = pd.DataFrame({'proba': self.y_val_prob*100, 'true': y.values})
+                bar_data = pd.DataFrame({
+                    'proba': self.y_val_prob*100, 'true': y.values})
 
                 palette=["#e14067", "#0080ea"]
-                axx = sns.histplot(data=bar_data, x='proba', hue='true', bins=20, ax=ax2, palette=palette)
+                axx = sns.histplot(
+                    data=bar_data, x='proba', hue='true', bins=20, ax=ax2,
+                    palette=palette)
 
                 ax1.set_xlabel('Score', size=14)
                 ax1.set_ylabel('Probability', size=14)
@@ -416,11 +435,13 @@ class EvaluateClassifier:
         def plot_flex_activation():
     
             @widgets.interactive
-            def _activation(weight=recal_weight, power_degree=recal_power_degree,\
+            def _activation(
+                weight=recal_weight, power_degree=recal_power_degree,
                 sigmoid_exponent=recal_sigmoid_exponent):
 
                 freq = np.arange(0, 101, 1)
-                _nums = [flex_activation(i, weight, power_degree, sigmoid_exponent) for i in freq]
+                _nums = [flex_activation(
+                    i, weight, power_degree, sigmoid_exponent) for i in freq]
 
                 data = pd.DataFrame({
                     "freq": freq,
@@ -502,7 +523,9 @@ class EvaluateClassifier:
     def profile(self, X, y):
         
         evaluation = widgets.Output()
-        self.scenarios = widgets.Output(layout = widgets.Layout(min_height='720px'))
+        self.scenarios = widgets.Output(
+            layout = widgets.Layout(min_height='720px'))
+        
         with self.scenarios:
             print("Generating widgets...")
             
@@ -511,15 +534,24 @@ class EvaluateClassifier:
         fimp_title = widgets.HTML('<h4>Feature Importances</h4>')
         self.feature_importance_bars = self._generate_feature_importance()
         feature_importances = widgets.VBox([self.feature_importance_bars])
-        feature_importances.layout = widgets.Layout(height = '390px', overflow_y='auto')
+
+        feature_importances.layout = widgets.Layout(
+            height = '390px', overflow_y='auto')
+        
         self.calibration_box = self._generate_calibration_box(X, y)
         self.calibration_box.layout = self.calibration_layout
-        self._feature_importance_chart = widgets.VBox([fimp_title, feature_importances])
-        left_columns = widgets.VBox([self._feature_importance_chart, self.calibration_box])
+
+        self._feature_importance_chart = widgets.VBox(
+            [fimp_title, feature_importances])
+        
+        left_columns = widgets.VBox(
+            [self._feature_importance_chart, self.calibration_box])
         
         contribution_title = widgets.HTML('<h4>Contributions</h4>')
         contribution_plot = self._generate_contribution_plot()
-        contribution_display = widgets.VBox([contribution_title, contribution_plot])
+
+        contribution_display = widgets.VBox(
+            [contribution_title, contribution_plot])
         
         metrics_eval = self._evaluation_screen(X, y)
         
@@ -536,7 +568,12 @@ class EvaluateClassifier:
         # Get numeric ranges from training set
         for c in self.model.numeric_columns:
             t = int if self.X[c].dtype == int else float
-            rng = {'type': t, 'lower': self.X[c].min(), 'upper': self.X[c].max()}
+            rng = {
+                'type': t,
+                'lower': self.X[c].min(),
+                'upper': self.X[c].max()
+                }
+            
             self.ranges[c] = rng
             
         tabs = widgets.Tab([evaluation, self.scenarios])
@@ -709,7 +746,8 @@ class EvaluateRegressor:
         cmap = LinearSegmentedColormap.from_list(
             'custom', ['#eeeeee', '#0080ea'], N=100, gamma=0.4)
         
-        chart_type = widgets.ToggleButtons(options=['Comparison', 'Error Dist', 'Residuals'])
+        chart_type = widgets.ToggleButtons(
+            options=['Comparison', 'Error Dist', 'Residuals'])
 
         def _plot(chart_type=chart_type):
 
@@ -718,7 +756,11 @@ class EvaluateRegressor:
             if chart_type == 'Comparison':
                 
                 sns.set(font_scale=1.5)
-                custom_params = {"axes.spines.right": False, "axes.spines.top": False}
+                custom_params = {
+                    "axes.spines.right": False,
+                    "axes.spines.top": False
+                    }
+                
                 sns.set_theme(style="white", palette=None, rc=custom_params)
                 
                 fig, ax = plt.subplots(1, 1, figsize=(6.5, 4))
@@ -730,7 +772,9 @@ class EvaluateRegressor:
                     'actual': y
                 })
 
-                ax1 = sns.scatterplot(data=plot_data, x='actual', y='predicted', alpha=0.5, color='#0080ea')
+                ax1 = sns.scatterplot(
+                    data=plot_data, x='actual', y='predicted', alpha=0.5,
+                    color='#0080ea')
 
                 limit = max([y.max(), y_pred.max()]) * 1.05
 
@@ -738,14 +782,19 @@ class EvaluateRegressor:
                 ax1.set_xlim(0, limit)
                 ax1.set_ylim(0, limit)
 
-                diag_line, = ax.plot(ax.get_xlim(), ax.get_ylim(), ls=":", c=".3")
+                diag_line, = ax.plot(
+                    ax.get_xlim(), ax.get_ylim(), ls=":", c=".3")
 
                 # Show the plot
                 plt.show()
             
             elif chart_type == 'Error Dist':
                 sns.set(font_scale=1.5)
-                custom_params = {"axes.spines.right": False, "axes.spines.top": False}
+                custom_params = {
+                    "axes.spines.right": False,
+                    "axes.spines.top": False
+                    }
+                
                 sns.set_theme(style="white", palette=None, rc=custom_params)
 
                 fig, ax = plt.subplots(1, 1, figsize=(6.5, 4))
@@ -759,7 +808,6 @@ class EvaluateRegressor:
 
                 plot_data['error'] = plot_data['predicted'] - plot_data['actual']
 
-                #ax1 = sns.scatterplot(data=plot_data, x='actual', y='predicted')
                 ax1 = sns.histplot(plot_data['error'], color='#0080ea')
 
                 limit = max([y.max(), y_pred.max()]) * 1.05
@@ -769,7 +817,11 @@ class EvaluateRegressor:
                 
             else:
                 sns.set(font_scale=1.5)
-                custom_params = {"axes.spines.right": False, "axes.spines.top": False}
+                custom_params = {
+                    "axes.spines.right": False,
+                    "axes.spines.top": False
+                    }
+                
                 sns.set_theme(style="white", palette=None, rc=custom_params)
 
                 fig, ax = plt.subplots(1, 1, figsize=(6.5, 4))
@@ -783,7 +835,10 @@ class EvaluateRegressor:
 
                 plot_data['error'] = plot_data['predicted'] - plot_data['actual']
 
-                ax1 = sns.scatterplot(data=plot_data, x='predicted', y='error', alpha=0.5, color='#e14067')
+                ax1 = sns.scatterplot(
+                    data=plot_data, x='predicted', y='error', alpha=0.5,
+                    color='#e14067')
+                
                 limit = y_pred.max() * 1.05
 
                 ax.hlines(y=0, xmin=0, xmax=limit)
@@ -827,13 +882,18 @@ class EvaluateRegressor:
         plot_selector.layout = widgets.Layout(margin='10px 0 0 90px')
         
         def _plot(feature=self.feature_selector, plot=plot_selector):
-            custom_params = {"axes.spines.right": False, "axes.spines.top": False}
+            custom_params = {
+                "axes.spines.right": False,
+                "axes.spines.top": False
+                }
+            
             sns.set_theme(style="ticks", rc=custom_params)
             
             if feature is None:
                 return
             
-            plot_data = self.profile_plot_data[self.profile_plot_data['feature'] == feature]
+            plot_data = self.profile_plot_data[
+                self.profile_plot_data['feature'] == feature]
 
             if plot_data.empty:
                 print('')
@@ -912,9 +972,16 @@ class EvaluateRegressor:
         def on_opt_click():
             xnet = XEvolutionaryNetwork(self.model)
             xnet.fit(self.X, self.y, subset=[self.feature_selector.value])
-            xnet.add_layer(Tighten(iterations=20, early_stopping=20, learning_rate=0.2))
-            xnet.add_layer(Evolve(max_leaves=1, max_severity=0.05, generations=20, early_stopping=10))
-            xnet.add_layer(Tighten(iterations=20, early_stopping=20, learning_rate=0.05))
+
+            xnet.add_layer(Tighten(
+                iterations=20, early_stopping=20, learning_rate=0.2))
+            
+            xnet.add_layer(
+                Evolve(max_leaves=1, max_severity=0.05, generations=20,
+                       early_stopping=10))
+            
+            xnet.add_layer(
+                Tighten(iterations=20, early_stopping=20, learning_rate=0.05))
             
             callback = RegressionCallback(xnet)
             
@@ -929,23 +996,6 @@ class EvaluateRegressor:
                 action,
                 )
             
-#             self.kvt.update_data(self.model.evaluate(self.X_val, self.y_val))
-#             self.profile_plot_data = self._generate_explain_plot_data()
-#             group = self._generate_feature_importance()
-#             self.feature_importance_bars.children = group.children
-#             self._refresh()
-        
-#         # Optimise Button
-#         optimise_button = widgets.Button(description='optimise')
-#         optimise_button.style = {
-#             "button_color": '#12b980',
-#             "text_color": 'white'
-#             }
-#         optimise_button.layout = widgets.Layout(
-#         height='27px', width='100px', margin='10px 0 0 100px')
-        
-#         optimise_button.on_click(on_opt_click)
-        
         recal_max_depth = widgets.IntSlider(
             description='max_depth',
             min=0, max=30, step=1, value=self.model.max_depth,
@@ -1039,7 +1089,8 @@ class EvaluateRegressor:
         self.y_val = y
         
         evaluation = widgets.Output()
-        self.scenarios = widgets.Output(layout = widgets.Layout(min_height='720px'))
+        self.scenarios = widgets.Output(
+            layout = widgets.Layout(min_height='720px'))
         with self.scenarios:
             print("Generating widgets...")
             
@@ -1048,15 +1099,24 @@ class EvaluateRegressor:
         fimp_title = widgets.HTML('<h4>Feature Importances</h4>')
         self.feature_importance_bars = self._generate_feature_importance()
         feature_importances = widgets.VBox([self.feature_importance_bars])
-        feature_importances.layout = widgets.Layout(height = '390px', overflow_y='auto')
+
+        feature_importances.layout = widgets.Layout(
+            height = '390px', overflow_y='auto')
+        
         self.calibration_box = self._generate_calibration_box(X, y)
         self.calibration_box.layout = self.calibration_layout
-        self._feature_importance_chart = widgets.VBox([fimp_title, feature_importances])
-        left_columns = widgets.VBox([self._feature_importance_chart, self.calibration_box])
+
+        self._feature_importance_chart = widgets.VBox(
+            [fimp_title, feature_importances])
+        
+        left_columns = widgets.VBox(
+            [self._feature_importance_chart, self.calibration_box])
         
         contribution_title = widgets.HTML('<h4>Contributions</h4>')
         contribution_plot = self._generate_contribution_plot()
-        contribution_display = widgets.VBox([contribution_title, contribution_plot])
+
+        contribution_display = widgets.VBox(
+            [contribution_title, contribution_plot])
         
         metrics_eval = self._evaluation_screen(X, y)
         
@@ -1073,7 +1133,12 @@ class EvaluateRegressor:
         # Get numeric ranges from training set
         for c in self.model.numeric_columns:
             t = int if self.X[c].dtype == int else float
-            rng = {'type': t, 'lower': self.X[c].min(), 'upper': self.X[c].max()}
+            rng = {
+                'type': t,
+                'lower': self.X[c].min(),
+                'upper': self.X[c].max()
+                }
+            
             self.ranges[c] = rng
             
         tabs = widgets.Tab([evaluation, self.scenarios])

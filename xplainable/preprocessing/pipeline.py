@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 from ..utils.exceptions import TransformerError
 import pandas as pd
 import numpy as np

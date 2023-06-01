@@ -133,6 +133,8 @@ surrogate models such as ``Shap`` or ``LIME``.
 model.explain()
 ```
 
+<img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/explain.gif">
+
 ### Action & Optimisation
 We leverage the explainability of our models to provide real-time
 recommendations on how to optimise predicted outcomes at a local and global
@@ -156,14 +158,15 @@ your finger leaves the mouse, your model is on a secure server and ready to go.
 
 ### #FairML
 We promote fair and ethical use of technology for all machine learning tasks.
-To help encourage this, we're working on additional bias detection and equality
-control tasks to ensure that everything you deploy is safe, fair, and compliant.
+To help encourage this, we're working on additional bias detection and fairness
+testing classes to ensure that everything you deploy is safe, fair, and
+compliant.
 
 | Feature | Python API| Xplainable Cloud |
 |:------|:------:|:------:|
 | Bias Identification | ✅ | ✅ |
 | Automated Bias Detection | 🔜 | 🔜 |
-| Equality Control | 🔜 | 🔜 |
+| Fairness Testing | 🔜 | 🔜 |
 
 ## Xplainable Cloud
 This Python package is free and open-source. To add more value to data teams
@@ -184,4 +187,17 @@ transparent and actionable machine learning. We're working on our contributor
 docs at the moment, but if you're interested in contributing, please flick us a
 message at contact@xplainable.io.
 
+
+
+
+<div align="center">
+<br></br>
+<br></br>
 Thanks for trying xplainable!
+<br></br>
+<strong>Made with ❤️ in Australia</strong>
+<br></br>
+<hr>
+&copy; copyright xplainable pty ltd
+</div>
+

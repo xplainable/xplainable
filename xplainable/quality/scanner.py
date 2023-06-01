@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 from pandas.api.types import is_string_dtype, is_datetime64_dtype, is_numeric_dtype, is_bool_dtype
 # from statsmodels.stats.outliers_influence import variance_inflation_factor
 # from statsmodels.tools.tools import add_constant

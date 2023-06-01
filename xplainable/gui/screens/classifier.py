@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 from IPython.display import display, clear_output
 import ipywidgets as widgets
 from ...core.models import XClassifier, PartitionedClassifier
@@ -336,7 +338,8 @@ def classifier(df):
             sigmoid_exponent=sigmoid_exponent):
 
             freq = np.arange(0, 101, 1)
-            _nums = [flex_activation(i, weight, power_degree, sigmoid_exponent) for i in freq]
+            _nums = [flex_activation(
+                i, weight, power_degree, sigmoid_exponent) for i in freq]
 
             data = pd.DataFrame({
                 "freq": freq,
@@ -434,7 +437,9 @@ def classifier(df):
 
     # FOOTER
     train_button = TrainButton(
-        description='Train Model', partitions=partitions, icon='bolt', disabled=True)
+        description='Train Model', partitions=partitions, icon='bolt',
+        disabled=True)
+    
     train_button.layout = widgets.Layout(margin=' 10px 0 10px 20px')
 
     close_button = widgets.Button(description='Close')
@@ -464,8 +469,9 @@ def classifier(df):
         id_vals = [i for i in list(id_columns.value) if i is not None]
         id_title.value = f"<h5>ID Column ({len(id_vals)} selected)</h5>"
 
-    def generate_callback(_max_depth_space, _min_leaf_size_space, _min_info_gain_space,\
-        _weight_space, _power_degree_space, _sigmoid_exponent_space):
+    def generate_callback(
+            _max_depth_space, _min_leaf_size_space, _min_info_gain_space,
+            _weight_space, _power_degree_space, _sigmoid_exponent_space):
 
         opt_bars = BarGroup(
             items=['iteration', 'fold', 'best'],
@@ -504,13 +510,23 @@ def classifier(df):
         opt_bars.set_bar_color(items=['fold'], color='#0080ea')
         opt_bars.set_bar_color(items=['best'], color='#12b980')
 
-        param_bars.set_bounds(['max_depth'], _max_depth_space[0], _max_depth_space[1])
-        param_bars.set_bounds(['min_leaf_size'], _min_leaf_size_space[0], _min_leaf_size_space[1])
-        param_bars.set_bounds(['min_info_gain'], _min_info_gain_space[0], _min_info_gain_space[1])
+        param_bars.set_bounds(
+            ['max_depth'], _max_depth_space[0], _max_depth_space[1])
+        
+        param_bars.set_bounds(
+            ['min_leaf_size'], _min_leaf_size_space[0], _min_leaf_size_space[1])
+        
+        param_bars.set_bounds(
+            ['min_info_gain'], _min_info_gain_space[0], _min_info_gain_space[1])
 
         param_bars.set_bounds(['weight'], _weight_space[0], _weight_space[1])
-        param_bars.set_bounds(['power_degree'], _power_degree_space[0], _power_degree_space[1])
-        param_bars.set_bounds(['sigmoid_exponent'], _sigmoid_exponent_space[0], _sigmoid_exponent_space[1])
+
+        param_bars.set_bounds(
+            ['power_degree'], _power_degree_space[0], _power_degree_space[1])
+        
+        param_bars.set_bounds(
+            ['sigmoid_exponent'], _sigmoid_exponent_space[0],
+            _sigmoid_exponent_space[1])
 
         param_bars.set_bar_color(color='#e14067')
 
@@ -576,8 +592,12 @@ def classifier(df):
                 )
 
                 desc_partition = widgets.HTML(f'<strong>Partition: </strong>-')
-                desc_optimise_on = widgets.HTML(f'<strong>Optimise on: </strong>{optimise_metric.value}')
-                desc_early_stopping = widgets.HTML(f'<strong>Early Stopping: </strong>{early_stopping.value}')
+
+                desc_optimise_on = widgets.HTML(
+                    f'<strong>Optimise on: </strong>{optimise_metric.value}')
+                
+                desc_early_stopping = widgets.HTML(
+                    f'<strong>Early Stopping: </strong>{early_stopping.value}')
 
                 opt_details = widgets.VBox([
                     opt_bars_display,
@@ -620,14 +640,16 @@ def classifier(df):
                         })
                         
                     if p != '__dataset__':
-                        part = df[df[partition_on.value] == p].drop(columns=[partition_on.value])
+                        part = df[df[partition_on.value] == p].drop(
+                            columns=[partition_on.value])
         
                         if len(part) < 100:
                             continue
 
                         X, y = part.drop(columns=[target.value]), part[target.value]
                         X_train, X_test, y_train, y_test = train_test_split(
-                            X, y, test_size=validation_size.value, random_state=1)
+                            X, y, test_size=validation_size.value,
+                            random_state=1)
                         
                     else:
                         drop_cols = [target.value]
@@ -637,9 +659,11 @@ def classifier(df):
 
                         X, y = df.drop(columns=drop_cols), df[target.value]
                         X_train, X_test, y_train, y_test = train_test_split(
-                            X, y, test_size=validation_size.value, random_state=1)
+                            X, y, test_size=validation_size.value,
+                            random_state=1)
 
-                    id_cols = [i for i in list(id_columns.value) if i is not None]
+                    id_cols = [
+                        i for i in list(id_columns.value) if i is not None]
                     
                     if optimise.value:
       

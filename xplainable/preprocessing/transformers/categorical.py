@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 from ...utils import stopwords, xwidgets
 
 from .base import XBaseTransformer

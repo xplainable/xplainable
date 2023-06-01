@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_bool_dtype
@@ -78,7 +80,8 @@ class BaseModel:
 
         return
 
-    def _cast_to_pandas(self, x, y=None, target_name='target', column_names=None):
+    def _cast_to_pandas(
+            self, x, y=None, target_name='target', column_names=None):
         
         if isinstance(x, np.ndarray):
             x = pd.DataFrame(x)
@@ -94,7 +97,8 @@ class BaseModel:
         if y is not None: 
             if isinstance(y, np.ndarray):
                 y = pd.Series(y)
-                assert isinstance(target_name, str), "target name must be str type"
+                assert isinstance(target_name, str), \
+                    "target name must be str type"
                 y.name = target_name
 
             return x, y
@@ -312,6 +316,14 @@ class BaseModel:
 
         return {k: v/total_importance for k, v in sorted(
             importances.items(), key=lambda item: item[1])}
+    
+    def explain(self):
+        try:
+            from ...visualisation.explain import _plot_explainer
+        except Exception as e:
+            raise ImportError(e)
+
+        return _plot_explainer(self)
 
 
 class BasePartition:
@@ -385,10 +397,8 @@ class BasePartition:
             pandas.DataFrame: The transformed dataset.
         """
 
-        assert(
-            str(partition) in self.partitions.keys(),
+        assert str(partition) in self.partitions.keys(), \
             f'Partition {partition} does not exist'
-        )
 
         x = x.copy()
         partition = str(partition)
@@ -409,3 +419,20 @@ class BasePartition:
             x[known, i] = nodes[idx[known], 2]
 
         return x
+    
+    def explain(self, partition: str = '__dataset__'):
+        """ Generates a global explainer for the model.
+
+        Args:
+            partition (str): The partition to explain.
+
+        Raises:
+            ImportError: If user does not have altair installed.
+
+        """
+        try:
+            from ...visualisation.explain import _plot_explainer
+        except Exception as e:
+            raise ImportError(e)
+
+        return _plot_explainer(self.partitions[partition])

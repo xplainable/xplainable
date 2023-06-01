@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 from datetime import datetime
 from .preprocessor import Preprocessor
 import xplainable
@@ -40,7 +42,8 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
         """Build transformer from metadata"""
 
         if not hasattr(xtf, stage["name"]):
-            raise ValueError(f"{stage['name']} does not exist in the transformers module")
+            raise ValueError(
+                f"{stage['name']} does not exist in the transformers module")
 
         # Get transformer function
         func = getattr(xtf, stage["name"])
@@ -247,7 +250,10 @@ def load_regressor(model_id=None, version_id=None):
     selector_heading = widgets.HTML("<h5>Select</h5>")
 
     model_content = xplainable.client.list_models()
-    type_indicies = [i for i, v in enumerate(model_content) if v['model_type'] == 'regression']
+
+    type_indicies = [
+        i for i, v in enumerate(model_content) if v['model_type'] == 'regression']
+    
     model_options = [f"ID: {v['model_id']} | {v['model_name']}" for i, v in \
                      enumerate(model_content) if i in type_indicies]
 
@@ -374,7 +380,10 @@ def load_classifier(model_id=None, version_id=None):
     selector_heading = widgets.HTML("<h5>Select</h5>")
 
     model_content = xplainable.client.list_models()
-    type_indicies = [i for i, v in enumerate(model_content) if v['model_type'] == 'binary_classification']
+    type_indicies = [
+        i for i, v in enumerate(model_content) if \
+            v['model_type'] == 'binary_classification']
+    
     model_options = [f"ID: {v['model_id']} | {v['model_name']}" for i, v in \
                      enumerate(model_content) if i in type_indicies]
 

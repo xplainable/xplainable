@@ -1,10 +1,11 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import numpy as np
 import pandas as pd
 from ._base_model import BaseModel, BasePartition
-#from ..xcython.regression import XRProfiler
 from ._constructor import XConstructor
 from sklearn.metrics import *
 import copy

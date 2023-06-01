@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 from ..utils.api import get_response_content
 from ..utils.encoders import NpEncoder
 import requests
@@ -191,7 +193,7 @@ class Client:
         Args:
             model_id (str): A valid model_id
             version_id (str): A valid version_id
-            model (xplainable.PartitionedClassifier, optional): An existing model to add partitions to
+            model (PartitionedClassifier): An existing model to add partitions
 
         Returns:
             xplainable.PartitionedClassifier: The loaded xplainable classifier
@@ -234,7 +236,7 @@ class Client:
         Args:
             model_id (str): A valid model_id
             version_id (str): A valid version_id
-            model (xplainable.PartitionedRegressor, optional): An existing model to add partitions to
+            model (PartitionedRegressor): An existing model to add partitions to
 
         Returns:
             xplainable.PartitionedRegressor: The loaded xplainable regressor
@@ -490,11 +492,15 @@ class Client:
         return
 
     def deploy(
-            self, model_id: int, version_id: int, partition_id: int,
+            self, hostname: str, model_id: int, version_id: int, partition_id: int,
             raw_output: bool=False) -> dict:
         """ Deploys a model partition to xplainable cloud.
 
+        The hostname should be the url of the inference server. For example:
+        https://inference.xplainable.io
+
         Args:
+            hostname (str): The host name for the inference server
             model_id (int): The model id
             version_id (int): The version id
             partition_id (int): The partition id
@@ -515,7 +521,7 @@ class Client:
                 "deployment_id": deployment_id,
                 "status": "active",
                 "location": "sydney",
-                "endpoint": "https://inference.xplainable.io/v1/predict"
+                "endpoint": f"{hostname}/v1/predict"
             }
 
             if raw_output:
@@ -568,8 +574,8 @@ class Client:
         Args:
             description (str): Description of the deploy key use case.
             deployment_id (int): The deployment id.
-            days_until_expiry (float, optional): The number of days until the key expires. Defaults to 90.
-            surpress_output (bool, optional): Surpress output. Defaults to False.
+            days_until_expiry (float): The number of days until the key expires.
+            surpress_output (bool): Surpress output. Defaults to False.
 
         Returns:
             None: No key is returned. The key is copied to the clipboard.

@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 import numpy as np
 import pandas as pd
 from ..utils.encoders import force_json_compliant
@@ -27,7 +29,9 @@ def calculate_probability_bins(y_true, y_prob):
 
     for cls in np.unique(y_true):
         counts = np.bincount((y_prob[y_true == cls]*100).round().astype(int))
-        counts = np.concatenate([counts, np.zeros(101 - len(counts), dtype=int)])
+
+        counts = np.concatenate(
+            [counts, np.zeros(101 - len(counts), dtype=int)])
 
         output_data.append({
             "class": cls,
@@ -76,7 +80,8 @@ def evaluate_classification(y_true, y_pred):
     # Precision-recall curve
     precision = [score["precision"] for score in scores]
     recall = [score["recall"] for score in scores]
-    results["precision_recall_curve"] = {"precision": precision, "recall": recall}
+    results["precision_recall_curve"] = {
+        "precision": precision, "recall": recall}
     
     # AUC-PR
     results["auc_pr"] = auc(recall, precision)
