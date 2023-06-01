@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
+[![Contributors](https://img.shields.io/badge/Contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <div align="center">
@@ -21,7 +21,7 @@
 
 You can install ``xplainable`` with:
 
-```python
+```
 pip install xplainable
 ```
 
@@ -43,83 +43,142 @@ train, test = train_test_split(data, test_size=0.2)
 # Train a model
 model = xp.classifier(train)
 ```
+
+## Why Was Xplainable Created?
+In machine learning, there has long been a trade-off between accuracy and 
+explainability. This drawback has led to the creation of explainable ML
+libraries such as ``Shap`` and ``LIME`` which make estimations of model decision
+processes. These can be incredibly time-expensive and often present steep
+learning curves making them challenging to implement effectively in production
+environments.
+
+To solve this problem, we created ``xplainable``. **xplainable** presents a
+suite of novel machine learning algorithms specifically designed to match the
+performance of popular black box models like ``XGBoost`` and ``LightGBM`` while
+providing complete transparency, all in real-time.
+
+## Simple Interface
+You can interface with xplainable either through a typical Pythonic API, or
+using a notebook-embedded GUI in your Jupyter Notebook.
+
+## Models
+Xplainable has each of the fundamental tabular models used in data science
+teams. They are fast, accurate, and easy to use.
+
+| Model | Python API| Jupyter GUI |
+|:------|:------:|:------:|
+| Regression | ✅ | ✅ |
+| Binary Classification | ✅ | ✅ |
+| Multi-Class Classification | ✅ | 🔜 |
+
+## Features
+Xplainable helps to streamline development processes by making model tuning
+and deployment simpler than you can imagine.
+
+### Preprocessing
+We built a comprehensive suite of preprocessing transformers for rapid and
+reproducible data preprocessing.
+
+| Feature | Python API| Jupyter GUI |
+|:------|:------:|:------:|
+| Data Health Checks | ✅ | ✅ |
+| Transformers Library | ✅ | ✅ |
+| Preprocessing Pipelines | ✅ | ✅ |
+| Pipeline Persistance | ✅ | ✅ |
+
+```python
+pp = xp.Preprocessor()
+
+pp.preprocess(train)
+```
+<img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/preprocessing.gif">
+
+
+### Modelling
+Xplainable models can be developed, optimised, and re-optimised using Pythonic
+APIs or the embedded GUI.
+
+| Feature | Python API| Jupyter GUI |
+|:------|:------:|:------:|
+| Classic Vanilla Data Science APIs | ✅ | - |
+| AutoML | ✅ | ✅ |
+| Hyperparameter Optimisation | ✅ | ✅ |
+| Partitioned Models | ✅ | ✅ |
+| **Rapid Refitting** (novel to xplainable) | ✅ | ✅ |
+| Model Persistance | ✅ | ✅ |
+
+```python
+model = xp.classifier(train)
+```
 <img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/gui_classifier.gif">
+
+**Rapid Refitting**
+<img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/recalibrate.gif">
+
+### Explainability
+Models are explainable and real-time, right out of the box, without having to fit
+surrogate models such as ``Shap`` or ``LIME``.
+
+| Feature | Python API| Jupyter GUI |
+|:------|:------:|:------:|
+| Global Explainers | ✅ | ✅ |
+| Regional Explainers | ✅ | ✅ |
+| Local Explainers | ✅ | ✅ |
+| Real-time Explainability | ✅ | ✅ |
 
 ```python
 model.explain()
 ```
 
-## Overview
-**xplainable** bridges the gap between data scientists, analysts, developers,
-and business domain experts by providing a simple Python API and web interface 
-to manage machine learning systems at both a technical and managerial level. It
-achieves this by providing a set of tools that allow users to:
+### Action & Optimisation
+We leverage the explainability of our models to provide real-time
+recommendations on how to optimise predicted outcomes at a local and global
+level.
 
-- Quickly preprocess data and generate features
-- Train and evaluate machine learning models
-- Visualise and interpret model performance
-- Explain model predictions
-- Deploy models to production as REST APIs in seconds
-- Collaborate with other users on model development and evaluation
-- Save and load preprocessing pipelines and models across your team or
-organisation
-- Share model profiles with other users via xplainable cloud
+| Feature |  |
+|:------|:------:|
+| Automated Local Prediction Optimisation | ✅ |
+| Automated Global Decision Optimisation | 🔜 |
 
-At the core of xplainable is a set of novel explainable machine learning
-algorithms designed to provide similar performance to black box models while
-maintaining complete transparency.
+### Deployment
+Xplainable brings transparency to API deployments, and it's easy. By the time
+your finger leaves the mouse, your model is on a secure server and ready to go.
 
-These docs contain details about how xplainable works and how to get the most
-out of it.
+| Feature | Python API| Xplainable Cloud |
+|:------|:------:|:------:|
+| < 1 Second API Deployments | ✅ | ✅ |
+| Explainability-Enabled API Deployments | ✅ | ✅ |
+| A/B Testing | - | 🔜 |
+| Champion Challenger Models (MAB) | - | 🔜 |
 
-## Who is Xplainable For?
-xplainable is for anyone who wants to build machine learning models that can be
-easily understood and explained. Experienced professionals, novices, students,
-and hobbyists can all use the package given appropriate data. The only
-requirement is a basic understanding of Python and machine learning at a
-conceptual level.
+### #FairML
+We promote fair and ethical use of technology for all machine learning tasks.
+To help encourage this, we're working on additional bias detection and equality
+control tasks to ensure that everything you deploy is safe, fair, and compliant.
 
-The users who will get the most out of xplainable include:
+| Feature | Python API| Xplainable Cloud |
+|:------|:------:|:------:|
+| Bias Identification | ✅ | ✅ |
+| Automated Bias Detection | 🔜 | 🔜 |
+| Equality Control | 🔜 | 🔜 |
 
-- Data scientists
-- Data analysts
-- Data engineers
-- Developers
-- Business domain experts
+## Xplainable Cloud
+This Python package is free and open-source. To add more value to data teams
+within organisations, we also created Xplainable Cloud that brings your models
+to a collaborative environment.
 
-The ``xplainable`` package, combined with the web application, is designed to be
-used by individuals and teams within data-centric organisations.
+```python
+import xplainable as xp
 
-## Skill Requirements
-Anyone with a basic understanding of Python and machine learning at a conceptual
-level can use xplainable. The package is intuitive and easy to use by design,
-and the web application provides a simple interface for managing models and
-deployments.
+xp.initialise()
+```
 
-### Experienced Users
+<img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/initialise.gif">
 
-Experienced users can use xplainable like any other open-source machine learning
-package. The package provides a simple API for training and evaluating models
-with the added benefit of novel model-tuning methods and advanced explainability
-tools.
+## Contributors
+We'd love to welcome contributors to xplainable to keep driving forward more
+transparent and actionable machine learning. We're working on our contributor
+docs at the moment, but if you're interested in contributing, please flick us a
+message at contact@xplainable.io.
 
-These users can still benefit from the GUI tools of xplainable by streamlining
-the process of training and evaluating models, but they can also go as low-level
-into the code as they require for complete control over the model development
-process.
-
-### Novice Users
-
-Novice users can use xplainable to learn about machine learning and experiment
-with models and datasets using AutoML. The package provides a simple embedded
-GUI for training and evaluating models without having to write much code or
-understand the underlying algorithms.
-
-xplainable also gives users with little to no experience with machine learning
-the ability to deploy models to production as REST APIs in seconds, which
-significantly reduces the barrier to entry of adding tangible value to
-data-centric organisations.
-
-As novice users become more experienced, they can start to interface with
-xplainable at a lower level and start to use the more advanced features of the
-package.
+Thanks for trying xplainable!
