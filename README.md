@@ -185,4 +185,17 @@ transparent and actionable machine learning. We're working on our contributor
 docs at the moment, but if you're interested in contributing, please flick us a
 message at contact@xplainable.io.
 
+
+
+
+<div align="center">
+<br></br>
+<br></br>
 Thanks for trying xplainable!
+<br></br>
+<strong>Made with ❤️ in Australia</strong>
+<br></br>
+<hr>
+&copy; copyright xplainable pty ltd
+</div>
+
