@@ -492,11 +492,15 @@ class Client:
         return
 
     def deploy(
-            self, model_id: int, version_id: int, partition_id: int,
+            self, hostname: str, model_id: int, version_id: int, partition_id: int,
             raw_output: bool=False) -> dict:
         """ Deploys a model partition to xplainable cloud.
 
+        The hostname should be the url of the inference server. For example:
+        https://inference.xplainable.io
+
         Args:
+            hostname (str): The host name for the inference server
             model_id (int): The model id
             version_id (int): The version id
             partition_id (int): The partition id
@@ -517,7 +521,7 @@ class Client:
                 "deployment_id": deployment_id,
                 "status": "active",
                 "location": "sydney",
-                "endpoint": "https://inference.xplainable.io/v1/predict"
+                "endpoint": f"{hostname}/v1/predict"
             }
 
             if raw_output:
