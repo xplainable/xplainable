@@ -4,7 +4,7 @@
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <div align="center">
-<img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/logo/xplainable-logo.png">
+<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/logo/xplainable-logo.png">
 <h1 align="center">xplainable</h1>
 <h3 align="center">Real-time explainable machine learning for business optimisation</h3>
     
@@ -91,7 +91,7 @@ pp = xp.Preprocessor()
 
 pp.preprocess(train)
 ```
-<img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/preprocessing.gif">
+<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/preprocessing.gif">
 
 
 ### Modelling
@@ -110,13 +110,13 @@ APIs or the embedded GUI.
 ```python
 model = xp.classifier(train)
 ```
-<img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/gui_classifier.gif">
+<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/gui_classifier.gif">
 
 ### Rapid Refitting
 Fine tune your models by refitting model parameters on the fly, even on
 individual features.
 
-<img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/recalibrate.gif">
+<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/recalibrate.gif">
 
 ### Explainability
 Models are explainable and real-time, right out of the box, without having to fit
@@ -133,7 +133,7 @@ surrogate models such as ``Shap`` or ``LIME``.
 model.explain()
 ```
 
-<img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/explain.gif">
+<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/explain.gif">
 
 ### Action & Optimisation
 We leverage the explainability of our models to provide real-time
@@ -179,7 +179,7 @@ import xplainable as xp
 xp.initialise()
 ```
 
-<img src="https://github.com/xplainable/xplainable/blob/dev/docs/assets/gifs/initialise.gif">
+<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/initialise.gif">
 
 ## Contributors
 We'd love to welcome contributors to xplainable to keep driving forward more
