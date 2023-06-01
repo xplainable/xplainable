@@ -111,7 +111,8 @@ class VisualPipeline:
             up_button.on_click(on_up)
             down_button.on_click(on_down)
 
-            editor = widgets.HBox([edit_button, delete_button, down_button, up_button])
+            editor = widgets.HBox(
+                [edit_button, delete_button, down_button, up_button])
 
             with self.editor_output:
                 clear_output(wait=True)
@@ -267,7 +268,8 @@ class VisualPipeline:
             description=model_name,
             idx=0,
             layer=None,
-            layout=widgets.Layout(width='250px', height='27px', align_items='center'),
+            layout=widgets.Layout(
+                width='250px', height='27px', align_items='center'),
             disabled=True
             )
         

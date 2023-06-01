@@ -193,7 +193,7 @@ class Client:
         Args:
             model_id (str): A valid model_id
             version_id (str): A valid version_id
-            model (xplainable.PartitionedClassifier, optional): An existing model to add partitions to
+            model (PartitionedClassifier): An existing model to add partitions
 
         Returns:
             xplainable.PartitionedClassifier: The loaded xplainable classifier
@@ -236,7 +236,7 @@ class Client:
         Args:
             model_id (str): A valid model_id
             version_id (str): A valid version_id
-            model (xplainable.PartitionedRegressor, optional): An existing model to add partitions to
+            model (PartitionedRegressor): An existing model to add partitions to
 
         Returns:
             xplainable.PartitionedRegressor: The loaded xplainable regressor
@@ -574,8 +574,8 @@ class Client:
         Args:
             description (str): Description of the deploy key use case.
             deployment_id (int): The deployment id.
-            days_until_expiry (float, optional): The number of days until the key expires. Defaults to 90.
-            surpress_output (bool, optional): Surpress output. Defaults to False.
+            days_until_expiry (float): The number of days until the key expires.
+            surpress_output (bool): Surpress output. Defaults to False.
 
         Returns:
             None: No key is returned. The key is copied to the clipboard.

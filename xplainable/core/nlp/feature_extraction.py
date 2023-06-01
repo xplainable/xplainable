@@ -588,7 +588,9 @@ class NLPExtractor:
         df = meta[(max_freq > meta['freq']) & (meta['freq'] > min_freq)]
         return df['word_map'].to_dict()
 
-    def set_word_map(self, min_word_freq=0.002, max_word_freq=0.7, min_ngram_freq=0.002, max_ngram_freq=0.3):
+    def set_word_map(
+            self, min_word_freq=0.002, max_word_freq=0.7, min_ngram_freq=0.002,
+            max_ngram_freq=0.3):
         
         word_map = {}
         if len(self.__ngram_meta) > 0:
@@ -624,7 +626,8 @@ class NLPExtractor:
         df = pd.DataFrame(x)
 
         # Set word map limits
-        #self.set_word_map(min_word_freq, max_word_freq, min_ngram_freq, max_ngram_freq)
+        #self.set_word_map(
+        # min_word_freq, max_word_freq, min_ngram_freq, max_ngram_freq)
 
         # Count and remove urls
         if self.urls:

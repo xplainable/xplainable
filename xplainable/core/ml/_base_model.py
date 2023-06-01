@@ -80,7 +80,8 @@ class BaseModel:
 
         return
 
-    def _cast_to_pandas(self, x, y=None, target_name='target', column_names=None):
+    def _cast_to_pandas(
+            self, x, y=None, target_name='target', column_names=None):
         
         if isinstance(x, np.ndarray):
             x = pd.DataFrame(x)
@@ -96,7 +97,8 @@ class BaseModel:
         if y is not None: 
             if isinstance(y, np.ndarray):
                 y = pd.Series(y)
-                assert isinstance(target_name, str), "target name must be str type"
+                assert isinstance(target_name, str), \
+                    "target name must be str type"
                 y.name = target_name
 
             return x, y
@@ -387,10 +389,8 @@ class BasePartition:
             pandas.DataFrame: The transformed dataset.
         """
 
-        assert(
-            str(partition) in self.partitions.keys(),
+        assert str(partition) in self.partitions.keys(), \
             f'Partition {partition} does not exist'
-        )
 
         x = x.copy()
         partition = str(partition)

@@ -76,8 +76,8 @@ class ModelPersist:
             models = xplainable.client.list_models()
 
             model_options.options = [
-                (i['model_name'], i['model_description'], i['model_id']) for i in models if \
-                    i['model_type'] == self.model_type]
+                (i['model_name'], i['model_description'], i['model_id']) for i \
+                    in models if i['model_type'] == self.model_type]
 
             model_loader_dropdown.options = [None]+[
                 f"ID: {i['model_id']} | {i['model_name']}" for i in models if \
@@ -314,7 +314,8 @@ class ModelPersist:
                 "text_color": 'white'
                 }
 
-        apply_buttons = widgets.HBox([cancel_button, confirm_button, loading, loading_status])
+        apply_buttons = widgets.HBox(
+            [cancel_button, confirm_button, loading, loading_status])
 
         model_name.w_text_input.observe(name_change, names=['value'])
 
@@ -367,8 +368,11 @@ class PreprocessorPersist:
             box_width='350px'
             )
 
-        preprocessor_details = widgets.HBox([preprocessor_name(), preprocessor_description()])
+        preprocessor_details = widgets.HBox(
+            [preprocessor_name(), preprocessor_description()])
+        
         preprocessor_loader_dropdown = widgets.Dropdown(options=[None])
+
         description_output = widgets.HTML(
             f'', layout=widgets.Layout(margin='0 0 0 15px'))
 
@@ -376,7 +380,9 @@ class PreprocessorPersist:
             [preprocessor_loader_dropdown, description_output],
             layout=widgets.Layout(display='none'))
 
-        buttons = widgets.ToggleButtons(options=['New preprocessor', 'Existing preprocessor'])
+        buttons = widgets.ToggleButtons(
+            options=['New preprocessor', 'Existing preprocessor'])
+        
         buttons.layout = widgets.Layout(margin="0 0 20px 0")
 
         class Options:
@@ -389,10 +395,12 @@ class PreprocessorPersist:
             preprocessors = xplainable.client.list_preprocessors()
 
             preprocessor_options.options = [
-                (i['preprocessor_name'], i['preprocessor_description'], i['preprocessor_id']) for i in preprocessors]
+                (i['preprocessor_name'], i['preprocessor_description'], \
+                 i['preprocessor_id']) for i in preprocessors]
 
             preprocessor_loader_dropdown.options = [None]+[
-                f"ID: {i['preprocessor_id']} | {i['preprocessor_name']}" for i in preprocessors]
+                f"ID: {i['preprocessor_id']} | {i['preprocessor_name']}" for \
+                    i in preprocessors]
 
         def on_select(_):
             if buttons.index == 0:
@@ -419,7 +427,9 @@ class PreprocessorPersist:
                 self.selected_preprocessor_id = None
                 
             elif len(preprocessor_options.options) > 0:
-                self.selected_preprocessor_id = preprocessor_options.options[idx-1][2]
+                self.selected_preprocessor_id = preprocessor_options.options[
+                    idx-1][2]
+                
                 preprocessor_name.value = preprocessor_options.options[idx-1][0]
                 desc = preprocessor_options.options[idx-1][1]
                 description_output.value = f'{desc}'
@@ -561,7 +571,10 @@ class PreprocessorPersist:
             confirm_button.disabled = False
 
         buttons.observe(on_select, names=['value'])
-        preprocessor_loader_dropdown.observe(preprocessor_selected, names=['value'])
+
+        preprocessor_loader_dropdown.observe(
+            preprocessor_selected, names=['value'])
+        
         button_display = widgets.HBox([buttons])
 
         divider = widgets.HTML(f'<hr class="solid">')
@@ -581,7 +594,9 @@ class PreprocessorPersist:
                  }
         done_button.on_click(done_clicked)
     
-        save_df_button = widgets.Button(description="Save as csv", disabled=False)
+        save_df_button = widgets.Button(
+            description="Save as csv", disabled=False)
+        
         save_df_button.layout = widgets.Layout(margin=' 10px 0 10px 10px')
         save_df_button.style = {
                 "button_color": '#12b980',
@@ -606,7 +621,8 @@ class PreprocessorPersist:
 
         preprocessor_name.w_text_input.observe(name_change, names=['value'])
 
-        action_buttons = widgets.HBox([close_button, save_df_button, save_button])
+        action_buttons = widgets.HBox(
+            [close_button, save_df_button, save_button])
         
         # output used for more user friendly error messages
         error_output = widgets.Output()

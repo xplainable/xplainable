@@ -274,13 +274,13 @@ class Preprocessor:
 
             output = {
                 "drop": [col for col in df1.columns if col not in df2.columns],
-                "add": [{"feature": col, "values": json.loads(df2[col].head(10).to_json(
-                    orient='records'))} for col in df2.columns if \
-                        col not in df1.columns],
+                "add": [{"feature": col, "values": json.loads(
+                df2[col].head(10).to_json(orient='records'))} for col in \
+                    df2.columns if col not in df1.columns],
                 "update": [{
                     "feature": col,
-                    "values": json.loads(df2[col].head(10).to_json(orient='records'))
-                    } for col in changed_features]}
+                    "values": json.loads(df2[col].head(10).to_json(
+                        orient='records'))} for col in changed_features]}
 
             return output
 
@@ -313,7 +313,10 @@ class Preprocessor:
             err_display.clear_output()
 
         def generate_transformer_warning(e):
-            warning_title = widgets.HTML(f'<h4 style="color: #e14067;">WARNING<h4>')
+
+            warning_title = widgets.HTML(
+                f'<h4 style="color: #e14067;">WARNING<h4>')
+            
             message = widgets.HTML(f'<p>The transformer could not be added.<p>')
             error_message = widgets.HTML(f'<p>{str(e)}<p>')
             undo_button = widgets.Button(description='dismiss')
@@ -323,7 +326,9 @@ class Preprocessor:
                 }
             undo_button.on_click(clear_warning)
 
-            box = widgets.VBox([warning_title, message, error_message, undo_button])
+            box = widgets.VBox(
+                [warning_title, message, error_message, undo_button])
+            
             box.layout.margin = '0 0 0 20px'
 
             return box
@@ -1128,7 +1133,8 @@ class Preprocessor:
         err_display = widgets.Output()
 
         # //------- COMPILE SCREEN -------//
-        self.screen = widgets.VBox([header.show(), body, err_display, display_tabs, footer])
+        self.screen = widgets.VBox(
+            [header.show(), body, err_display, display_tabs, footer])
 
         # //---------------------------------//
         

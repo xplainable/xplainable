@@ -61,13 +61,23 @@ class OptCallback():
     def metric(self, v):
         self.progress.set_value(item='best', value=v)
 
-    def update_params(self, max_depth, min_leaf_size, min_info_gain, weight, power_degree, sigmoid_exponent, alpha=None):
+    def update_params(
+            self, max_depth, min_leaf_size, min_info_gain, weight, power_degree,
+            sigmoid_exponent, *args, **kwargs):
+        
         self.params.set_value(item='max_depth', value=int(max_depth))
-        self.params.set_value(item='min_leaf_size', value=round(min_leaf_size, 4))
-        self.params.set_value(item='min_info_gain', value=round(min_info_gain, 4))
+
+        self.params.set_value(
+            item='min_leaf_size', value=round(min_leaf_size, 4))
+        
+        self.params.set_value(
+            item='min_info_gain', value=round(min_info_gain, 4))
+        
         self.params.set_value(item='weight', value=round(weight, 2))
         self.params.set_value(item='power_degree', value=int(power_degree))
-        self.params.set_value(item='sigmoid_exponent', value=round(sigmoid_exponent, 2))
+        
+        self.params.set_value(
+            item='sigmoid_exponent', value=round(sigmoid_exponent, 2))
 
     def reset(self):
         self.params.set_value(item='max_depth', value=0)

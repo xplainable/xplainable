@@ -168,7 +168,8 @@ class ScenarioClassification:
             color='white', ax=ax[0])
 
         for i, v in enumerate(data['upper']):
-            ax[0].text(v + 0.005, i + 0.1, round(data['contribution'][i]*100, 2))
+            ax[0].text(
+                v + 0.005, i + 0.1, round(data['contribution'][i]*100, 2))
 
         ax[0].set_xlim(0, 1)
         sns.despine()

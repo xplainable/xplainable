@@ -48,7 +48,9 @@ def regressor(df):
     divider = widgets.HTML(f'<hr class="solid">')
 
     # COLUMN 1
-    _title_target = widgets.HTML(f"<h5>Target</h5>", layout=widgets.Layout(height='auto'))
+    _title_target = widgets.HTML(
+        f"<h5>Target</h5>", layout=widgets.Layout(height='auto'))
+    
     _title_target.layout = widgets.Layout(margin='0 0 0 15px')
 
     _title_id = widgets.HTML(f"<h5>ID Column (0 selected)</h5>")
@@ -70,7 +72,10 @@ def regressor(df):
             _button_train.partitions = {"__dataset__": XRegressor()}
             return
         partitioned_model.partition_on = _dropdown_partition_on.value
-        parts = {p: XRegressor() for p in df[_dropdown_partition_on.value].unique()}
+
+        parts = {
+            p: XRegressor() for p in df[_dropdown_partition_on.value].unique()}
+        
         _button_train.partitions.update(parts)
 
     _dropdown_partition_on.observe(partition_change, names=['value'])
@@ -179,11 +184,21 @@ def regressor(df):
     vpipe = vp.show(hide_output=True)
     
     # Tighten
-    mutations = widgets.IntSlider(min=2, max=200, value=50, description='mutations', style=style)
-    generations = widgets.IntSlider(min=5, max=500, value=50, description='generations', style=style)
-    max_generation_depth = widgets.IntSlider(min=5, max=100, value=10, description='max_generation_depth', style=style)
-    max_severity = widgets.FloatSlider(min=0.01, max=0.8, value=0.3, step=0.01, description='max_severity', style=style)
-    max_leaves = widgets.IntSlider(min=2, max=50, value=20, description='max_leaves', style=style)
+    mutations = widgets.IntSlider(
+        min=2, max=200, value=50, description='mutations', style=style)
+    
+    generations = widgets.IntSlider(
+        min=5, max=500, value=50, description='generations', style=style)
+    
+    max_generation_depth = widgets.IntSlider(
+        min=5, max=100, value=10, description='max_generation_depth', style=style)
+    
+    max_severity = widgets.FloatSlider(
+        min=0.01, max=0.8, value=0.3, step=0.01, description='max_severity',
+        style=style)
+    
+    max_leaves = widgets.IntSlider(
+        min=2, max=50, value=20, description='max_leaves', style=style)
     
     _box_evolve = widgets.VBox([
         mutations,
@@ -194,9 +209,15 @@ def regressor(df):
     ])
     
     # Evolve
-    iterations = widgets.IntSlider(min=10, max=1000, value=100, description='iterations', style=style)
-    learning_rate = widgets.FloatSlider(min=0.001, max=0.5, value=0.1, step=0.001, description='learning_rate', style=style, readout_format='.3f')
-    early_stopping = widgets.IntSlider(min=10, max=1000, value=100, description='early_stopping', style=style)
+    iterations = widgets.IntSlider(
+        min=10, max=1000, value=100, description='iterations', style=style)
+    
+    learning_rate = widgets.FloatSlider(
+        min=0.001, max=0.5, value=0.1, step=0.001, description='learning_rate',
+        style=style, readout_format='.3f')
+    
+    early_stopping = widgets.IntSlider(
+        min=10, max=1000, value=100, description='early_stopping', style=style)
     
     _box_tighten = widgets.VBox([
         iterations,
@@ -230,7 +251,9 @@ def regressor(df):
     layer_selector = widgets.ToggleButtons(options=['Tighten', 'Evolve'])
     layer_selector.style.button_width = '100px'
     layer_selector.style.button_height = '25px'
-    widgets.jslink((layer_selector, 'index'), (optimisation_stack, 'selected_index'))
+
+    widgets.jslink(
+        (layer_selector, 'index'), (optimisation_stack, 'selected_index'))
     
     layer_selector.layout = widgets.Layout(margin = '0 0 12px 0')
     
@@ -314,14 +337,19 @@ def regressor(df):
     
     tabs.set_title(0, 'Parameters')
     tabs.set_title(1, 'Optimisation')
-    tabs.layout = widgets.Layout(margin='0 75px 0 20px', width='400px', height='400px')
+    tabs.layout = widgets.Layout(
+        margin='0 75px 0 20px', width='400px', height='400px')
     
     def partition_change(_):
         if _dropdown_partition_on.value is None:
-            _button_train.partitions = {"__dataset__": XClassifier()}
+            _button_train.partitions = {"__dataset__": XRegressor()}
             return
+        
         partitioned_model.partition_on = _dropdown_partition_on.value
-        parts = {str(p): XRegressor() for p in df[_dropdown_partition_on.value].unique()}
+        
+        parts = {str(p): XRegressor() for p in \
+                 df[_dropdown_partition_on.value].unique()}
+        
         _button_train.partitions.update(parts)
 
     _dropdown_partition_on.observe(partition_change, names=['value'])
@@ -378,9 +406,12 @@ def regressor(df):
                 if len(part) < 100:
                     continue
 
-                X, y = part.drop(columns=[_dropdown_target.value]), part[_dropdown_target.value]
+                X = part.drop(columns=[_dropdown_target.value])
+                y = part[_dropdown_target.value]
+
                 X_train, X_test, y_train, y_test = train_test_split(
-                    X, y, test_size=_slider_validation_size.value, random_state=1)
+                    X, y, test_size=_slider_validation_size.value,
+                    random_state=1)
                 
             else:
                 drop_cols = [_dropdown_target.value]
@@ -390,9 +421,11 @@ def regressor(df):
 
                 X, y = df.drop(columns=drop_cols), df[_dropdown_target.value]
                 X_train, X_test, y_train, y_test = train_test_split(
-                    X, y, test_size=_slider_validation_size.value, random_state=1)
+                    X, y, test_size=_slider_validation_size.value,
+                    random_state=1)
             
-            id_cols = [i for i in list(_selector_id_columns.value) if i is not None]
+            id_cols = [
+                i for i in list(_selector_id_columns.value) if i is not None]
             
             kvt.update_data({
                 'status': 'fitting model',
@@ -424,12 +457,18 @@ def regressor(df):
                 })
                 
                 if _slider_opt_sample.value < 1:
-                    X_train = X_train.sample(int(len(X_train) * _slider_opt_sample.value))
+
+                    X_train = X_train.sample(
+                        int(len(X_train) * _slider_opt_sample.value))
+                    
                     y_train = y_train.loc[X_train.index]
                 
                 start = time.time()
                 network.fit(X_train, y_train)
-                output_screen.children = (output_screen.children[0],) + (callback.group.show(),)
+                
+                output_screen.children = (output_screen.children[0],) + \
+                    (callback.group.show(),)
+                
                 network.optimise(callback=callback)
                 training_metadata[p]['optimise_time'] = round(
                             time.time()-start, 4)
