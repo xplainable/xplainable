@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 import pandas as pd
 
 def _generate_explain_plot_data(model, partition):

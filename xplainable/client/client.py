@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 from ..utils.api import get_response_content
 from ..utils.encoders import NpEncoder
 import requests

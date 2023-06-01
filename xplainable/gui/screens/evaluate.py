@@ -1,3 +1,4 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
 
 from ...gui.components.bars import BarGroup
 from ...utils.activation import flex_activation

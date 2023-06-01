@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 from .base import XBaseTransformer
 import pandas.api.types as pdtypes
 from ipywidgets import interactive

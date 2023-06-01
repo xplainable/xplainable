@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 import xplainable
 from ...utils.api import get_response_content
 from ...utils.xwidgets import TextInput

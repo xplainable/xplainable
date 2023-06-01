@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 from .client import Client
 import xplainable
 from .._version import __version__ as XP_VERSION

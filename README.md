@@ -156,14 +156,15 @@ your finger leaves the mouse, your model is on a secure server and ready to go.
 
 ### #FairML
 We promote fair and ethical use of technology for all machine learning tasks.
-To help encourage this, we're working on additional bias detection and equality
-control tasks to ensure that everything you deploy is safe, fair, and compliant.
+To help encourage this, we're working on additional bias detection and fairness
+testing classes to ensure that everything you deploy is safe, fair, and
+compliant.
 
 | Feature | Python API| Xplainable Cloud |
 |:------|:------:|:------:|
 | Bias Identification | ✅ | ✅ |
 | Automated Bias Detection | 🔜 | 🔜 |
-| Equality Control | 🔜 | 🔜 |
+| Fairness Testing | 🔜 | 🔜 |
 
 ## Xplainable Cloud
 This Python package is free and open-source. To add more value to data teams

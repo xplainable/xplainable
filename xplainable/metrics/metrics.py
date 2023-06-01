@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 import numpy as np
 import pandas as pd
 from ..utils.encoders import force_json_compliant

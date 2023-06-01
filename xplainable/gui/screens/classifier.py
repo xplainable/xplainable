@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 from IPython.display import display, clear_output
 import ipywidgets as widgets
 from ...core.models import XClassifier, PartitionedClassifier

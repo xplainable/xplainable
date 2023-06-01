@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 from ...utils import xwidgets as xwidgets
 from .base import XBaseTransformer
 

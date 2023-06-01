@@ -1,3 +1,5 @@
+""" Copyright Xplainable Pty Ltd, 2023"""
+
 from .base import XBaseTransformer
 from ipywidgets import interactive
 import ipywidgets as widgets
