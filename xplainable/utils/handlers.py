@@ -1,5 +1,8 @@
 import numpy as np
 import pandas as pd
+import warnings
+from distutils.version import LooseVersion
+
 
 def add_thousands_separator(var):
     if isinstance(var, (float)):
@@ -22,4 +25,25 @@ def check_df(df):
         'Dataframe contains NaNs. Please remove them before proceeding.'
     assert _check_inf(df), \
         'Dataframe contains infinite values. Please remove them before proceeding.'
+    
+def check_critical_versions():
+    """ This is implemented to ensure critical dependencies are imported."""
+    
+    # Tornado
+    try:
+        import tornado
+    except ImportError:
+        warnings.warn(
+            "Tornado is not installed, but is required for this package.")
+        return
+
+    if LooseVersion(tornado.version) > LooseVersion('6.1'):
+        warnings.warn(
+            """
+            Your version of Tornado is greater than 6.1, which is known to
+            crash the Jupyter kernel when training models. Please consider
+            downgrading to Tornado 6.1
+            """)
+    
+    return
     
