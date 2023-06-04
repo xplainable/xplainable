@@ -27,7 +27,6 @@ class Preprocessor:
     def __init__(self):
         
         pd.set_option('display.max_columns', 500)
-        #warnings.filterwarnings('ignore')
 
         self.preprocessor_name = None
         self.description=None
