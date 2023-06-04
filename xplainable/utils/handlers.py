@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import warnings
-from distutils.version import LooseVersion
+from packaging import version
 
 
 def add_thousands_separator(var):
@@ -37,7 +37,7 @@ def check_critical_versions():
             "Tornado is not installed, but is required for this package.")
         return
 
-    if LooseVersion(tornado.version) > LooseVersion('6.1'):
+    if version.parse(tornado.version) > version.parse('6.1'):
         warnings.warn(
             """
             Your version of Tornado is greater than 6.1, which is known to
