@@ -13,7 +13,7 @@ import numpy as np
 import time
 
 #suppress warnings
-warnings.filterwarnings('ignore')
+warnings.filterwarnings('ignore', module="hyperopt")
 
 
 class XParamOptimiser:
