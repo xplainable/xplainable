@@ -9,7 +9,7 @@ and organisations. Persisted models are also able to be deployed as API
 endpoints in seconds. The cloud service is accessible via a web interface to 
 manage organisations, teams, and users and provides an excellent interface for 
 visualising model explainers and metrics. You can find more information about
-Xplainable Cloud at https://xplainable.io.
+Xplainable Cloud at https://www.xplainable.io.
 
 
 What is the Cloud Client?

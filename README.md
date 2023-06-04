@@ -47,14 +47,13 @@ model = xp.classifier(train)
 ## Why Was Xplainable Created?
 In machine learning, there has long been a trade-off between accuracy and 
 explainability. This drawback has led to the creation of explainable ML
-libraries such as ``Shap`` and ``LIME`` which make estimations of model decision
-processes. These can be incredibly time-expensive and often present steep
+libraries such as [Shap](https://github.com/slundberg/shap) and [Lime](https://github.com/marcotcr/lime) which make estimations of model decision processes. These can be incredibly time-expensive and often present steep
 learning curves making them challenging to implement effectively in production
 environments.
 
 To solve this problem, we created ``xplainable``. **xplainable** presents a
 suite of novel machine learning algorithms specifically designed to match the
-performance of popular black box models like ``XGBoost`` and ``LightGBM`` while
+performance of popular black box models like [XGBoost](https://github.com/dmlc/xgboost) and [LightGBM](https://github.com/microsoft/LightGBM) while
 providing complete transparency, all in real-time.
 
 ## Simple Interface
@@ -65,11 +64,14 @@ using a notebook-embedded GUI in your Jupyter Notebook.
 Xplainable has each of the fundamental tabular models used in data science
 teams. They are fast, accurate, and easy to use.
 
+<div align="center">
+
 | Model | Python API| Jupyter GUI |
-|:------|:------:|:------:|
+|:-----:|:---------:|:-----------:|
 | Regression | ✅ | ✅ |
 | Binary Classification | ✅ | ✅ |
 | Multi-Class Classification | ✅ | 🔜 |
+</div>
 
 ## Features
 Xplainable helps to streamline development processes by making model tuning
@@ -79,24 +81,32 @@ and deployment simpler than you can imagine.
 We built a comprehensive suite of preprocessing transformers for rapid and
 reproducible data preprocessing.
 
+<div align="center">
+
 | Feature | Python API| Jupyter GUI |
 |:------|:------:|:------:|
 | Data Health Checks | ✅ | ✅ |
 | Transformers Library | ✅ | ✅ |
 | Preprocessing Pipelines | ✅ | ✅ |
 | Pipeline Persistance | ✅ | ✅ |
+</div>
 
 ```python
 pp = xp.Preprocessor()
 
 pp.preprocess(train)
 ```
+<div align="center">
+
 <img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/preprocessing.gif">
 
+</div><br>
 
 ### Modelling
 Xplainable models can be developed, optimised, and re-optimised using Pythonic
 APIs or the embedded GUI.
+
+<div align="center">
 
 | Feature | Python API| Jupyter GUI |
 |:------|:------:|:------:|
@@ -107,20 +117,28 @@ APIs or the embedded GUI.
 | **Rapid Refitting** (novel to xplainable) | ✅ | ✅ |
 | Model Persistance | ✅ | ✅ |
 
+</div>
+
 ```python
 model = xp.classifier(train)
 ```
+<div align="center">
 <img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/gui_classifier.gif">
+</div><br>
 
 ### Rapid Refitting
 Fine tune your models by refitting model parameters on the fly, even on
 individual features.
 
+<div align="center">
 <img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/recalibrate.gif">
+</div><br>
 
 ### Explainability
 Models are explainable and real-time, right out of the box, without having to fit
-surrogate models such as ``Shap`` or ``LIME``.
+surrogate models such as [Shap](https://github.com/slundberg/shap) or[Lime](https://github.com/marcotcr/lime).
+
+<div align="center">
 
 | Feature | Python API| Jupyter GUI |
 |:------|:------:|:------:|
@@ -129,25 +147,35 @@ surrogate models such as ``Shap`` or ``LIME``.
 | Local Explainers | ✅ | ✅ |
 | Real-time Explainability | ✅ | ✅ |
 
+</div>
+
 ```python
 model.explain()
 ```
 
+<div align="center">
 <img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/explain.gif">
+</div><br>
 
 ### Action & Optimisation
 We leverage the explainability of our models to provide real-time
 recommendations on how to optimise predicted outcomes at a local and global
 level.
 
+<div align="center">
+
 | Feature |  |
 |:------|:------:|
 | Automated Local Prediction Optimisation | ✅ |
 | Automated Global Decision Optimisation | 🔜 |
 
+</div><br>
+
 ### Deployment
 Xplainable brings transparency to API deployments, and it's easy. By the time
 your finger leaves the mouse, your model is on a secure server and ready to go.
+
+<div align="center">
 
 | Feature | Python API| Xplainable Cloud |
 |:------|:------:|:------:|
@@ -156,17 +184,23 @@ your finger leaves the mouse, your model is on a secure server and ready to go.
 | A/B Testing | - | 🔜 |
 | Champion Challenger Models (MAB) | - | 🔜 |
 
+</div><br>
+
 ### #FairML
 We promote fair and ethical use of technology for all machine learning tasks.
 To help encourage this, we're working on additional bias detection and fairness
 testing classes to ensure that everything you deploy is safe, fair, and
 compliant.
 
+<div align="center">
+
 | Feature | Python API| Xplainable Cloud |
 |:------|:------:|:------:|
 | Bias Identification | ✅ | ✅ |
 | Automated Bias Detection | 🔜 | 🔜 |
 | Fairness Testing | 🔜 | 🔜 |
+
+</div><br>
 
 ## Xplainable Cloud
 This Python package is free and open-source. To add more value to data teams
@@ -179,12 +213,14 @@ import xplainable as xp
 xp.initialise()
 ```
 
+<div align="center">
 <img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/initialise.gif">
+</div><br>
 
 ## Contributors
 We'd love to welcome contributors to xplainable to keep driving forward more
 transparent and actionable machine learning. We're working on our contributor
-docs at the moment, but if you're interested in contributing, please flick us a
+docs at the moment, but if you're interested in contributing, please send us a
 message at contact@xplainable.io.
 
 
