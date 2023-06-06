@@ -2,7 +2,7 @@
 
 import altair as alt
 import pandas as pd
-from IPython.display import HTML
+from IPython.display import HTML, display
 
 def _generate_explain_plot_data(model):
 
@@ -60,7 +60,7 @@ def _plot_explainer(model):
 
     data = _generate_explain_plot_data(model)
 
-    single = alt.selection_single(
+    single = alt.selection_point(
         fields=['feature'],
         value=list(model.feature_importances.keys())[-1])
     
@@ -68,7 +68,7 @@ def _plot_explainer(model):
     brush2 = alt.selection_interval(encodings=['y'])
     
     # Define the dropdown selection
-    dropdown = alt.selection_single(
+    dropdown = alt.selection_point(
         name='Select',
         fields=['column'],
         bind=alt.binding_select(options=['contribution', 'mean', 'frequency']),
@@ -84,18 +84,18 @@ def _plot_explainer(model):
             color=alt.condition(
             single, alt.value('lightgray'), alt.value('#0080ea'))
     ).properties(width=330, height=400).transform_filter(
-        brush).add_selection(single, dropdown)
+        brush).add_params(single, dropdown)
     
     view = alt.Chart(fi).mark_bar().encode(
         y=alt.Y('feature:N', sort='-x', axis=alt.Axis(
         labels=False, title=None)),
         x=alt.X('importance:Q', axis=alt.Axis(labels=False, title=None))
-    ).properties(height=400, width=25).add_selection(brush)
+    ).properties(height=400, width=25).add_params(brush)
     
     view2 = alt.Chart(data).mark_bar().encode(
         y=alt.Y('value:N', sort='-x', axis=alt.Axis(labels=False, title=None)),
         x=alt.X('contribution:Q', axis=alt.Axis(labels=False, title=None))
-    ).properties(height=400, width=25).add_selection(brush2).transform_filter(
+    ).properties(height=400, width=25).add_params(brush2).transform_filter(
         single
     )
 
@@ -120,7 +120,7 @@ def _plot_explainer(model):
             single
         ).transform_filter(
             brush2
-        ).add_selection(dropdown)
+        ).add_params(dropdown)
     
     display(HTML("""
     <style>

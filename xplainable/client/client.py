@@ -212,7 +212,7 @@ class Client:
         for p in response['partitions']:
             model = XClassifier()
             model._profile = np.array([
-                np.array(i) for i in json.loads(p['profile'])])
+                np.array(i) for i in json.loads(p['profile'])], dtype=object)
             model._calibration_map = p['calibration_map']
             model._support_map = p['support_map']
             model.base_value = p['base_value']
