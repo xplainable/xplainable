@@ -542,6 +542,12 @@ def classifier(df):
     # Train model on click
     def train_button_clicked(b):
         
+        # Drop partitions with only one class
+        for p in list(b.partitions.keys()):
+            if p != '__dataset__':
+                if df[df[partition_on.value] == p][target.value].nunique() < 2:
+                    b.partitions.pop(p)
+                    
         header.loader.start()
 
         part_progress.set_bounds(min_val=0, max_val=len(b.partitions))
