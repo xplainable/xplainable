@@ -8,12 +8,8 @@ from sklearn.model_selection import StratifiedKFold
 import numpy as np
 import pandas as pd
 from ..ml.classification import XClassifier
-import warnings
 import numpy as np
 import time
-
-#suppress warnings
-warnings.filterwarnings('ignore', module="hyperopt")
 
 
 class XParamOptimiser:
@@ -68,12 +64,12 @@ class XParamOptimiser:
         shuffle=False,
         subsample=1,
         alpha=0.01,
-        max_depth_space = [4, 22, 2],
-        min_leaf_size_space = [0.005, 0.08, 0.005],
-        min_info_gain_space = [0.005, 0.08, 0.005],
-        weight_space = [0, 5, 0.25],
-        power_degree_space = [1, 7, 2],
-        sigmoid_exponent_space = [0.5, 4, 0.25],
+        max_depth_space = [4, 10, 2],
+        min_leaf_size_space = [0.005, 0.05, 0.005],
+        min_info_gain_space = [0.005, 0.05, 0.005],
+        weight_space = [0, 1.2, 0.05],
+        power_degree_space = [1, 3, 2],
+        sigmoid_exponent_space = [0.5, 1, 0.1],
         verbose=True,
         random_state=1
         ):

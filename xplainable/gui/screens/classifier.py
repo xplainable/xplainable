@@ -174,11 +174,11 @@ def classifier(df):
 
     # Param pickers
     max_depth = widgets.IntSlider(
-        value=6, min=2, max=100, step=1, description='max_depth:',
+        value=6, min=1, max=30, step=1, description='max_depth:',
         style=style)
 
     min_leaf_size = widgets.FloatSlider(
-        value=0.035, min=0.0001, max=0.2, step=0.0001, readout_format='.4f',
+        value=0.025, min=0.0001, max=0.2, step=0.0001, readout_format='.4f',
         description='min_leaf_size:', style=style)
 
     min_info_gain = widgets.FloatSlider(
@@ -188,17 +188,17 @@ def classifier(df):
     weight = widgets.FloatSlider(
         description='weight',
         style=style,
-        value=0.4, min=0.001, max=10, step=0.01)
+        value=0.0, min=0., max=3.0, step=0.01)
         
     power_degree = widgets.IntSlider(
         description='power_degree',
         style=style,
-        value=1, min=1, max=7, step=2)
+        value=1, min=1, max=5, step=2)
         
     sigmoid_exponent = widgets.FloatSlider(
         description='sigmoid_exponent',
         style=style,
-        value=1, min=0, max=6, step=0.25)
+        value=1.0, min=0.0, max=1.0, step=0.1)
     
     # Optimise param pickers
     n_trials = widgets.IntSlider(
@@ -213,7 +213,7 @@ def classifier(df):
     max_depth_space = widgets.IntRangeSlider(
         value=[4, 10],
         min=2,
-        max=100,
+        max=30,
         step=1,
         description="max_depth:",
         style={'description_width': 'initial'},
@@ -230,10 +230,10 @@ def classifier(df):
 
     # SEARCH SPACE – MIN_LEAF_SIZE
     min_leaf_size_space = widgets.FloatRangeSlider(
-        value=[0.0001, 0.04],
+        value=[0.005, 0.05],
         min=0.0001,
-        max=0.2,
-        step=0.0001,
+        max=0.12,
+        step=0.0005,
         description="min_leaf_size:",
         style={'description_width': 'initial'},
         readout_format='.4f',
@@ -251,10 +251,10 @@ def classifier(df):
 
     # SEARCH SPACE – MIN_LEAF_SIZE
     min_info_gain_space = widgets.FloatRangeSlider(
-        value=[0.0001, 0.04],
+        value=[0.005, 0.05],
         min=0.0001,
-        max=0.2,
-        step=0.0001,
+        max=0.12,
+        step=0.0005,
         description="min_info_gain:",
         style={'description_width': 'initial'},
         readout_format='.4f',
@@ -274,7 +274,7 @@ def classifier(df):
     weight_space = widgets.FloatRangeSlider(
         value=[0, 1.2],
         min=0,
-        max=5,
+        max=3,
         step=0.1,
         description="weight:",
         style={'description_width': 'initial'},
@@ -284,7 +284,7 @@ def classifier(df):
 
     weight_step = widgets.Dropdown(
         options=[0.05, 0.1, 0.25, 0.5],
-        value=0.25,
+        value=0.05,
         layout = widgets.Layout(max_width='75px')
     )
 
@@ -293,9 +293,9 @@ def classifier(df):
 
     # SEARCH SPACE - POWER_DEGREE
     power_degree_space = widgets.IntRangeSlider(
-        value=[1, 1],
+        value=[1, 3],
         min=1,
-        max=7,
+        max=5,
         step=2,
         description="power_degree:",
         style={'description_width': 'initial'},
@@ -312,10 +312,10 @@ def classifier(df):
 
     # SEARCH SPACE – SIGMOID_EXPONENT
     sigmoid_exponent_space = widgets.FloatRangeSlider(
-        value=[0.75, 1.25],
+        value=[0.5, 1],
         min=0,
-        max=4,
-        step=0.25,
+        max=1,
+        step=0.1,
         description="sigmoid_exponent:",
         style={'description_width': 'initial'},
         readout_format='.2f',
@@ -323,8 +323,8 @@ def classifier(df):
     )
 
     sigmoid_exponent_step = widgets.Dropdown(
-        options=[0.25, 0.5, 1],
-        value=0.25,
+        options=[0.1, 0.25, 0.5],
+        value=0.1,
         layout = widgets.Layout(max_width='75px')
     )
 

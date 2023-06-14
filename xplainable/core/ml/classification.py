@@ -144,6 +144,27 @@ class XClassifier(BaseModel):
         self.power_degree = power_degree
         self.sigmoid_exponent = sigmoid_exponent
 
+    def _check_param_bounds(self):
+
+        assert self.max_depth >= 0, \
+            'max_depth must be greater than or equal to 0'
+        
+        assert -1 <= self.min_leaf_size < 1, \
+            'min_leaf_size must be between -1 and 1'
+        
+        assert -1 <= self.min_info_gain < 1, \
+            'min_info_gain must be between -1 and 1'
+        
+        assert 0 <= self.alpha <= 1, 'alpha must be between 0 and 1'
+
+        assert 0 <= self.weight <= 3, 'weight must be between 0 and 3'
+
+        assert self.power_degree in [1, 3, 5], 'power_degree must be 1, 3, or 5'
+
+        assert 0 <= self.sigmoid_exponent <= 1, \
+            'sigmoid_exponent must be between 0 and 1'
+
+
     def _map_calibration(self, y, y_prob, smooth=15):
         """ Maps the associated probability for each possible feature score.
 
@@ -290,6 +311,9 @@ class XClassifier(BaseModel):
         """
 
         start = time.time()
+
+        # Ensure parameters are valid
+        self._check_param_bounds()
 
         x = x.copy()
         y = y.copy()

@@ -115,13 +115,13 @@ def regressor(df):
         description='max_depth ', min=2, max=30, value=8, style=style)
     
     _slider_min_leaf_size = widgets.FloatSlider(
-        description='min_leaf_size ', min=0.0005,
-        max=0.2, value=0.025, step=0.001, style=style,
+        description='min_leaf_size ', min=0.0001,
+        max=0.2, value=0.025, step=0.0001, style=style,
         readout_format='.4f')
     
     _slider_min_info_gain = widgets.FloatSlider(
-        description='min_info_gain ', min=0.0005, max=0.1,
-        value=0.025, step=0.001, style=style, readout_format='.4f')
+        description='min_info_gain ', min=0.0001, max=0.2,
+        value=0.015, step=0.0001, style=style, readout_format='.4f')
     
     _slider_tail_sensitivity = widgets.FloatSlider(
         description='tail_sensitivity ', min=1, max=2,

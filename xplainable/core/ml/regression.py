@@ -141,7 +141,23 @@ class XRegressor(BaseModel):
         self.min_info_gain = min_info_gain
         self.alpha = alpha
         self.tail_sensitivity = tail_sensitivity
-    
+
+    def _check_param_bounds(self):
+
+        assert self.max_depth >= 0, \
+            'max_depth must be greater than or equal to 0'
+        
+        assert -1 <= self.min_leaf_size < 1, \
+            'min_leaf_size must be between -1 and 1'
+        
+        assert -1 <= self.min_info_gain < 1, \
+            'min_info_gain must be between -1 and 1'
+        
+        assert 0 <= self.alpha < 1, 'alpha must be between 0 and 1'
+
+        assert 1 <= self.tail_sensitivity <= 2, \
+            'tail_sensitivity must be between 1 and 2'
+
     def _build_profile(self, features: list=[]) -> 'XRegressor':
         """ Builds the profile from each feature construct.
         """
@@ -179,6 +195,9 @@ class XRegressor(BaseModel):
         """
 
         start = time.time()
+
+        # Ensure parameters are valid
+        self._check_param_bounds()
 
         x = x.copy()
         y = y.copy()
