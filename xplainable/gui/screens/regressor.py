@@ -370,9 +370,6 @@ def regressor(df):
         part_progress.expand_items(items=['Partitions'])
         
         eval_screens = {}
-        eval_objects = {}
-        metadata_objects = {}
-        training_metadata = {}
         
         for i, (p, model) in enumerate(parts.items(), start=1):
             
@@ -392,13 +389,6 @@ def regressor(df):
             model.min_info_gain = _slider_min_info_gain.value
             model.tail_sensitivity = _slider_tail_sensitivity.value
             model.alpha = _slider_alpha.value
-            
-            training_metadata[p] = {
-                "optimisation_time": None,
-                "training_time": None,
-                "layers": [i.__class__.__name__ for i in network.future_layers],
-                "optimise_on": None
-            }
             
             if p != '__dataset__':
                 part = df[df[p_on] == p].drop(columns=[p_on])
@@ -435,8 +425,8 @@ def regressor(df):
             
             start = time.time()
             model.fit(X_train, y_train, id_columns=id_cols)
-            training_metadata[p]['training_time'] = round(
-                                        time.time()-start, 4)
+            
+            model.metadata['optimisation'] = {}
             
             if _toggle_optimise_ts.value:
                 kvt.update_data({
@@ -444,10 +434,13 @@ def regressor(df):
                     'partition': p,
                     'layers': f'{len(xnet.future_layers)}'
                 })
+
                 start = time.time()
                 model.optimise_tail_sensitivity(X_train, y_train)
-                training_metadata[p]['tail_sensitivity_optimise_time'] = round(
-                            time.time()-start, 4)
+                elapsed = round(time.time()-start, 4)
+
+                model.metadata['optimisation'][
+                    'tail_sensitivity_optimise_time'] = elapsed
             
             if len(network.future_layers) > 0:
                 kvt.update_data({
@@ -470,8 +463,11 @@ def regressor(df):
                     (callback.group.show(),)
                 
                 network.optimise(callback=callback)
-                training_metadata[p]['optimise_time'] = round(
-                            time.time()-start, 4)
+
+                elapsed = round(time.time()-start, 4)
+                model.metadata['optimisation']['optimise_time'] = elapsed
+                model.metadata['optimisation']['layers'] = len(
+                    network.completed_layers)
 
                 with bar_plot_output:
                     metric_bars.add_bar(p, network.checkpoint_score)
@@ -487,21 +483,14 @@ def regressor(df):
                 'validation': evaluate_regression(
                     e.y_val, e.y_val_pred)
             }
-            eval_objects[p] = eval_items
-            metadata_objects[p] = training_metadata
+            model.metadata['evaluation'] = eval_items
             part_progress.set_value('Partitions', i)
             
         part_progress.collapse_items(items=['Partitions'])
         divider.close()
         header.title = {'title': 'Profile'}
         
-        save = ModelPersist(
-                partitioned_model,
-                'regression',
-                eval_objects,
-                metadata_objects,
-                df
-                )
+        save = ModelPersist(partitioned_model, 'regression', df)
         
         partition_select = widgets.Dropdown(
             options = eval_screens.keys()

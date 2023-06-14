@@ -24,6 +24,8 @@ class BaseModel:
         self.feature_map_inv = {}
         self.category_meta = {}
 
+        self.metadata = {"optimised": False}
+
     @property
     def feature_importances(self) -> dict:
         """ Calculates the feature importances for the model decision process.

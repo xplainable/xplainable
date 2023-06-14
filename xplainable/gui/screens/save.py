@@ -4,7 +4,6 @@ import xplainable
 from ...utils.api import get_response_content
 from ...utils.xwidgets import TextInput
 from ...core.optimisation.targeting import generate_ruleset
-from ...quality.scanner import XScan
 from ...utils.encoders import NpEncoder, force_json_compliant
 import json
 
@@ -19,15 +18,12 @@ import time
 
 class ModelPersist:
     
-    def __init__(self, model, model_type,
-    eval_objects=None, metadata_objects=None, df=None):
+    def __init__(self, model, model_type, df=None):
 
         self.model = model
         self.model_type = model_type
         self.partition_on = model.partition_on
         self.partitions = list(self.model.partitions.keys())
-        self.eval_objects = eval_objects
-        self.metadata_objects = metadata_objects
         self.df = df
         self.selected_model_id = None
 
@@ -153,21 +149,6 @@ class ModelPersist:
             apply_buttons.layout.display = 'none'
             model_loader.layout.display = 'none'
 
-        def get_health_data():
-            scanner = XScan()
-            scanner.scan(self.df)
-
-            results = []
-            for i, v in scanner.profile.items():
-                feature_info = {
-                    "feature": i,
-                    "description": None,
-                    "health_info": json.dumps(v, cls=NpEncoder)
-                }
-                results.append(feature_info)
-
-            return results
-        
         def catch_errors(func):
             def wrapper(*args, **kwargs):
                 try:
@@ -197,66 +178,31 @@ class ModelPersist:
 
             confirm_button.description = "Saving..."
             confirm_button.disabled = True
-            loading.max = len(self.partitions) + 2
+            loading.max = 2
             loading.layout.display = 'flex'
             
             if buttons.index == 0:
                 model_id = xplainable.client.create_model_id(
                     model_name.value,
                     model_description.value,
-                    self.model.partitions['__dataset__'].target,
-                    self.model_type
+                    self.model
                 )
 
             else:
                 model_id = self.selected_model_id
             
-            # loading_status.value = f'Calculating dataset rules...'
-            # ruleset = generate_ruleset(
-            #     self.df,
-            #     self.model.partitions['__dataset__'].target,
-            #     self.model.partitions['__dataset__'].id_columns
-            #     )
-            ruleset = '[]' # removed ruleset until we can build a handler for it
-
-            loading.value = loading.value + 1
-
-            loading_status.value = f'Scanning data health...'
-            health_info = get_health_data()
             loading.value = loading.value + 1
 
             loading_status.value = f'Creating model version...'
-
-            versions = {
-                    "xplainable_version": xplainable.client.xplainable_version,
-                    "python_version": xplainable.client.python_version
-                }
-            
-            health_info = force_json_compliant(health_info)
             
             version_id = xplainable.client.create_model_version(
-                model_id, self.partition_on, ruleset, health_info, versions)
+                self.model,
+                model_id,
+                self.df
+                )
+            
             loading.value = loading.value + 1
             
-            for part in self.partitions:
-                
-                loading_status.value = f'logging {part} model'
-
-                mdl = self.model.partitions[part]
-
-                xplainable.client.log_partition(
-                    self.model_type,
-                    part,
-                    mdl,
-                    model_id,
-                    version_id,
-                    self.eval_objects[part],
-                    self.metadata_objects[part]
-                )
-
-                # Increment model_loader after logging partition
-                loading.value = loading.value + 1
-
             loading_status.value = ''
             loading.layout.display = 'none'
             loading.value = 0
@@ -522,39 +468,20 @@ class PreprocessorPersist:
             confirm_button.disabled = True
             
             if buttons.index == 0:
-
                 preprocessor_id = xplainable.client.create_preprocessor_id(
                     preprocessor_name.value,
-                    preprocessor_description.value,
+                    preprocessor_description.value
                 )
 
             else:
                 preprocessor_id = self.selected_preprocessor_id
 
-
-            metadata = []
-            for stage in self.preprocessor.pipeline.stages:
-                step = {
-                    'feature': stage['feature'],
-                    'name': stage['name'],
-                    'params': stage['transformer'].__dict__
-                }
-
-                metadata.append(step)
-
-            versions = {
-                "xplainable_version": xplainable.client.xplainable_version,
-                "python_version": xplainable.client.python_version
-            }
-
             # Create preprocessor version
             preprocessor_id = xplainable.client.create_preprocessor_version(
                 preprocessor_id,
-                metadata,
-                self.preprocessor.df_delta,
-                versions
+                self.preprocessor
                 )
-                
+
             confirm_button.description = "Saved"
             confirm_button.style.button_color = '#12b980'
 

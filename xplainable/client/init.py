@@ -29,7 +29,7 @@ def _render_init_table(data):
     output = widgets.VBox([header.show(), table.html_widget])
     display(output)
 
-def initialise():
+def initialise(hostname='https://api.xplainable.io'):
     """ Initialise the client with an API Key.
 
     API Keys can be generated from https://app.xplainable.io with a valid
@@ -52,7 +52,7 @@ def initialise():
         has_set = True
     
     try:
-        xplainable.client = Client(api_key)
+        xplainable.client = Client(api_key, hostname)
         xplainable.client.xplainable_version = XP_VERSION
         xplainable.client.python_version = PY_VERSION
 

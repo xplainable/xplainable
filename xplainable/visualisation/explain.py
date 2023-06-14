@@ -86,15 +86,20 @@ def _plot_explainer(model):
     ).properties(width=330, height=400).transform_filter(
         brush).add_params(single, dropdown)
     
-    view = alt.Chart(fi).mark_bar().encode(
+    view = alt.Chart(fi).mark_bar(color='#0080ea').encode(
         y=alt.Y('feature:N', sort='-x', axis=alt.Axis(
         labels=False, title=None)),
         x=alt.X('importance:Q', axis=alt.Axis(labels=False, title=None))
     ).properties(height=400, width=25).add_params(brush)
     
-    view2 = alt.Chart(data).mark_bar().encode(
+    view2 = alt.Chart(data).mark_bar(color='#e14067').encode(
         y=alt.Y('value:N', sort='-x', axis=alt.Axis(labels=False, title=None)),
-        x=alt.X('contribution:Q', axis=alt.Axis(labels=False, title=None))
+        x=alt.X('contribution:Q', axis=alt.Axis(labels=False, title=None)),
+        color=alt.condition(
+            alt.datum.contribution < 0,
+            alt.value("#e14067"),
+            alt.value("#12b980")
+        )
     ).properties(height=400, width=25).add_params(brush2).transform_filter(
         single
     )
