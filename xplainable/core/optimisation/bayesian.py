@@ -112,6 +112,8 @@ class XParamOptimiser:
         self.folds = {}
         self.results = []
 
+        self.metadata = {}
+
     def _cv_fold(self, params):
         """ Runs an iteration of cross-validation for a set of parameters.
 
@@ -307,10 +309,13 @@ class XParamOptimiser:
             id_columns (list, optional): ID columns in dataset. Defaults to [].
             verbose (bool, optional): Sets output amount. Defaults to True.
             callback (any, optional): Callback for progress tracking.
+            return_model (bool, optional): Returna model, else returns params
 
         Returns:
             dict: The optimised set of parameters.
         """
+
+        start = time.time()
 
         # Store class variables
         self.x = x.copy()
@@ -390,6 +395,17 @@ class XParamOptimiser:
         # iteration callback completed
         if self.callback:
             self.callback.update_params(**best_params)
+
+        # record metadata
+        self.metadata.update({
+            "optimisation_time": time.time() - start,
+            "metric": self.metric,
+            "n_trials": self.n_trials,
+            "n_folds": self.n_folds,
+            "early_stopping": self.early_stopping,
+            "shuffle": self.shuffle,
+            "subsample": self.subsample
+        })
 
         # Return the best parameters
         return best_params

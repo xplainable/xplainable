@@ -563,9 +563,6 @@ def classifier(df):
             #outt.layout.display = 'flex'
 
             eval_screens = {}
-            eval_objects = {}
-            metadata_objects = {}
-            training_metadata = {}
 
             if optimise.value:
                 _max_depth_space = list(max_depth_space.value) + \
@@ -626,24 +623,10 @@ def classifier(df):
                 model.power_degree = power_degree.value
                 model.sigmoid_exponent = sigmoid_exponent.value
 
-                training_metadata[p] = {
-                    "optimisation_time": None,
-                    "training_time": None,
-                    "optimised": optimise.value,
-                    "optimise_on": None,
-                    "n_trials": None,
-                    "early_stopping": None
-                }
-
                 try:
                     if optimise.value:
                         desc_partition.value = f'<strong>Partition: </strong>{p}'
                         callback.reset()
-                        training_metadata.update({
-                            "optimise_on": optimise_metric.value,
-                            "n_trials": n_trials.value,
-                            "early_stopping": early_stopping.value
-                        })
                         
                     if p != '__dataset__':
                         part = df[df[partition_on.value] == p].drop(
@@ -687,19 +670,16 @@ def classifier(df):
                             sigmoid_exponent_space=_sigmoid_exponent_space,
                             verbose=False
                         )
-                        start = time.time()
-                        params = opt.optimise(
-                            X_train, y_train, verbose=False, callback=callback)
-                        training_metadata[p]['optimisation_time'] = round(
-                            time.time()-start, 4)
-
+                        
+                        # This returns an optimised model
+                        params = opt.optimise(X_train, y_train, verbose=False,
+                                     callback=callback)
+                        
                         model.set_params(**params)
+                        model.metadata["optimised"] = True
+                        model.metadata["optimiser"] = opt.metadata
 
-                    # Train model
-                    start = time.time()
                     model.fit(X_train, y_train, id_columns=id_cols)
-                    training_metadata[p]['training_time'] = round(
-                            time.time()-start, 4)
 
                     partitioned_model.add_partition(model, p)
                     
@@ -719,8 +699,7 @@ def classifier(df):
                             e.y_val, e.y_val_prob)
                     }
 
-                    eval_objects[p] = eval_items
-                    metadata_objects[p] = training_metadata
+                    model.metadata['evaluation'] = eval_items
                     part_progress.set_value('Partitions', i+1)
                     
                 except Exception as e:
@@ -736,13 +715,7 @@ def classifier(df):
             header.title = {'title': 'Profile'}
             divider.close()
 
-            save = ModelPersist(
-                partitioned_model,
-                'binary_classification',
-                eval_objects,
-                metadata_objects,
-                df
-                )
+            save = ModelPersist(partitioned_model, 'binary_classification', df)
 
             partition_select = widgets.Dropdown(
                 options = eval_screens.keys()

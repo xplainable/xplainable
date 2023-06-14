@@ -9,6 +9,7 @@ from ._base_model import BaseModel, BasePartition
 from ._constructor import XConstructor
 from sklearn.metrics import *
 import copy
+import time
 from typing import Union
 
 
@@ -177,6 +178,8 @@ class XRegressor(BaseModel):
             XRegressor: The fitted model.
         """
 
+        start = time.time()
+
         x = x.copy()
         y = y.copy()
 
@@ -219,6 +222,11 @@ class XRegressor(BaseModel):
         params = self.params
         self.feature_params = {c: copy.copy(params) for c in self.columns}
         
+        # record metadata
+        self.metadata['fit_time'] = time.time() - start
+        self.metadata['observations'] = x.shape[0]
+        self.metadata['features'] = x.shape[1]
+
         return self
     
     def optimise_tail_sensitivity(
