@@ -10,7 +10,7 @@
     
 [![Python](https://img.shields.io/pypi/pyversions/xplainable)](https://pypi.org/project/xplainable/)
 [![PyPi](https://img.shields.io/pypi/v/xplainable?color=blue)](https://pypi.org/project/xplainable/)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://github.com/xplainable/xplainable/blob/dev/LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://github.com/xplainable/xplainable/blob/main/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/xplainable)](https://pepy.tech/project/xplainable)
     
 **Xplainable** leverages explainable machine learning for fully transparent predictions and advanced data optimisation in production systems.
@@ -222,8 +222,6 @@ We'd love to welcome contributors to xplainable to keep driving forward more
 transparent and actionable machine learning. We're working on our contributor
 docs at the moment, but if you're interested in contributing, please send us a
 message at contact@xplainable.io.
-
-
 
 
 <div align="center">
