@@ -391,7 +391,7 @@ def regressor(df):
             model.alpha = _slider_alpha.value
             
             if p != '__dataset__':
-                part = df[df[p_on] == p].drop(columns=[p_on])
+                part = df[df[p_on] == p]
 
                 if len(part) < 100:
                     continue
@@ -405,9 +405,8 @@ def regressor(df):
                 
             else:
                 drop_cols = [_dropdown_target.value]
-
                 if _dropdown_partition_on.value is not None:
-                    drop_cols.append(p_on)
+                            drop_cols.append(_dropdown_partition_on.value)
 
                 X, y = df.drop(columns=drop_cols), df[_dropdown_target.value]
                 X_train, X_test, y_train, y_test = train_test_split(
@@ -422,7 +421,7 @@ def regressor(df):
                 'partition': p,
                 'layers': f'{len(xnet.future_layers)}'
             })
-            
+
             start = time.time()
             model.fit(X_train, y_train, id_columns=id_cols)
             
@@ -457,7 +456,12 @@ def regressor(df):
                     y_train = y_train.loc[X_train.index]
                 
                 start = time.time()
-                network.fit(X_train, y_train)
+                if _dropdown_partition_on.value is not None:
+                    network.fit(
+                        X_train.drop(columns=[_dropdown_partition_on.value]),
+                        y_train)
+                else:
+                    network.fit(X_train, y_train)
                 
                 output_screen.children = (output_screen.children[0],) + \
                     (callback.group.show(),)
@@ -490,7 +494,10 @@ def regressor(df):
         divider.close()
         header.title = {'title': 'Profile'}
         
-        save = ModelPersist(partitioned_model, 'regression', df)
+        X, y = df.drop(
+            columns=[_dropdown_target.value]), df[_dropdown_target.value]
+        
+        save = ModelPersist(partitioned_model, 'regression', X, y)
         
         partition_select = widgets.Dropdown(
             options = eval_screens.keys()

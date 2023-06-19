@@ -18,13 +18,14 @@ import time
 
 class ModelPersist:
     
-    def __init__(self, model, model_type, df=None):
+    def __init__(self, model, model_type, X, y):
 
         self.model = model
         self.model_type = model_type
         self.partition_on = model.partition_on
         self.partitions = list(self.model.partitions.keys())
-        self.df = df
+        self.X = X
+        self.y = y
         self.selected_model_id = None
 
     def save(self):
@@ -183,9 +184,9 @@ class ModelPersist:
             
             if buttons.index == 0:
                 model_id = xplainable.client.create_model_id(
+                    self.model,
                     model_name.value,
-                    model_description.value,
-                    self.model
+                    model_description.value
                 )
 
             else:
@@ -198,7 +199,8 @@ class ModelPersist:
             version_id = xplainable.client.create_model_version(
                 self.model,
                 model_id,
-                self.df
+                self.X,
+                self.y
                 )
             
             loading.value = loading.value + 1
