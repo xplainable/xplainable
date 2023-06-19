@@ -6,6 +6,7 @@ import math
 from numba import njit, prange
 from ...utils.numba_funcs import *
 from .genetic import XEvolutionaryNetwork
+import warnings
 
 
 class BaseLayer:
@@ -575,20 +576,24 @@ class Tighten(BaseLayer):
             o_vals = o_vals**2
             u_vals = u_vals**2
 
-        # get mean error and count of obs that are too high for each leaf
-        om = np.nanmean(o_vals, axis=0)
-        oc = o_mask.sum(axis=0)
+        # surpress know warning that raises when all values are nan
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
 
-         # get mean error and count of obs that are too low for each leaf
-        um = np.nanmean(abs(u_vals), axis=0)
-        uc = u_mask.sum(axis=0)
+            # get mean error and count of obs that are too high for each leaf
+            om = np.nanmean(o_vals, axis=0)
+            oc = o_mask.sum(axis=0)
+
+            # get mean error and count of obs that are too low for each leaf
+            um = np.nanmean(abs(u_vals), axis=0)
+            uc = u_mask.sum(axis=0)
 
         # calculate max benefit of inc/dec each leaf
         inc = (um * uc) - (um * oc) - (um * ec)
         dec = (om * oc) - (om * uc) - (om * ec)
 
         # get the best outcomes
-        bsts = np.maximum(inc, dec)
+        bsts = np.nanmax([inc, dec])
 
         # find individual best outcome and loc
         bst = np.nanmax(bsts)
