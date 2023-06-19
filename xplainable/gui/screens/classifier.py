@@ -567,27 +567,27 @@ def classifier(df):
             if optimise.value:
                 _max_depth_space = list(max_depth_space.value) + \
                     [max_depth_step.value]
-                _max_depth_space[1] += _max_depth_space[2]
+                _max_depth_space[1] += 0.0001
                 
                 _min_leaf_size_space = list(min_leaf_size_space.value) + \
                     [min_leaf_size_step.value]
-                _min_leaf_size_space[1] += _min_leaf_size_space[2]
+                _min_leaf_size_space[1] += 0.0001
 
                 _min_info_gain_space = list(min_info_gain_space.value) + \
                     [min_info_gain_step.value]
-                _min_info_gain_space[1] += _min_info_gain_space[2]
+                _min_info_gain_space[1] += 0.0001
 
                 _weight_space = list(weight_space.value) + \
                     [weight_step.value]
-                _weight_space[1] += _weight_space[2]
+                _weight_space[1] += 0.0001
 
                 _power_degree_space = list(power_degree_space.value) + \
                     [power_degree_step.value]
-                _power_degree_space[1] += _power_degree_space[2]
+                _power_degree_space[1] += 0.0001
 
                 _sigmoid_exponent_space = list(sigmoid_exponent_space.value) + \
                     [sigmoid_exponent_step.value]
-                _sigmoid_exponent_space[1] += _sigmoid_exponent_space[2]
+                _sigmoid_exponent_space[1] += 0.0001
 
                 callback, opt_bars_display, param_bars_display = generate_callback(
                 _max_depth_space, _min_leaf_size_space, _min_info_gain_space,
@@ -629,8 +629,7 @@ def classifier(df):
                         callback.reset()
                         
                     if p != '__dataset__':
-                        part = df[df[partition_on.value] == p].drop(
-                            columns=[partition_on.value])
+                        part = df[df[partition_on.value] == p]
         
                         if len(part) < 100:
                             continue
@@ -715,7 +714,9 @@ def classifier(df):
             header.title = {'title': 'Profile'}
             divider.close()
 
-            save = ModelPersist(partitioned_model, 'binary_classification', df)
+            X, y = df.drop(columns=[target.value]), df[target.value]
+            save = ModelPersist(
+                partitioned_model, 'binary_classification', X, y)
 
             partition_select = widgets.Dropdown(
                 options = eval_screens.keys()

@@ -91,6 +91,8 @@ reproducible data preprocessing.
 | Pipeline Persistance | ✅ | ✅ |
 </div>
 
+#### Using the GUI
+
 ```python
 pp = xp.Preprocessor()
 
@@ -102,7 +104,36 @@ pp.preprocess(train)
 
 </div><br>
 
+#### Using the API
+```python
+from xplainable.preprocessing.pipeline import XPipeline
+from xplainable.preprocessing import transformers as xtf
+
+pipeline = XPipeline()
+
+# Add stages for specific features
+pipeline.add_stages([
+    {"feature": "age", "transformer": xtf.Clip(lower=18, upper=99)},
+    {"feature": "balance", "transformer": xtf.LogTransform()}
+])
+
+# add stages on multiple features
+pipeline.add_stages([
+    {"transformer": xtf.FillMissing({'job': 'mode', 'age': 'mean'})},
+    {"transformer": xtf.DropCols(columns=['duration', 'campaign'])}
+])
+
+# Fit and transform the data
+train_transformed = pipeline.fit_transform(train)
+
+# Apply transformations on new data
+test_transformed = pipeline.transform(test)
+
+```
+
+
 ### Modelling
+
 Xplainable models can be developed, optimised, and re-optimised using Pythonic
 APIs or the embedded GUI.
 
@@ -119,12 +150,40 @@ APIs or the embedded GUI.
 
 </div>
 
+#### Using the GUI
+
 ```python
 model = xp.classifier(train)
 ```
 <div align="center">
 <img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/gui_classifier.gif">
 </div><br>
+
+#### Using the API
+```python
+from xplainable.core.models import XClassifier
+from xplainable.core.optimisation.bayesian import XParamOptimiser
+from sklearn.model_selection import train_test_split
+import pandas as pd
+
+# Load your data
+data = pd.read_csv('data.csv')
+x, y = data.drop('target', axis=1), data['target']
+X_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+
+# Optimise params
+opt = XParamOptimiser(metric='roc-auc')
+params = opt.optimise(X_train, y_train)
+
+# Train your model
+model = XClassifier(**params)
+model.fit(X_train, y_train)
+
+# Predict on the test set
+y_pred = model.predict(x_test)
+```
+
+#### Using the GUI
 
 ### Rapid Refitting
 Fine tune your models by refitting model parameters on the fly, even on
@@ -133,6 +192,23 @@ individual features.
 <div align="center">
 <img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/recalibrate.gif">
 </div><br>
+
+#### Using the API
+```python
+new_params = {
+            "features": ['Age'],
+            "max_depth": 6,
+            "min_info_gain": 0.01,
+            "min_leaf_size": 0.03,
+            "weight": 0.05,
+            "power_degree": 1,
+            "sigmoid_exponent": 1,
+            "x": X_train,
+            "y": y_train
+}
+
+model.update_feature_params(**new_params)
+```
 
 ### Explainability
 Models are explainable and real-time, right out of the box, without having to fit

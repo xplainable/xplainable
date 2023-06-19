@@ -10,6 +10,7 @@ from ..preprocessing import transformers as xtf
 from ..utils.exceptions import AuthenticationError
 from ..gui.components.cards import render_user_avatar
 from ..quality.scanner import XScan
+from ..metrics.metrics import evaluate_classification, evaluate_regression
 from ..core.models import (XClassifier, XRegressor, PartitionedRegressor,
                            PartitionedClassifier)
 
@@ -409,7 +410,7 @@ class Client:
         return model_type, model.target
 
     def create_model_id(
-            self, model_name: str, model_description: str, model) -> str:
+            self, model, model_name: str, model_description: str) -> str:
         """ Creates a new model and returns the model id.
 
         Args:
@@ -427,7 +428,8 @@ class Client:
             "model_name": model_name,
             "model_description": model_description,
             "model_type": model_type,
-            "target_name": target
+            "target_name": target,
+            "algorithm": model.__class__.__name__
         }
         
         response = self.__session__.post(
@@ -440,7 +442,7 @@ class Client:
         return model_id
 
     def create_model_version(
-            self, model, model_id: str, df: pd.DataFrame = None) -> str:
+            self, model, model_id: str, x: pd.DataFrame, y: pd.Series) -> str:
         """ Creates a new model version and returns the version id.
 
         Args:
@@ -481,18 +483,19 @@ class Client:
         # get all partitions
         if model.__class__.__name__ in partitioned_models:
             for p, m in model.partitions.items():
-                part = None
-                if df is not None:
-                    if p == '__dataset__':
-                        part = df
-                    else:
-                        part = df[df[partition_on] == p]
+                if p == '__dataset__':
+                    part_x = x
+                    part_y = y
 
-                pdata = self._get_partition_data(m, p, part)
+                else:
+                    part_x = x[x[partition_on].astype(str) == str(p)]
+                    part_y = y[y.index.isin(part_x.index)]
+
+                pdata = self._get_partition_data(m, p, part_x, part_y)
                 payload['partitions'].append(pdata)
         
         elif model.__class__.__name__ in independent_models:
-            pdata = self._get_partition_data(model, '__dataset__', df)
+            pdata = self._get_partition_data(model, '__dataset__', x, y)
             payload['partitions'].append(pdata)
 
         # Create a new version and fetch id
@@ -504,7 +507,8 @@ class Client:
         return version_id
 
     def _get_partition_data(
-            self, model, partition_name: str, df: pd.DataFrame = None):
+            self, model, partition_name: str, x: pd.DataFrame,
+            y: pd.Series) -> dict:
         """ Logs a partition to a model version.
 
         Args:
@@ -551,17 +555,35 @@ class Client:
                 json.dumps(model._support_map, cls=NpEncoder))
             })
 
-        data["evaluation"] = json.dumps(
-            model.metadata.get('evaluation', {}), cls=NpEncoder)
+            evaluation = model.metadata.get('evaluation', {})
+            if evaluation == {}:
+                y_prob = model.predict_score(x)
+
+                if model.target_map:
+                    y = y.map(model.target_map)
+
+                evaluation = {
+                            'train': evaluate_classification(y, y_prob)
+                        }
+                
+        elif model_type == 'regression':
+            evaluation = model.metadata.get('evaluation', {})
+            if evaluation == {}:
+                y_pred = model.predict(x)
+                evaluation = {
+                            'train': evaluate_regression(y, y_pred)
+                        }
+
+        data["evaluation"] = json.dumps(evaluation, cls=NpEncoder)
 
         training_metadata = {
             i: v for i, v in model.metadata.items() if i != "evaluation"}
         
         data["training_metadata"] = json.dumps(training_metadata, cls=NpEncoder)
         
-        if df is not None:
+        if x is not None:
             scanner = XScan()
-            scanner.scan(df)
+            scanner.scan(x)
 
             results = []
             for i, v in scanner.profile.items():
@@ -578,8 +600,8 @@ class Client:
         return data
 
     def deploy(
-            self, hostname: None, model_id: str, version_id: str, partition_id: str,
-            raw_output: bool=False) -> dict:
+            self, hostname: None, model_id: str, version_id: str,
+            partition_id: str, raw_output: bool=False) -> dict:
         """ Deploys a model partition to xplainable cloud.
 
         The hostname should be the url of the inference server. For example:

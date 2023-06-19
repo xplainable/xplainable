@@ -40,6 +40,48 @@ def calculate_probability_bins(y_true, y_prob):
     
     return output_data
 
+def calculate_regression_bins(y_true, y_pred, bin_count):
+
+    # Ensure y_true and y_pred are NumPy arrays
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+
+    # Calculate the min and max of the predicted values
+    min_val = min(y_pred)
+    max_val = max(y_pred)
+
+    # Define the bins
+    bins = np.linspace(min_val, max_val, bin_count+1)
+
+    # Assign each predicted value to a bin
+    true_bin_indices = np.digitize(y_true, bins)
+    pred_bin_indices = np.digitize(y_pred, bins)
+
+    # For each bin, count the number of true values
+    true_output = []
+    pred_output = []
+    for i in range(1, bin_count+1):
+        true_values_in_bin = y_true[true_bin_indices == i]
+        true_counts = len(true_values_in_bin)
+        true_output.append(true_counts)
+        
+        pred_values_in_bin = y_pred[pred_bin_indices == i]
+        pred_counts = len(pred_values_in_bin)
+        pred_output.append(pred_counts)
+    
+    output = [
+        {
+            "class": "true",
+            "values": true_output
+        },
+        {
+            "class": "pred",
+            "values": pred_output
+        }
+    ]
+    
+    return output
+
 def evaluate_classification(y_true, y_pred):
     results = {}
     thresholds = np.linspace(0, 1, 101)
@@ -100,8 +142,8 @@ def evaluate_classification(y_true, y_pred):
 def evaluate_regression(y_true, y_pred):
     results = {
         "charts": {
-            'true': y_true.values if len(y_true) < 10000 else y_true[:10000].values,
-            'prediction': y_pred if len(y_pred) < 10000 else y_pred[:10000],
+            'true': list(y_true.values if len(y_true) < 10000 else y_true[:10000].values),
+            'prediction': list(y_pred if len(y_pred) < 10000 else y_pred[:10000]),
         }
     }
     
@@ -153,5 +195,7 @@ def evaluate_regression(y_true, y_pred):
         results["mape"] = mean_absolute_percentage_error(y_true, y_pred)
     except:
         results["mape"] = np.nan
+
+    results["prediction_bins"] = calculate_regression_bins(y_true, y_pred, 100)
     
     return force_json_compliant(results)

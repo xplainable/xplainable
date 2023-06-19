@@ -147,48 +147,59 @@ class XParamOptimiser:
 
             # Calculate the score for the fold
             if self.metric == 'macro-f1':
-                scores.append(skm.f1_score(y_test, y_pred, average='macro'))
+                scores.append(skm.f1_score(y_test, y_pred, average='macro',
+                                           zero_division=0))
 
             elif self.metric == 'weighted-f1':
-                scores.append(skm.f1_score(y_test, y_pred, average='weighted'))
+                scores.append(skm.f1_score(y_test, y_pred, average='weighted',
+                                           zero_division=0))
 
             elif self.metric == 'positive-f1':
-                scores.append(skm.f1_score(y_test, y_pred, average=None)[1])
+                scores.append(skm.f1_score(y_test, y_pred, average=None,
+                                           zero_division=0)[1])
 
             elif self.metric == 'negative-f1':
-                scores.append(skm.f1_score(y_test, y_pred, average=None)[0])
+                scores.append(skm.f1_score(y_test, y_pred, average=None,
+                                           zero_division=0)[0])
 
             elif self.metric == 'macro-precision':
                 scores.append(
-                    skm.precision_score(y_test, y_pred, average='macro'))
+                    skm.precision_score(y_test, y_pred, average='macro',
+                                        zero_division=0))
 
             elif self.metric == 'weighted-precision':
                 scores.append(
-                    skm.precision_score(y_test, y_pred, average='weighted'))
+                    skm.precision_score(y_test, y_pred, average='weighted',
+                                        zero_division=0))
 
             elif self.metric == 'positive-precision':
                 scores.append(
-                    skm.precision_score(y_test, y_pred, average=None)[1])
+                    skm.precision_score(y_test, y_pred, average=None,
+                                        zero_division=0)[1])
 
             elif self.metric == 'negative-precision':
                 scores.append(
-                    skm.precision_score(y_test, y_pred, average=None)[0])
+                    skm.precision_score(y_test, y_pred, average=None,
+                                        zero_division=0)[0])
 
             elif self.metric == 'macro-recall':
                 scores.append(
-                    skm.precision_score(y_test, y_pred, average='macro'))
+                    skm.recall_score(y_test, y_pred, average='macro',
+                                        zero_division=0))
 
             elif self.metric == 'weighted-recall':
                 scores.append(
-                    skm.precision_score(y_test, y_pred, average='weighted'))
+                    skm.recall_score(y_test, y_pred, average='weighted'))
 
             elif self.metric == 'positive-recall':
                 scores.append(
-                    skm.precision_score(y_test, y_pred, average=None)[1])
+                    skm.recall_score(y_test, y_pred, average=None,
+                                     zero_division=0)[1])
 
             elif self.metric == 'negative-recall':
                 scores.append(
-                    skm.precision_score(y_test, y_pred, average=None)[0])
+                    skm.recall_score(y_test, y_pred, average=None,
+                                     zero_division=0)[0])
 
             elif self.metric == 'accuracy':
                 scores.append(skm.accuracy_score(y_test, y_pred))
@@ -209,7 +220,8 @@ class XParamOptimiser:
                     _has_nan = True
 
             else:
-                scores.append(skm.f1_score(y_test, y_pred, average='weighted'))
+                scores.append(skm.f1_score(y_test, y_pred, average='weighted',
+                                           zero_division=0))
 
             if self.callback:
                 # fold callback
