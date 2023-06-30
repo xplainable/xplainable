@@ -1,10 +1,28 @@
 Installation
 =========================
 
+Quickstart
+------------
 PyPI is the distribution channel for xplainable release versions. The best way
 to install it is with pip::
 
     pip install xplainable
+
+
+Optional dependencies
+-----------------------
+To use xplainable's embedded GUI in jupyter, you will need to install
+``xplainable`` with the ``gui`` extra::
+
+
+    pip install xplainable[gui]
+
+
+To use xplainable's advanced plotting functions, you will need to install
+``xplainable`` with the ``plotting`` extra::
+
+
+    pip install xplainable[plotting]
 
 
 Environment
@@ -12,18 +30,17 @@ Environment
 
 Working in Jupyter
 ~~~~~~~~~~~~~~~~~~~~~
+The ``xplainable`` GUI relies heavily on ``ipywidgets``.
+Unfortunately, this requires a strict environment to ensure that it renders as
+expected. Ensuring that you have correctly installed the required dependencies
+before using the xplainable GUI is essential.
 
-When using ``xplainable`` with Jupyter, it relies heavily on ``ipywidgets``.
-Unfortunately, this requires a strict environment to ensure that
-xplainable's embedded GUI works as expected. Ensuring that you have correctly
-installed the required dependencies before importing xplainable is essential.
+For now, **we recommend using Python 3.8** when working with the GUI. This
+environment will yield the best visible results until we can stabilise
+``ipywidgets`` for later versions of Python.
 
-For now, **we recommend using Python 3.8**. This environment will yield the best
-visible results until we can stabilise ``ipywidgets`` for later versions of
-Python.
-
-Known Tornado Issue
-~~~~~~~~~~~~~~~~~~~~
+Known Tornado Issue with the xplainable GUI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Versions of ``tornado`` greater than 6.1 are known to cause issues with the 
 jupyter kernel and ``ipywidgets``. We recommend using ``tornado==6.1`` for now.
