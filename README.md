@@ -19,13 +19,20 @@
 
 ## Installation
 
-You can install ``xplainable`` with:
+You can install the core features of ``xplainable`` with:
 
 ```
 pip install xplainable
 ```
 
-Vist our [Documentation](https://xplainable.readthedocs.io) for extra support.
+to use the ``xplainable`` gui in a jupyter notebook, install with:
+
+```
+pip install xplainable[gui]
+```
+
+Vist our [Documentation](https://xplainable.readthedocs.io) for additional
+support.
 
 ## Getting Started
 
