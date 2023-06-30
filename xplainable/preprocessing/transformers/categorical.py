@@ -1,14 +1,12 @@
 """ Copyright Xplainable Pty Ltd, 2023"""
 
-from ...utils import stopwords, xwidgets
+from ...utils import stopwords
 
 from .base import XBaseTransformer
 from pandas.api.types import is_string_dtype
-from ipywidgets import interactive
 import re
 import numpy as np
 import pandas as pd
-import ipywidgets as widgets
 
 
 class TextRemove(XBaseTransformer):
@@ -47,17 +45,20 @@ class TextRemove(XBaseTransformer):
         self.custom_regex = custom_regex
 
     def __call__(self, *args, **kwargs):
+        import ipywidgets as widgets
+        from ipywidgets import interactive
+        from ...utils import xwidgets
         
         def _set_params(
-        numbers=widgets.ToggleButton(value=False),
-        characters=widgets.ToggleButton(value=False),
-        uppercase=widgets.ToggleButton(value=False),
-        lowercase=widgets.ToggleButton(value=False),
-        special=widgets.ToggleButton(value=False),
-        whitespace=widgets.ToggleButton(value=False),
-        stopwords=widgets.ToggleButton(value=False),
-        text=xwidgets.Text(''),
-        regex=xwidgets.Text('')
+            numbers=widgets.ToggleButton(value=False),
+            characters=widgets.ToggleButton(value=False),
+            uppercase=widgets.ToggleButton(value=False),
+            lowercase=widgets.ToggleButton(value=False),
+            special=widgets.ToggleButton(value=False),
+            whitespace=widgets.ToggleButton(value=False),
+            stopwords=widgets.ToggleButton(value=False),
+            text=xwidgets.Text(''),
+            regex=xwidgets.Text('')
         ):
 
             self.numbers = numbers
@@ -150,6 +151,7 @@ class ChangeCase(XBaseTransformer):
         self.case = case
 
     def __call__(self, *args, **kwargs):
+        from ipywidgets import interactive
         
         def _set_params(case = ["lower", "upper"]):
             self.case = case
@@ -192,6 +194,7 @@ class DetectCategories(XBaseTransformer):
         self.category_list = category_list
 
     def __call__(self, *args, **kwargs):
+        from ipywidgets import interactive
         
         def _set_params(max_categories=(2, 50)):
             self.max_categories = max_categories
@@ -259,6 +262,7 @@ class Condense(XBaseTransformer):
         self.categories = categories
 
     def __call__(self, *args, **kwargs):
+        from ipywidgets import interactive
         
         def _set_params(pct=(0, 100)):
             self.pct = pct / 100
@@ -334,6 +338,8 @@ class MergeCategories(XBaseTransformer):
         self.merge_to = merge_to
 
     def __call__(self, column, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
 
         unq = column.dropna().unique()
 
@@ -374,6 +380,7 @@ class ReplaceCategory(XBaseTransformer):
         self.replace_with = replace_with
 
     def __call__(self, column, *args, **kwargs):
+        from ipywidgets import interactive
         
         unq = column.dropna().unique()
 
@@ -410,6 +417,7 @@ class FillMissingCategorical(XBaseTransformer):
         self.fill_with = fill_with
 
     def __call__(self, *args, **kwargs):
+        from ipywidgets import interactive
         
         def _set_params(fill_with = "missing"):
             self.fill_with = fill_with
@@ -443,6 +451,8 @@ class MapCategories(XBaseTransformer):
         self.category_values = category_values
 
     def __call__(self, ser, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
       
         def _set_params(*args, **kwargs):
             args = locals()
@@ -483,6 +493,8 @@ class TextContains(XBaseTransformer):
         self.value = value
 
     def __call__(self, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
         
         def _set_params(
             selector = widgets.Dropdown(
@@ -533,6 +545,8 @@ class TextTrim(XBaseTransformer):
         self.action = action
 
     def __call__(self, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
         
         def _set_params(
             selector = widgets.Dropdown(options=["first", "last"]),
@@ -588,6 +602,8 @@ class TextSlice(XBaseTransformer):
         self.action = action
 
     def __call__(self, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
         
         def _set_params(
             start = widgets.IntText(idx=0),
@@ -635,6 +651,7 @@ class ReplaceWith(XBaseTransformer):
         self.replace_with = replace_with
 
     def __call__(self, *args, **kwargs):
+        from ipywidgets import interactive
         
         def _set_params(target = '', replace_with = ''):
             self.target = target

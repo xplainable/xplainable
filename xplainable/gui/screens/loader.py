@@ -1,13 +1,9 @@
 """ Copyright Xplainable Pty Ltd, 2023"""
 
 from datetime import datetime
-from .preprocessor import Preprocessor
 import xplainable
-import ipywidgets as widgets
-from IPython.display import display, clear_output
 from ...utils import *
 from ...preprocessing import transformers as xtf
-from ..components import Header
 from ...core.models import PartitionedRegressor, PartitionedClassifier
 
 
@@ -37,7 +33,20 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
     if xplainable.client is None:
         print("visit https://www.xplainable.io/sign-up to access this service")
         return
-
+    
+    if preprocessor_id is not None:
+        if version_id is None:
+            raise ValueError(
+                "version_id must be specified if model_id is specified")
+        return xplainable.client.load_preprocessor(preprocessor_id, version_id)
+    
+    # Check if optional dependencies are installed
+    xplainable._check_optional_dependencies_gui()
+    import ipywidgets as widgets
+    from IPython.display import display, clear_output
+    from ..components import Header
+    from .preprocessor import Preprocessor
+    
     def build_transformer(stage):
         """Build transformer from metadata"""
 
@@ -115,10 +124,6 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
         clear_output()
         print(f"Successfully loaded preprocessor {p} version {v} (version_id: {vid})")
 
-    if preprocessor_id is not None:
-        version_id = 'latest' if version_id is None else version_id
-        return xplainable.client.load_preprocessor(preprocessor_id, version_id)
-
     # --- HEADER ---
     header = Header(title='Load Preprocessor', logo_size=40, font_size=18)
     header.title = {'margin': '10px 15px 0 10px'}
@@ -174,12 +179,24 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
 
     return xp
 
-
 def load_regressor(model_id=None, version_id=None):
 
     if xplainable.client is None:
         print("visit https://www.xplainable.io/sign-up to access this service")
         return
+    
+    if model_id is not None:
+        if version_id is None:
+            raise ValueError(
+                "version_id must be specified if model_id is specified")
+        
+        return xplainable.client.load_regressor(model_id, version_id)
+    
+    # Check if optional dependencies are installed
+    xplainable._check_optional_dependencies_gui()
+    import ipywidgets as widgets
+    from IPython.display import display, clear_output
+    from ..components import Header
 
     def on_model_change(_):
         """Loads versions when model is selected"""
@@ -236,9 +253,6 @@ def load_regressor(model_id=None, version_id=None):
         xplainable.client.load_regressor(m, vid, model=partitioned_model)
         clear_output()
         print(f"Successfully loaded model {m} version {v} (version_id: {vid})")
-
-    if model_id is not None:
-        return xplainable.client.load_model(model_id, version_id)
 
     # --- HEADER ---
     header = Header(title='Load Regressor', logo_size=40, font_size=18)
@@ -304,12 +318,24 @@ def load_regressor(model_id=None, version_id=None):
 
     return partitioned_model
 
-
 def load_classifier(model_id=None, version_id=None):
 
     if xplainable.client is None:
         print("visit https://www.xplainable.io/sign-up to access this service")
         return
+    
+    if model_id is not None:
+        if version_id is None:
+            raise ValueError(
+                "version_id must be specified if model_id is specified")
+        
+        return xplainable.client.load_classifier(model_id, version_id)
+    
+    # Check if optional dependencies are installed
+    xplainable._check_optional_dependencies_gui()
+    import ipywidgets as widgets
+    from IPython.display import display, clear_output
+    from ..components import Header
 
     def on_model_change(_):
         """Loads versions when model is selected"""

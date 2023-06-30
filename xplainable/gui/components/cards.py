@@ -1,10 +1,9 @@
-import ipywidgets as widgets
 from IPython.display import display
 import requests
-from IPython.display import display
 from IPython.core.display import HTML
 import base64
 from ...utils.handlers import add_thousands_separator
+import ipywidgets as widgets
 
 
 class CardWidget:
@@ -38,6 +37,7 @@ class CardWidget:
         self.card = self._create_card()
 
     def _create_card(self):
+        
         card_style = f"""
             background-color: {self.background_color};
             padding: 16px;

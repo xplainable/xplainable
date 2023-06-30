@@ -1,8 +1,6 @@
 """ Copyright Xplainable Pty Ltd, 2023"""
 
 from .base import XBaseTransformer
-from ipywidgets import interactive
-import ipywidgets as widgets
 from pandas.api.types import is_numeric_dtype
 import numpy as np
 import pandas as pd
@@ -96,6 +94,8 @@ class Clip(XBaseTransformer):
         self.upper = upper
 
     def __call__(self, column, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
         
         minn = column.min()
         maxx = column.max()
@@ -138,6 +138,8 @@ class FillMissingNumeric(XBaseTransformer):
         self.fill_value = fill_value
 
     def __call__(self, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
         
         def _set_params(
             fill_with = widgets.Dropdown(options=["mean", "median", "mode"])
