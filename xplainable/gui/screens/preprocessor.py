@@ -8,7 +8,6 @@ from ...preprocessing.pipeline import XPipeline
 from ...utils.api import *
 
 import pandas as pd
-import matplotlib.pyplot as plt
 import inspect
 from pandas.api.types import is_numeric_dtype, is_string_dtype
 import pandas.api.types as pdtypes
@@ -100,7 +99,8 @@ class Preprocessor:
         
         except:
             raise ImportError("Optional dependencies not found. Please install "
-                              "them with xplainable[gui] to use the GUI.]")
+                          "them with `pip install xplainable[gui]' to use "
+                          "this feature.") from None
 
         # // ---------- SUPPORTING FUNCTIONS ---------- //
         def reset_charts():
