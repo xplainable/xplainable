@@ -1,6 +1,5 @@
 """ Copyright Xplainable Pty Ltd, 2023"""
 
-import altair as alt
 import pandas as pd
 from IPython.display import HTML, display
 
@@ -50,6 +49,13 @@ def _generate_explain_plot_data(model):
         
 def _plot_explainer(model):
 
+    try:
+        import altair as alt
+    except ImportError:
+        raise ImportError("Optional dependencies not found. Please install "
+                          "them with `pip install xplainable[plotting]' to use "
+                          "this feature.") from None
+
     fi = pd.DataFrame(
             {i: {'importance': v} for i, v in model.feature_importances.items()}
             ).T.reset_index()
@@ -93,7 +99,8 @@ def _plot_explainer(model):
     ).properties(height=400, width=25).add_params(brush)
     
     view2 = alt.Chart(data).mark_bar(color='#e14067').encode(
-        y=alt.Y('value:N', sort='-x', axis=alt.Axis(labels=False, title=None)),
+        y=alt.Y('value:N', sort=alt.SortField(field='index', order='descending'),
+                axis=alt.Axis(labels=False, title=None)),
         x=alt.X('contribution:Q', axis=alt.Axis(labels=False, title=None)),
         color=alt.condition(
             alt.datum.contribution < 0,
