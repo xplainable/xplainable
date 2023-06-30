@@ -54,7 +54,7 @@ if install == 'true':
 
 # Remove .egg-info file
 if platform.system() == 'Windows':
-    os.system(f'rmdir /s /q build target')
+    os.system(f'rmdir /s /q build target {package_name}.egg-info')
 
 else:
-    os.system(f'rm -r build target')
+    os.system(f'rm -r build target {package_name}.egg-info')
