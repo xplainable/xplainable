@@ -6,19 +6,12 @@ from ...preprocessing import transformers as xtf
 from ...quality import XScan
 from ...preprocessing.pipeline import XPipeline
 from ...utils.api import *
-from ...gui.screens import Header
-from .save import PreprocessorPersist
 
 import pandas as pd
-from ipywidgets import interactive
-from IPython.display import display, clear_output
-import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import inspect
 from pandas.api.types import is_numeric_dtype, is_string_dtype
 import pandas.api.types as pdtypes
-import matplotlib.pyplot as plt
-import seaborn as sns
 import pickle
 
 
@@ -95,7 +88,20 @@ class Preprocessor:
             df (pandas.DataFrame): Dataframe to preprocess
 
         """
+
+        try:
+            from ..components import Header
+            from .save import PreprocessorPersist
+            from ipywidgets import interactive
+            import ipywidgets as widgets
+            from IPython.display import display, clear_output
+            import matplotlib.pyplot as plt
+            import seaborn as sns
         
+        except:
+            raise ImportError("Optional dependencies not found. Please install "
+                              "them with xplainable[gui] to use the GUI.]")
+
         # // ---------- SUPPORTING FUNCTIONS ---------- //
         def reset_charts():
             """Forces chart value change to trigger refresh"""

@@ -2,8 +2,6 @@
 
 from .base import XBaseTransformer
 import pandas.api.types as pdtypes
-from ipywidgets import interactive
-import ipywidgets as widgets
 import pandas as pd
 
 
@@ -18,6 +16,8 @@ class SetDType(XBaseTransformer):
         self.to_type = to_type
 
     def __call__(self, ser, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
       
         def _set_params(to_type, *args, **kwargs):
             self.to_type = to_type
@@ -92,6 +92,8 @@ class Shift(XBaseTransformer):
         self.step = step
 
     def __call__(self, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
         
         def _set_params(
             step = widgets.IntText(value=0, min=-1000, max=1000)
@@ -112,5 +114,3 @@ class Shift(XBaseTransformer):
         ser = ser.shift(self.step)
 
         return ser
-
-

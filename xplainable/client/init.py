@@ -3,15 +3,16 @@
 from .client import Client
 import xplainable
 from .._version import __version__ as XP_VERSION
-from IPython.display import clear_output
 import sys
 from getpass import getpass
-from ..gui.components import KeyValueTable, Header
 from IPython.display import display, clear_output
 import keyring
 
+from .. import config
+
 def _render_init_table(data):
     import ipywidgets as widgets
+    from ..gui.components import KeyValueTable, Header
     table = KeyValueTable(
         data,
         transpose=False,
@@ -29,7 +30,7 @@ def _render_init_table(data):
     output = widgets.VBox([header.show(), table.html_widget])
     display(output)
 
-def initialise(hostname='https://api.xplainable.io'):
+def initialise(hostname='https://api.xplainable.io', api_key=None):
     """ Initialise the client with an API Key.
 
     API Keys can be generated from https://app.xplainable.io with a valid
@@ -46,7 +47,9 @@ def initialise(hostname='https://api.xplainable.io'):
     PY_VERSION = f'{version_info.major}.{version_info.minor}.{version_info.micro}'
     
     has_set = False
-    api_key = keyring.get_password('XPLAINABLE', PY_VERSION)
+    api_key = api_key if api_key else \
+        keyring.get_password('XPLAINABLE', PY_VERSION)
+    
     if not api_key:
         api_key = getpass("Paste a valid API Key: ")
         has_set = True
@@ -65,6 +68,9 @@ def initialise(hostname='https://api.xplainable.io'):
             "user": xplainable.client._user['username']
         }
 
+        if config.OUTPUT_TYPE == 'raw':
+            return data
+        
         try:
             _render_init_table(data)
         except:

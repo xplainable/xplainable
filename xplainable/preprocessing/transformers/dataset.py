@@ -1,16 +1,12 @@
 """ Copyright Xplainable Pty Ltd, 2023"""
 
-from ...utils import xwidgets as xwidgets
 from .base import XBaseTransformer
 
 import pandas.api.types as pdtypes
 import pandas as pd
-from ipywidgets import interactive
-import ipywidgets as widgets
 import numpy as np
 import pandas as pd
 import scipy.signal as ss
-from IPython.display import display
 
 
 class DropCols(XBaseTransformer):
@@ -27,6 +23,8 @@ class DropCols(XBaseTransformer):
         self.columns = columns
 
     def __call__(self, df, *args, **kwargs):
+        from ipywidgets import interactive
+        from ...utils import xwidgets
         
         def _set_params(columns=xwidgets.SelectMultiple(options=df.columns)):
 
@@ -67,6 +65,8 @@ class DropNaNs(XBaseTransformer):
         self.subset = subset
 
     def __call__(self, df, *args, **kwargs):
+        from ipywidgets import interactive
+        from ...utils import xwidgets
         
         def _set_params(
             subset=xwidgets.SelectMultiple(options=[None]+list(df.columns))):
@@ -110,6 +110,9 @@ class Operation(XBaseTransformer):
         self.drop = drop
 
     def __call__(self, dataset, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
+        from ...utils import xwidgets
         
         cols = list(dataset.columns)
         
@@ -213,6 +216,9 @@ class TextTrimMulti(XBaseTransformer):
         self.alias = alias
 
     def __call__(self, dataset, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
+        from ...utils import xwidgets
 
         cols = list(dataset.columns)
         
@@ -282,6 +288,9 @@ class ChangeNames(XBaseTransformer):
         self.col_names = col_names
 
     def __call__(self, df, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
+        from ...utils import xwidgets
       
         def _set_params(*args, **kwargs):
             args = locals()
@@ -327,6 +336,8 @@ class OrderBy(XBaseTransformer):
         self.ascending = ascending
 
     def __call__(self, df, *args, **kwargs):
+        from ipywidgets import interactive
+        from ...utils import xwidgets
       
         def _set_params(
             order_by = xwidgets.SelectMultiple(
@@ -382,6 +393,8 @@ class GroupbyShift(XBaseTransformer):
         self.descending = descending
 
     def __call__(self, df, *args, **kwargs):
+        from ipywidgets import interactive
+        from ...utils import xwidgets
         
         def _set_params(
             group_by = xwidgets.SelectMultiple(
@@ -455,6 +468,8 @@ class FillMissing(XBaseTransformer):
         self.fill_values = fill_values
 
     def __call__(self, df, *args, **kwargs):
+        from ipywidgets import interactive
+        from ...utils import xwidgets
       
         def _set_params(*args, **kwargs):
             args = locals()
@@ -535,6 +550,8 @@ class SetDTypes(XBaseTransformer):
         self.types = types
 
     def __call__(self, df, *args, **kwargs):
+        from ipywidgets import interactive
+        from ...utils import xwidgets
       
         def _set_params(*args, **kwargs):
             args = locals()
@@ -626,6 +643,8 @@ class TextSplit(XBaseTransformer):
         self.max_splits = max_splits
 
     def __call__(self, df, *args, **kwargs):
+        from ipywidgets import interactive
+        from ...utils import xwidgets
         
         def _set_params(
             target=xwidgets.Dropdown(
@@ -676,6 +695,8 @@ class ChangeCases(XBaseTransformer):
         self.case = case
 
     def __call__(self, df, *args, **kwargs):
+        from ipywidgets import interactive
+        from ...utils import xwidgets
         
         def _set_params(
             columns = xwidgets.SelectMultiple(
@@ -743,6 +764,8 @@ class GroupedSignalSmoothing(XBaseTransformer):
         self.descending = descending
 
     def __call__(self, df, *args, **kwargs):
+        from ipywidgets import interactive
+        from ...utils import xwidgets
         
         def _set_params(
             group_by = xwidgets.SelectMultiple(
@@ -822,6 +845,8 @@ class DateTimeExtract(XBaseTransformer):
 
 
     def __call__(self, df, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
         
         def _set_params(
             target=widgets.Dropdown(options=df.columns),
@@ -937,6 +962,9 @@ class RollingOperation(XBaseTransformer):
         self.drop = drop
 
     def __call__(self, df, *args, **kwargs):
+        from ipywidgets import interactive
+        import ipywidgets as widgets
+        from ...utils import xwidgets
         
         cols = list(df.columns)
         
@@ -965,7 +993,7 @@ class RollingOperation(XBaseTransformer):
             self.window = window
             self.drop = drop_columns
         
-        widget = widgets.interactive(_set_params)
+        widget = interactive(_set_params)
 
         widget.children[6].layout = widgets.Layout(margin='10px 0 20px 0')
 

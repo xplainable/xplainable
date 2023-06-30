@@ -5,7 +5,7 @@ from ...core.optimisation.genetic import XEvolutionaryNetwork
 from ...core.optimisation.layers import Tighten, Evolve
 from ...quality import XScan
 from ...gui.components.tables import KeyValueTable 
-from ...gui.screens import Header
+from ..components import Header
 from ...utils.xwidgets import TrainButton
 from ...callbacks.optimisation import RegressionCallback
 from ...gui.components.bars import IncrementalBarPlot
@@ -15,6 +15,8 @@ from .save import ModelPersist
 from ..components import BarGroup
 from ...metrics.metrics import evaluate_regression
 from ...utils.handlers import check_df
+from ..._dependencies import _check_critical_versions
+
 
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -25,6 +27,20 @@ from IPython.display import  display
 from sklearn.metrics import *
 
 def regressor(df):
+    """ Trains an xplainable regressor via a simple GUI.
+
+    Args:
+        df (pandas.DataFrame): Training data including target
+
+    Raises:
+        RuntimeError: When model fails to fit
+
+    Returns:
+        xplainale.models.XRegressor: The trained model
+    """
+
+    # Check critical dependencies
+    _check_critical_versions()
     
     # Assert dataframe is valid
     check_df(df)

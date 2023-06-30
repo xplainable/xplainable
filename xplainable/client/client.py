@@ -1,5 +1,11 @@
 """ Copyright Xplainable Pty Ltd, 2023"""
-
+import json
+import numpy as np
+import pandas as pd
+import pyperclip
+import time
+from IPython.display import clear_output, display
+from .._dependencies import _check_ipywidgets
 from ..utils.api import get_response_content
 from ..utils.encoders import NpEncoder
 import requests
@@ -8,22 +14,12 @@ from requests.packages.urllib3.util.retry import Retry
 from ..gui.screens.preprocessor import Preprocessor
 from ..preprocessing import transformers as xtf
 from ..utils.exceptions import AuthenticationError
-from ..gui.components.cards import render_user_avatar
 from ..quality.scanner import XScan
 from ..metrics.metrics import evaluate_classification, evaluate_regression
 from ..core.models import (XClassifier, XRegressor, PartitionedRegressor,
                            PartitionedClassifier)
 
-import json
-import numpy as np
-import pandas as pd
-import pyperclip
-import time
-from IPython.display import clear_output, display
-from ..gui.components import KeyValueTable
-import ipywidgets as widgets
-from typing import Union
-import logging
+from ..config import OUTPUT_TYPE
 
 
 class Client:
@@ -71,7 +67,13 @@ class Client:
         self.__team_id = session_data.pop('team_id')
         self.__ext = f'organisations/{self.__org_id}/teams/{self.__team_id}'
         self._user = session_data
-        self.avatar = render_user_avatar(self._user)
+        
+        try:
+            import ipywidgets
+            from ..gui.components.cards import render_user_avatar
+            self.avatar = render_user_avatar(self._user)
+        except ImportError:
+            pass
 
         self.xplainable_version = None
         self.python_version = None
@@ -601,7 +603,7 @@ class Client:
 
     def deploy(
             self, hostname: None, model_id: str, version_id: str,
-            partition_id: str, raw_output: bool=False) -> dict:
+            partition_id: str, raw_output: bool=True) -> dict:
         """ Deploys a model partition to xplainable cloud.
 
         The hostname should be the url of the inference server. For example:
@@ -639,8 +641,11 @@ class Client:
                 "endpoint": f"{hostname}/v1/predict"
             }
 
-            if raw_output:
+            if raw_output or OUTPUT_TYPE == 'raw':
                 return data
+            
+            widgets = _check_ipywidgets()
+            from ..gui.components import KeyValueTable
 
             table = KeyValueTable(
                 data,
@@ -670,7 +675,6 @@ class Client:
                     b.description = "Generate Deploy Key"
                     b.disabled = False
                 
-
             button = widgets.Button(description="Generate Deploy Key")
             button.on_click(on_click)
 

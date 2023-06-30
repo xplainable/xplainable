@@ -1,19 +1,12 @@
 """ Copyright Xplainable Pty Ltd, 2023"""
 
 import xplainable
-from ...utils.api import get_response_content
 from ...utils.xwidgets import TextInput
-from ...core.optimisation.targeting import generate_ruleset
-from ...utils.encoders import NpEncoder, force_json_compliant
-import json
+import time
 
 import ipywidgets as widgets
-from IPython.display import display, clear_output
-
-from xplainable.utils.api import get_response_content
 from xplainable.utils.xwidgets import TextInput
-
-import time
+from IPython.display import display, clear_output
 
 
 class ModelPersist:

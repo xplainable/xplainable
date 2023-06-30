@@ -2,8 +2,17 @@ from traitlets import traitlets
 import ipywidgets as widgets
 from ipywidgets import interactive
 from IPython.display import display
-import webbrowser
 from .svgs import docs_svg, offline_svg
+import warnings
+
+# Handler for ipywidgets < 8.0.0
+try:
+    from ipywidgets import TagsInput as TagsInputt
+
+except ImportError:
+    from ipywidgets import Dropdown as TagsInputt
+    warnings.warn(f"TagsInput is not supported in ipywidgets version "
+                  f"{widgets.__version__}. Replacing with Dropdown")
 
 class LiveDF:
 
@@ -34,6 +43,15 @@ class Dropdown(widgets.Dropdown):
         self.style = adder_element_style
 
 
+class TagsInput(TagsInputt):
+    """This is used to set a default max_width for adder Text"""
+    
+    def __init__(self, *args, **kwargs):
+        super(TagsInput, self).__init__(*args, **kwargs)
+        self.layout = adder_element_layout
+        self.style = adder_element_style
+
+
 class Text(widgets.Text):
     """This is used to set a default max_width for adder Text"""
     
@@ -57,14 +75,6 @@ class SelectMultiple(widgets.SelectMultiple):
     
     def __init__(self, *args, **kwargs):
         super(SelectMultiple, self).__init__(*args, **kwargs)
-        self.layout = adder_element_layout
-        self.style = adder_element_style
-
-class TagsInput(widgets.TagsInput):
-    """This is used to set a default max_width for adder Text"""
-    
-    def __init__(self, *args, **kwargs):
-        super(TagsInput, self).__init__(*args, **kwargs)
         self.layout = adder_element_layout
         self.style = adder_element_style
 

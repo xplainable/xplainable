@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 import time
+from ..._dependencies import _check_critical_versions
 
 import os
 os.environ['KMP_WARNINGS'] = '0'
@@ -38,6 +39,9 @@ def classifier(df):
     Returns:
         xplainale.models.XClassifier: The trained model
     """
+
+    # Check critical dependencies
+    _check_critical_versions()
 
     # Assert dataframe is valid
     check_df(df)
