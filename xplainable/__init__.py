@@ -14,7 +14,7 @@ def _check_optional_dependencies_gui():
     if not OPTIONAL_DEPENDENCIES_GUI:
         raise ImportError("Optional dependencies not found. Please install "
                           "them with `pip install xplainable[gui]' to use "
-                          "this feature.")
+                          "this feature.") from None
     
 # Filter retry warnings as retries are expected and already handled
 warnings.filterwarnings(
