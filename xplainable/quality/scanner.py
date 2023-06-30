@@ -1,12 +1,12 @@
 """ Copyright Xplainable Pty Ltd, 2023"""
 
-from pandas.api.types import is_string_dtype, is_datetime64_dtype, is_numeric_dtype, is_bool_dtype
-# from statsmodels.stats.outliers_influence import variance_inflation_factor
-# from statsmodels.tools.tools import add_constant
+from pandas.api.types import (is_string_dtype, is_datetime64_dtype,
+                              is_numeric_dtype, is_bool_dtype)
 import pandas as pd
 import numpy as np
-import ipywidgets as widgets
 from IPython.display import display
+from .._dependencies import _check_ipywidgets
+from tqdm.auto import tqdm
 
 class XScan:
     """ Data quality scanner
@@ -316,50 +316,6 @@ class XScan:
 
         return sub_profile
 
-    # @staticmethod
-    # def _vif(X, max_categories: int = 10):
-
-    #     X = X.copy()
-    #     X.dropna(inplace=True)
-        
-    #     categorical_columns = X.select_dtypes(
-    #         include=['object', 'category']).columns.to_list()
-
-    #     for col in list(categorical_columns):
-    #         if X[col].nunique() > max_categories:
-    #             categorical_columns.remove(col)
-
-    #     X = pd.get_dummies(
-    #         X, columns=categorical_columns, drop_first=True)
-
-    #     X = X.select_dtypes(include=[np.number])
-
-    #     # Add constant for vif calculation
-    #     X = add_constant(X)
-
-    #     # calculating VIF for each feature
-    #     vif = {X.columns[i]: variance_inflation_factor(
-    #         X.values, i) for i in range(X.shape[1])}
-
-    #     if 'const' in vif:
-    #         vif.pop('const')
-
-    #     vif_report = {}
-
-    #     # Add categories to map
-    #     for col in categorical_columns:
-    #         sub = {}
-    #         for i, v in copy.deepcopy(vif).items():
-    #             if i.startswith(col):
-    #                 sub[i.replace(f'{col}_', "")] = v
-    #                 vif.pop(i)
-            
-    #         vif_report[col] = sub
-            
-    #     vif_report.update(vif)
-
-    #     return vif_report
-
     def _scan_feature(self, ser):
 
         if is_bool_dtype(ser):
@@ -380,36 +336,13 @@ class XScan:
 
         return sub_profile
 
-    def scan(self, df, target=None, verbose=True):
+    def scan(self, df, target=None):
 
         if target:
             if target not in df.columns:
                 raise ValueError(f"{target} not in df")
 
             df = df.drop(columns=[target])
-        
-        progress_bar = widgets.IntProgress(
-            description="scanning data: ",
-            value=0,
-            max=df.shape[1],
-            style={'description_width': 'initial'})
 
-        if verbose:
-            current_feature = widgets.HTML("")
-            display(widgets.HBox([progress_bar, current_feature]))
-
-        for i, col in enumerate(df.columns):
-
-            if verbose:
-                progress_bar.value = i
-                current_feature.value = col
-
+        for i, col in tqdm(enumerate(df.columns)):
             self.profile[col] = self._scan_feature(df[col])
-
-        #current_feature.value = 'Calculating VIF'
-        #vif = self._vif(df)
-        #for i, v in vif.items():
-        #    self.profile[i].update({'vif': v})
-
-        current_feature.close()
-        progress_bar.close()
