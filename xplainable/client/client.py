@@ -722,3 +722,26 @@ class Client:
                 clear_output()
         else:
             return response.status_code
+
+    def _gpt_report(
+            self, model_id, version_id, target_info='', other_details=''):
+
+        url = (
+            f'{self.hostname}/v1/{self.__ext}/models/{model_id}/versions/'
+            f'{version_id}/generate-report'
+        )
+
+        params = {
+            'target_info': target_info,
+            'other_details': other_details
+        }
+
+        response = self.__session__.get(
+            url=url,
+            params=params
+            )
+        
+        if response.status_code == 200:
+            return response.content
+        else:
+            return response.status_code

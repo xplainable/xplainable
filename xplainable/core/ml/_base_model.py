@@ -218,6 +218,26 @@ class BaseModel:
             x[known, i] = nodes[idx[known], 2]
         
         return x
+    
+    def predict_explain(self, x):
+        """ Predictions with explanations.
+        
+        Args:
+            x (array-like): data to predict
+
+        Returns:
+            pd.DataFrame: prediction and explanation
+        """
+        
+        t = pd.DataFrame(self._transform(x), columns=self.columns)
+        t['base_value'] = self.base_value
+        t['score'] = t.sum(axis=1)
+        t['proba'] = (t['score'] * 100).astype(int).map(self._calibration_map)
+        t['multiplier'] = t['proba'] / t['base_value']
+        t['support'] = (t['score'] * 100).astype(int).map(self._support_map)
+
+        return t
+
 
     def _build_leaf_id_map(self):
         id_map = []
@@ -326,6 +346,17 @@ class BaseModel:
             raise ImportError(e)
 
         return _plot_explainer(self)
+    
+    def local_explainer(self, x, subsample):
+        try:
+            from ...visualisation.explain import _plot_local_explainer
+        except Exception as e:
+            raise ImportError(e)
+        
+        t = pd.DataFrame(self._transform(x), columns=self.columns)
+        t['base_value'] = self.base_value
+
+        return _plot_local_explainer(self, t, subsample)
 
 
 class BasePartition:
