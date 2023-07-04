@@ -21,3 +21,4 @@ altair>=5.0.1
 networkx>=2.6.3
 tqdm>=4.62.3
 plotly>=5.1.0
+packaging
