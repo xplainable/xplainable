@@ -192,7 +192,7 @@ class GraphSelector:
         self.matrix = self.matrix.drop(low_corr, axis=1)
         self.matrix = self.matrix.drop(low_corr, axis=0)
         
-        pbar = tqdm(total=(int(start_threshold-self.min_feature_corr)*100))
+        pbar = tqdm(total=int((start_threshold-self.min_feature_corr)*100))
         threshold = start_threshold
         while True:
             
