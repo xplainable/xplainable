@@ -2,6 +2,7 @@
 
 import pandas as pd
 from IPython.display import HTML, display
+import plotly.graph_objects as go
 
 def _generate_explain_plot_data(model):
 
@@ -143,3 +144,58 @@ def _plot_explainer(model):
     """))
 
     return (feature_importances | view | profile | view2)
+
+def _plot_local_explainer(model, df, subsample=100):
+    buttons = []
+    data = []
+    
+    if type(df) == pd.Series:
+        df = pd.DataFrame(df).T
+        
+    if len(df) > 100:
+        sample_size = min(len(df), subsample)
+        df = df.sample(sample_size)
+
+    for i in range(len(df)):
+        row = df.iloc[i]
+        base = row['base_value']
+        measures = row.drop('base_value').values.tolist()
+        cumulative = [float(base)] + measures + [sum([base]+measures)]
+        
+        trace = go.Waterfall(
+            name = "explainer", orientation = "h",
+            measure = ["relative"] * (len(measures)+1) + ["total"],
+            y = ['Base Value'] + model.columns + ['Total'],
+            textposition = "outside",
+            text = [str(round(v, 4)) for v in cumulative],
+            x = cumulative,
+            connector = {"line":{"color":"rgb(63, 63, 63)"}},
+            hovertemplate="Feature: %{y}<br>Contribution: %{text}<br>Cumulative: %{x:.4f}<extra></extra>",
+            visible = False
+        )
+
+        data.append(trace)
+
+        buttons.append(dict(label=str(df.index[i]),
+                            method='update',
+                            args=[{'visible': [j==i for j in range(len(df))]}]))
+
+    # Make the first trace visible
+    data[0]['visible'] = True
+    fig = go.Figure(data=data, )
+
+    fig.update_layout(
+        showlegend=False,
+        updatemenus=[{
+            'buttons': buttons,
+            'direction': 'down',
+            'showactive': True,
+            'active': 0,
+            'x': 0.33,
+            'y': 1.215
+        }],
+        width=660,
+        title='Local Explainer for: '
+    )
+    
+    fig.show()
