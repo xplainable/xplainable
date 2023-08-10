@@ -47,7 +47,7 @@ def initialise(hostname='https://api.xplainable.io', api_key=None):
     PY_VERSION = f'{version_info.major}.{version_info.minor}.{version_info.micro}'
     
     has_set = False
-    api_key = api_key if api_key else \
+    api_key = api_key if api_key is not None else \
         keyring.get_password('XPLAINABLE', PY_VERSION)
     
     if not api_key:
