@@ -230,13 +230,16 @@ class Client:
             model.base_value = p['base_value']
             model.target_map = p['target_map']
             model.feature_map = p['feature_map']
-            model.feature_map_inv = {idx: {v: i} for idx, val in p['feature_map'].items() for i, v in val.items()}
+            model.feature_map_inv = {k: {v: k2 for k2, v in v.items()} for \
+                                     k, v in p['feature_map'].items()}
             model.columns = p['columns']
             model.id_columns = p['id_columns']
             model.categorical_columns = p['feature_map'].keys()
             model.numeric_columns = [c for c in model.columns if c not \
                                      in model.categorical_columns]
-            model.category_meta = p['category_meta']
+            model.category_meta = {
+                i: {ii: {int(float(k)): v for k, v in vv.items()} for ii, vv \
+                    in v.items()} for i, v in p['category_meta'].items()}
 
             partitioned_model.add_partition(model, p['partition'])
 
