@@ -7,6 +7,7 @@ def _try_optional_dependencies_gui():
     global HAS_WARNED
     try:
         import ipywidgets
+        import gradio
         from IPython.display import display
         import drawsvg
         import traitlets

@@ -339,13 +339,13 @@ class BaseModel:
         return {k: v/total_importance for k, v in sorted(
             importances.items(), key=lambda item: item[1])}
     
-    def explain(self):
+    def explain(self, label_rounding=5):
         try:
             from ...visualisation.explain import _plot_explainer
         except Exception as e:
             raise ImportError(e)
 
-        return _plot_explainer(self)
+        return _plot_explainer(self, label_rounding)
     
     def local_explainer(self, x, subsample):
         try:

@@ -5,6 +5,7 @@ from .screens.loader import load_preprocessor
 from .screens.loader import load_classifier
 from .screens.loader import load_regressor
 
+
 def _optional_dependency_placeholder(*args, **kwargs):
     raise ImportError("Optional dependencies not found. Please install "
                           "them with `pip install xplainable[gui]' to use "
@@ -19,6 +20,7 @@ class OptionalDependencyPlaceholder:
 
 # import functions and classes as normal if optional dependencies are found
 if _try_optional_dependencies_gui():
+    from .gradio.fine_tuning import XFineTuner
     from .screens.classifier import classifier
     from .screens.regressor import regressor
     from .screens.evaluate import EvaluateClassifier, EvaluateRegressor
@@ -36,3 +38,4 @@ else:
     ModelPersist = OptionalDependencyPlaceholder
     ScenarioClassification = OptionalDependencyPlaceholder
     ScenarioRegression = OptionalDependencyPlaceholder
+    XFineTuner = OptionalDependencyPlaceholder
