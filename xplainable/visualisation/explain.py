@@ -2,9 +2,8 @@
 
 import pandas as pd
 from IPython.display import HTML, display
-import plotly.graph_objects as go
 
-def _generate_explain_plot_data(model):
+def _generate_explain_plot_data(model, label_rounding=5):
 
     def get_plot_data(f):
         _profile = model.profile
@@ -14,8 +13,8 @@ def _generate_explain_plot_data(model):
             if prof.empty:
                 return
 
-            prof['value'] = prof['lower'].round(3).astype(str) + " - " + \
-                prof['upper'].round(3).astype(str)
+            prof['value'] = prof['lower'].round(label_rounding).astype(
+                str) + " - " + prof['upper'].round(label_rounding).astype(str)
 
             prof = prof[['value', 'score', 'mean', 'freq']]
 
@@ -48,7 +47,7 @@ def _generate_explain_plot_data(model):
 
     return prof
         
-def _plot_explainer(model):
+def _plot_explainer(model, label_rounding=5):
 
     try:
         import altair as alt
@@ -65,7 +64,7 @@ def _plot_explainer(model):
     fi['importance_label'] = fi['importance'].apply(
         lambda x: str(round(x*100, 1))+'%')
 
-    data = _generate_explain_plot_data(model)
+    data = _generate_explain_plot_data(model, label_rounding)
 
     single = alt.selection_point(
         fields=['feature'],
@@ -145,7 +144,143 @@ def _plot_explainer(model):
 
     return (feature_importances | view | profile | view2)
 
+def _plot_feature_importances(model, feature=''):
+
+    try:
+        import altair as alt
+    except ImportError:
+        raise ImportError("Optional dependencies not found. Please install "
+                          "them with `pip install xplainable[plotting]' to use "
+                          "this feature.") from None
+    
+    fi = pd.DataFrame(
+            {i: {'importance': v} for i, v in model.feature_importances.items()}
+            ).T.reset_index()
+
+    fi = fi.rename(columns={'index': 'feature'})
+    fi['importance_label'] = fi['importance'].apply(
+        lambda x: str(round(x*100, 1))+'%')
+    
+    brush = alt.selection_interval(encodings=['y'])
+
+    feature_importances = alt.Chart(
+        fi,
+        title='Feature Importances').mark_bar(color='#0080ea').encode(
+            x='importance:Q', y=alt.Y('feature:N',
+                sort=alt.SortField(field='importance:Q', order='descending')),
+            tooltip='importance_label',
+            color=alt.condition(
+        alt.datum.feature == feature,
+        alt.value('lightgray'), alt.value('#0080ea'))
+        ).properties(width=175, height=300).transform_filter(brush)
+    
+    view = alt.Chart(fi).mark_bar(color='#0080ea').encode(
+        y=alt.Y('feature:N', sort=alt.SortField(
+        field='importance:Q', order='descending'), axis=alt.Axis(
+        labels=False, title=None)),
+        x=alt.X('importance:Q', axis=alt.Axis(labels=False, title=None))
+    ).properties(height=300, width=25).add_params(brush)
+    
+    combined_chart = (feature_importances | view).configure(
+        background='#1F2937',
+        title=alt.TitleConfig(color='white'),
+        axis=alt.AxisConfig(
+            titleColor='white',
+            labelColor='white',
+            domainColor='white',
+            tickColor='white'
+        ),
+        legend=alt.LegendConfig(
+            titleColor='white',
+            labelColor='white',
+            strokeColor='white',
+            fillColor='#1F2937',
+        )
+    )
+    
+    return combined_chart
+
+def _plot_contributions(model, feature='__all__'):
+    try:
+        import altair as alt
+    except ImportError:
+        raise ImportError("Optional dependencies not found. Please install "
+                          "them with `pip install xplainable[plotting]' to use "
+                          "this feature.") from None
+    
+    if feature == '__all__':
+        features = list(model.columns)
+    else:
+        features = [feature]
+    
+    plot_data = _generate_explain_plot_data(model)
+    filt = plot_data[plot_data['feature'].isin(features)]
+
+    brush = alt.selection_interval(encodings=['y'])
+
+    profile = alt.Chart(filt, title='Contributions').mark_bar(
+            color='#e14067').encode(
+            x='contribution:Q',
+            y=alt.Y('value:N', sort=alt.SortField(field='index:Q', order='ascending')),
+            tooltip='value:N', # or 'column' or 'value' based on what you want to show in tooltip
+            color=alt.condition(
+                alt.datum.contribution < 0,
+                alt.value("#e14067"),
+                alt.value("#12b980")
+            )
+        ).transform_fold(
+            ['contribution', 'mean', 'frequency'], as_=['column', 'val']
+        ).properties(
+                width=175,
+                height=300
+        ).transform_filter(
+            brush
+        )
+    
+
+    view = alt.Chart(filt).mark_bar(color='#e14067').encode(
+            y=alt.Y('value:N', sort=alt.SortField(field='index:Q', order='ascending'),
+                    axis=alt.Axis(labels=False, title=None)),
+            x=alt.X('contribution:Q', axis=alt.Axis(labels=False, title=None)),
+            color=alt.condition(
+                alt.datum.contribution < 0,
+                alt.value("#e14067"),
+                alt.value("#12b980")
+            )).properties(
+            width=25,
+            height=300
+        ).add_params(
+            brush
+        )
+    
+    combined_chart = (profile | view).configure(
+        background='#1F2937',
+        title=alt.TitleConfig(color='white'),
+        axis=alt.AxisConfig(
+            titleColor='white',
+            labelColor='white',
+            domainColor='white',
+            tickColor='white'
+        ),
+        legend=alt.LegendConfig(
+            titleColor='white',
+            labelColor='white',
+            strokeColor='white',
+            fillColor='#1F2937',
+        )
+    )
+    
+    return combined_chart
+
 def _plot_local_explainer(model, df, subsample=100):
+
+    try:
+        import plotly.graph_objects as go
+    except ImportError:
+        raise ImportError("Optional dependencies not found. Please install "
+                          "them with `pip install xplainable[plotting]' to use "
+                          "this feature.") from None
+    
     buttons = []
     data = []
     
