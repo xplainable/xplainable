@@ -298,7 +298,7 @@ class XParamOptimiser:
 
         self.folds = {i: {'train_index': train_index, 'test_index': test_index} for \
             i, (train_index, test_index) in enumerate(folds.split(X_, y_))}
-
+        
         for i, v in self.folds.items():
             self.models[i].fit(
                 X_.loc[v['train_index']],
@@ -368,20 +368,30 @@ class XParamOptimiser:
         self.y = self.y.reset_index(drop=True)
 
         # Instantiate the search space for hyperopt
-        space = {
-            'max_depth': hp.choice(
-                'max_depth', np.arange(*self.max_depth_space)),
-            'min_leaf_size': hp.choice(
-                'min_leaf_size', np.arange(*self.min_leaf_size_space)),
-            'min_info_gain': hp.choice(
-                'min_info_gain', np.arange(*self.min_info_gain_space)),
-            'weight': hp.choice('weight', np.arange(*self.weight_space)),
-            'power_degree': hp.choice(
-                'power_degree', np.arange(*self.power_degree_space)),
-            'sigmoid_exponent': hp.choice(
-                'sigmoid_exponent', np.arange(*self.sigmoid_exponent_space))
-            }
+        space = {}
 
+        parameters = {
+            'max_depth': self.max_depth_space,
+            'min_leaf_size': self.min_leaf_size_space,
+            'min_info_gain': self.min_info_gain_space,
+            'weight': self.weight_space,
+            'power_degree': self.power_degree_space,
+            'sigmoid_exponent': self.sigmoid_exponent_space
+        }
+        
+        best_params = {}
+        for n, p in parameters.items():
+            
+            if type(p) == list:
+                space[n] = hp.choice(n, np.arange(*p))
+            
+            else:
+                for i, model in self.models.items():            
+                    # Instantiate and fit model
+                    model.update_feature_params(model.columns, **{n: p})
+                
+                best_params[n] = p
+            
         # Instantiate trials
         trials = Trials()
 
@@ -398,7 +408,7 @@ class XParamOptimiser:
 
         # Find maximum metric value across the trials
         idx = np.argmin(trials.losses())
-        best_params = trials.trials[idx]["result"]["params"]
+        best_params.update(trials.trials[idx]["result"]["params"])
 
         # iteration callback completed
         if self.callback:
