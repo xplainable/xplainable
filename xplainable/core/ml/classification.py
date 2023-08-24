@@ -389,9 +389,15 @@ class XClassifier(BaseModel):
         return self
 
     def update_feature_params(
-            self, features: list, max_depth: int, min_info_gain: float,
-            min_leaf_size: float, weight: float, power_degree: float,
-            sigmoid_exponent: float, x: Union[pd.DataFrame, np.ndarray] = None,
+            self,
+            features: list,
+            max_depth: int = None,
+            min_info_gain: float = None,
+            min_leaf_size: float = None,
+            weight: float = None,
+            power_degree: float = None,
+            sigmoid_exponent: float = None,
+            x: Union[pd.DataFrame, np.ndarray] = None,
             y: Union[pd.Series, np.array] = None, *args, **kwargs
             ) -> 'XClassifier':
         """ Updates the parameters for a subset of features.
@@ -422,6 +428,22 @@ class XClassifier(BaseModel):
         Returns:
             XClassifier: The refitted model.
         """
+
+        max_depth = max_depth if max_depth is not None else self.max_depth
+        
+        min_info_gain = min_info_gain if min_info_gain is not None \
+            else self.min_info_gain
+        
+        min_leaf_size = min_leaf_size if min_leaf_size is not None \
+            else self.min_leaf_size
+        
+        weight = weight if weight is not None else self.weight
+
+        power_degree = power_degree if power_degree is not None \
+            else self.power_degree
+        
+        sigmoid_exponent = sigmoid_exponent if sigmoid_exponent is not None \
+            else self.sigmoid_exponent
         
         for feature in features:
             idx = self.columns.index(feature)
@@ -437,14 +459,14 @@ class XClassifier(BaseModel):
             )
 
             self.feature_params[feature].update({
-            'max_depth': max_depth,
-            'min_info_gain': min_info_gain,
-            'min_leaf_size': min_leaf_size,
-            'alpha': self.alpha,
-            'weight': weight,
-            'power_degree': power_degree,
-            'sigmoid_exponent': sigmoid_exponent
-        })
+                'max_depth': max_depth,
+                'min_info_gain': min_info_gain,
+                'min_leaf_size': min_leaf_size,
+                'alpha': self.alpha,
+                'weight': weight,
+                'power_degree': power_degree,
+                'sigmoid_exponent': sigmoid_exponent
+            })
 
         self._build_profile()
 

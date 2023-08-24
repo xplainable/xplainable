@@ -222,19 +222,29 @@ class Client:
             partitioned_model = model
 
         for p in response['partitions']:
+
             model = XClassifier()
+
             model._profile = np.array([
                 np.array(i) for i in json.loads(p['profile'])], dtype=object)
-            model._calibration_map = p['calibration_map']
-            model._support_map = p['support_map']
+            
+            model._calibration_map = {
+                int(i): v for i, v in p['calibration_map'].items()}
+            
+            model._support_map = {
+                int(i): v for i, v in p['support_map'].items()}
+            
             model.base_value = p['base_value']
             model.target_map = p['target_map']
             model.feature_map = p['feature_map']
+
             model.feature_map_inv = {k: {v: k2 for k2, v in v.items()} for \
                                      k, v in p['feature_map'].items()}
+            
             model.columns = p['columns']
             model.id_columns = p['id_columns']
             model.categorical_columns = p['feature_map'].keys()
+            
             model.numeric_columns = [c for c in model.columns if c not \
                                      in model.categorical_columns]
             model.category_meta = {
