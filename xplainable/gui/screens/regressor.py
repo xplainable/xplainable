@@ -406,13 +406,16 @@ def regressor(df):
             model.tail_sensitivity = _slider_tail_sensitivity.value
             model.alpha = _slider_alpha.value
             
+            drop_cols = [_dropdown_target.value]
+
             if p != '__dataset__':
                 part = df[df[p_on] == p]
 
                 if len(part) < 100:
                     continue
-
-                X = part.drop(columns=[_dropdown_target.value])
+                
+                drop_cols.append(_dropdown_partition_on.value)
+                X = part.drop(columns=drop_cols)
                 y = part[_dropdown_target.value]
 
                 X_train, X_test, y_train, y_test = train_test_split(
@@ -420,7 +423,7 @@ def regressor(df):
                     random_state=1)
                 
             else:
-                drop_cols = [_dropdown_target.value]
+                
                 if _dropdown_partition_on.value is not None:
                             drop_cols.append(_dropdown_partition_on.value)
 
