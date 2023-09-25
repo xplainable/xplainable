@@ -117,7 +117,10 @@ def evaluate_classification(y_true, y_pred):
     results["roc"] = {"fpr": fpr, "tpr": tpr}
     
     # ROC-AUC
-    results["roc_auc"] = roc_auc_score(y_true, y_pred)
+    try:
+        results["roc_auc"] = roc_auc_score(y_true, y_pred)
+    except:
+        results["roc_auc"] = np.nan
     
     # Precision-recall curve
     precision = [score["precision"] for score in scores]
@@ -126,13 +129,22 @@ def evaluate_classification(y_true, y_pred):
         "precision": precision, "recall": recall}
     
     # AUC-PR
-    results["auc_pr"] = auc(recall, precision)
+    try:
+        results["auc_pr"] = auc(recall, precision)
+    except:
+        results["auc_pr"] = np.nan
     
     # Matthews Correlation Coefficient (MCC)
-    results["mcc"] = matthews_corrcoef(y_true, np.round(y_pred))
+    try:
+        results["mcc"] = matthews_corrcoef(y_true, np.round(y_pred))
+    except:
+        results["mcc"] = np.nan
     
     # Log Loss (Cross-Entropy Loss)
-    results["log_loss"] = log_loss(y_true, y_pred)
+    try:
+        results["log_loss"] = log_loss(y_true, y_pred)
+    except:
+        results["log_loss"] = np.nan
 
     # Calculates the number of predictions in each probability bin
     results["probability_bins"] = calculate_probability_bins(y_true, y_pred)

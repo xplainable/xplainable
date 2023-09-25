@@ -631,21 +631,22 @@ def classifier(df):
                     if optimise.value:
                         desc_partition.value = f'<strong>Partition: </strong>{p}'
                         callback.reset()
-                        
+                    
+                    drop_cols = [target.value]
+
                     if p != '__dataset__':
                         part = df[df[partition_on.value] == p]
         
                         if len(part) < 100:
                             continue
-
-                        X, y = part.drop(columns=[target.value]), part[target.value]
+                        drop_cols.append(partition_on.value)
+                        X, y = part.drop(columns=drop_cols), part[target.value]
                         X_train, X_test, y_train, y_test = train_test_split(
                             X, y, test_size=validation_size.value,
                             random_state=1)
                         
                     else:
-                        drop_cols = [target.value]
-
+                    
                         if partition_on.value is not None:
                             drop_cols.append(partition_on.value)
 
