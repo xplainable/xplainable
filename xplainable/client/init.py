@@ -108,6 +108,11 @@ def reinitialise():
     """
     version_info = sys.version_info
     PY_VERSION = f'{version_info.major}.{version_info.minor}.{version_info.micro}'
-    keyring.delete_password('XPLAINABLE', PY_VERSION)
+
+    try:
+        keyring.delete_password('XPLAINABLE', PY_VERSION)
+    except Exception as e:
+        Warning(f'Could not find existing API Key to delete.')
+        pass
 
     initialise()

@@ -738,7 +738,8 @@ class Client:
             return response.status_code
 
     def _gpt_report(
-            self, model_id, version_id, target_info='', other_details=''):
+            self, model_id, version_id, target_info='',
+            project_objective='', max_features=15):
 
         url = (
             f'{self.hostname}/v1/{self.__ext}/models/{model_id}/versions/'
@@ -747,7 +748,8 @@ class Client:
 
         params = {
             'target_info': target_info,
-            'other_details': other_details
+            'project_objective': project_objective,
+            'max_features': max_features
         }
 
         response = self.__session__.get(
