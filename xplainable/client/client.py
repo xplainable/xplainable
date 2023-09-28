@@ -36,7 +36,7 @@ class Client:
         self.__api_key = api_key
         self.hostname = hostname
         self.machines = {}
-        self.__session__ = requests.Session()
+        self.__session = requests.Session()
         self._user = None
         self.avatar = None
         self._init()
@@ -50,7 +50,7 @@ class Client:
             HTTPError: If user not authorized.
         """
         # Add token to session headers
-        self.__session__.headers['api_key'] = self.__api_key
+        self.__session.headers['api_key'] = self.__api_key
 
         # Configure retry strategy
         RETRY_STRATEGY = Retry(
@@ -59,7 +59,7 @@ class Client:
         )
         # Mount strategy
         ADAPTER = HTTPAdapter(max_retries=RETRY_STRATEGY)
-        self.__session__.mount(self.hostname, ADAPTER)
+        self.__session.mount(self.hostname, ADAPTER)
 
         session_data = self.get_user_data()
         
@@ -85,7 +85,7 @@ class Client:
             dict: Dictionary of saved models.
         """
 
-        response = self.__session__.get(
+        response = self.__session.get(
             url=f'{self.hostname}/v1/{self.__ext}/models'
             )
 
@@ -104,7 +104,7 @@ class Client:
             dict: Dictionary of model versions.
         """
 
-        response = self.__session__.get(
+        response = self.__session.get(
             url=f'{self.hostname}/v1/{self.__ext}/models/{model_id}/versions'
             )
 
@@ -120,7 +120,7 @@ class Client:
             dict: Dictionary of preprocessors.
         """
 
-        response = self.__session__.get(
+        response = self.__session.get(
             url=f'{self.hostname}/v1/{self.__ext}/preprocessors'
             )
 
@@ -139,7 +139,7 @@ class Client:
             dict: Dictionary of preprocessor versions.
         """
 
-        response = self.__session__.get(
+        response = self.__session.get(
             url=f'{self.hostname}/v1/{self.__ext}/preprocessors/{preprocessor_id}/versions'
             )
         
@@ -175,7 +175,7 @@ class Client:
             return func(**stage['params'])
         
         try:
-            preprocessor_response = self.__session__.get(
+            preprocessor_response = self.__session.get(
                 url=f'{self.hostname}/v1/{self.__ext}/preprocessors/{preprocessor_id}/versions/{version_id}'
                 )
 
@@ -302,7 +302,7 @@ class Client:
 
     def __get_model__(self, model_id: int, version_id: int):
         try:
-            response = self.__session__.get(
+            response = self.__session.get(
                 url=f'{self.hostname}/v1/{self.__ext}/models/{model_id}/versions/{version_id}'
             )
             return get_response_content(response)
@@ -319,15 +319,19 @@ class Client:
             dict: User data
         """
         
-        response = self.__session__.get(
-        url=f'{self.hostname}/v1/client-connect'
+        response = self.__session.get(
+            url=f'{self.hostname}/v1/client-connect'
         )
 
         if response.status_code == 200:
             return get_response_content(response)
-        else:
-            raise AuthenticationError("API key has expired or is invalid.")
         
+        else:
+            raise AuthenticationError(
+                f"{response.status_code} Unauthenticated. "
+                f"{response.json()['detail']}"
+            )
+
     def create_preprocessor_id(
             self, preprocessor_name: str, preprocessor_description: str) -> str:
         """ Creates a new preprocessor and returns the preprocessor id.
@@ -345,7 +349,7 @@ class Client:
             "preprocessor_description": preprocessor_description
         }
 
-        response = self.__session__.post(
+        response = self.__session.post(
             url=f'{self.hostname}/v1/{self.__ext}/create-preprocessor',
             json=payoad
         )
@@ -400,7 +404,7 @@ class Client:
             f'{preprocessor_id}/add-version'
             )
         
-        response = self.__session__.post(url=url, json=payload)
+        response = self.__session.post(url=url, json=payload)
 
         version_id = get_response_content(response)
 
@@ -448,7 +452,7 @@ class Client:
             "algorithm": model.__class__.__name__
         }
         
-        response = self.__session__.post(
+        response = self.__session.post(
             url=f'{self.hostname}/v1/{self.__ext}/create-model',
             json=payoad
         )
@@ -516,7 +520,7 @@ class Client:
 
         # Create a new version and fetch id
         url = f'{self.hostname}/v1/{self.__ext}/models/{model_id}/add-version'
-        response = self.__session__.post(url=url,json=payload)
+        response = self.__session.post(url=url,json=payload)
 
         version_id = get_response_content(response)
 
@@ -642,7 +646,7 @@ class Client:
             f'{version_id}/partitions/{partition_id}/deploy'
         )
 
-        response = self.__session__.put(url)
+        response = self.__session.put(url)
         
         if response.status_code == 200:
 
@@ -721,7 +725,7 @@ class Client:
             'days_until_expiry': days_until_expiry
         }
         
-        response = self.__session__.put(
+        response = self.__session.put(
             url=url,
             json=params
             )
@@ -752,7 +756,7 @@ class Client:
             'max_features': max_features
         }
 
-        response = self.__session__.get(
+        response = self.__session.get(
             url=url,
             params=params
             )

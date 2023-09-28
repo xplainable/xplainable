@@ -7,6 +7,7 @@ import sys
 from getpass import getpass
 from IPython.display import display, clear_output
 import keyring
+from ..utils.exceptions import AuthenticationError
 
 from .. import config
 
@@ -70,7 +71,5 @@ def initialise(api_key=None, hostname='https://api.xplainable.io'):
         except:
             return data
 
-    except:
-        raise ValueError(
-            'Test test'
-            ) from None
+    except Exception as e:
+        raise e
