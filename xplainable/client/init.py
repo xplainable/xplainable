@@ -6,7 +6,6 @@ from .._version import __version__ as XP_VERSION
 import sys
 from getpass import getpass
 from IPython.display import display, clear_output
-import keyring
 from ..utils.exceptions import AuthenticationError
 
 from .. import config
