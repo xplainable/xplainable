@@ -7,7 +7,7 @@ import pandas as pd
 
 class Target:
     
-    def __init__(self, model, tolerance=0):
+    def __init__(self, model, tolerance=0.005):
         self.base_value = model.base_value
         self.score = model.base_value
         self.columns = list(model.columns)

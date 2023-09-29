@@ -1,6 +1,6 @@
 from .client.client import Client
 from .gui import *
-from .client.init import initialise, reinitialise
+from .client.init import initialise
 from . import config
 import warnings
 from ._dependencies import _try_optional_dependencies_gui

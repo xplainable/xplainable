@@ -19,7 +19,7 @@ def get_response_content(response):
         raise HTTPError(response.status_code, json.loads(response.content))
 
 def ping_server(hostname):
-    response = xplainable.client.__session__.get(
+    response = xplainable.client.__session.get(
         f'{hostname}/v1/compute/ping',
         timeout=1
         )
@@ -30,7 +30,7 @@ def ping_server(hostname):
         return False
 
 def ping_gateway(hostname):
-    response = xplainable.client.__session__.get(
+    response = xplainable.client.__session.get(
         f'{hostname}/v1/ping',
         timeout=1
         )
