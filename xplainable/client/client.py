@@ -90,7 +90,10 @@ class Client:
             )
 
         data = get_response_content(response)
+        
+        # For better readability
         [i.pop('user') for i in data]
+        [i.pop('contributors') for i in data]
 
         return data
 
