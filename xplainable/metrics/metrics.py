@@ -209,5 +209,7 @@ def evaluate_regression(y_true, y_pred):
         results["mape"] = np.nan
 
     results["prediction_bins"] = calculate_regression_bins(y_true, y_pred, 100)
+    results["observed_min"] = np.nanmin(y_true)
+    results["observed_max"] = np.nanmax(y_true)
     
     return force_json_compliant(results)
