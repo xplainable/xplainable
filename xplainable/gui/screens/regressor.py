@@ -477,7 +477,7 @@ def regressor(df):
                 start = time.time()
                 if _dropdown_partition_on.value is not None:
                     network.fit(
-                        X_train.drop(columns=[_dropdown_partition_on.value]),
+                        X_train,
                         y_train)
                 else:
                     network.fit(X_train, y_train)
