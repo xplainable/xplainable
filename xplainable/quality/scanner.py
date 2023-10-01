@@ -344,5 +344,5 @@ class XScan:
 
             df = df.drop(columns=[target])
 
-        for i, col in tqdm(enumerate(df.columns)):
+        for col in tqdm(list(df.columns)):
             self.profile[col] = self._scan_feature(df[col])
