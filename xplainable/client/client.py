@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pyperclip
 import time
-from IPython.display import clear_output, display
+from IPython.display import clear_output, display, Markdown
 from .._dependencies import _check_ipywidgets
 from ..utils.api import get_response_content
 from ..utils.encoders import NpEncoder
@@ -596,7 +596,7 @@ class Client:
                 evaluation = {
                             'train': evaluate_regression(y, y_pred)
                         }
-
+        
         data["evaluation"] = json.dumps(evaluation, cls=NpEncoder)
 
         training_metadata = {
@@ -746,7 +746,8 @@ class Client:
 
     def _gpt_report(
             self, model_id, version_id, target_info='',
-            project_objective='', max_features=15):
+            project_objective='', max_features=15, temperature=0.5,
+            markdown=False):
 
         url = (
             f'{self.hostname}/v1/{self.__ext}/models/{model_id}/versions/'
@@ -756,15 +757,15 @@ class Client:
         params = {
             'target_info': target_info,
             'project_objective': project_objective,
-            'max_features': max_features
+            'max_features': max_features,
+            'temperature': temperature
         }
 
         response = self.__session.get(
             url=url,
-            params=params
+            params=params,
             )
         
-        if response.status_code == 200:
-            return response.content
-        else:
-            return response.status_code
+        content = get_response_content(response)
+
+        return Markdown(content) if markdown else content
