@@ -20,7 +20,7 @@ achieves this by providing a set of tools that allow users to:
  * Deploy models to production as REST APIs in seconds
  * Collaborate with other users on model development and evaluation
  * Save and load preprocessing pipelines and models across your team or organisation
- * Share model profiles with other users via `xplainable cloud <https://app.xplainable.io>`_
+ * Share model profiles with other users via `xplainable cloud <https://beta.xplainable.io>`_
 
 
 At the core of xplainable is a set of novel explainable machine learning

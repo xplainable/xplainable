@@ -26,7 +26,7 @@ class Client:
     """ A client for interfacing with the xplainable web api (xplainable cloud).
 
     Access models, preprocessors and user data from xplainable cloud. API keys
-    can be generated at https://app.xplainable.io.
+    can be generated at https://beta.xplainable.io.
 
     Args:
         api_key (str): A valid api key.

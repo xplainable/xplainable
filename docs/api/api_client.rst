@@ -21,8 +21,8 @@ your account, models, and deployments within Python.
 
 Initialising a session
 -------------------------------
-To initialise a session, you first must generate an API key at
-https://app.xplainable.io.
+To initialise a session, you first must generate an API key at 
+`xplainable cloud <https://beta.xplainable.io>`.
 
 .. automodule:: xplainable.client.init
    :members:
@@ -36,9 +36,10 @@ When you connect successfully to Xplainable Cloud, you can use the client
 to query the API. The client is accessible by running::
    
       import xplainable as xp
+      import os
       
       # Initialise your session
-      xp.initialise()
+      xp.initialise(api_key=os.environ['XP_API_KEY'])
 
       # Query the API
       xp.client.list_models()

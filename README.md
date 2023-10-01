@@ -292,8 +292,9 @@ to a collaborative environment.
 
 ```python
 import xplainable as xp
+import os
 
-xp.initialise()
+xp.initialise(api_key=os.environ['XP_API_KEY'])
 ```
 
 <div align="center">
