@@ -1,8 +1,10 @@
 import xplainable as xp
+import json
+from IPython.display import display, Markdown
 
 def gpt_explainer(
         model_id, version_id, target_info='', project_objective='',
-        max_features=15
+        max_features=15, temperature=0.5, markdown=True
         ):
     """
     Generates a report for a given model and version.
@@ -24,7 +26,7 @@ def gpt_explainer(
             "You must initialise a valid API key to use this feature.") \
                 from None
 
-    report = xp.client._gpt_report(
-        model_id, version_id, target_info, project_objective, max_features)
-    
-    return report
+    return xp.client._gpt_report(
+        model_id, version_id, target_info, project_objective, max_features, 
+        temperature, markdown)
+
