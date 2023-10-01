@@ -33,11 +33,13 @@ def _render_init_table(data):
 def initialise(api_key=None, hostname='https://api.xplainable.io'):
     """ Initialise the client with an API Key.
 
-    API Keys can be generated from https://app.xplainable.io with a valid
+    API Keys can be generated from https://beta.xplainable.io with a valid
     account.
 
     Example:
-        >>> xp.initialise()
+        >>> import xplainable as xp
+        >>> import os
+        >>> xp.initialise(api_key=os.environ['XP_API_KEY'])
 
     Returns:
         dict: The users account information.

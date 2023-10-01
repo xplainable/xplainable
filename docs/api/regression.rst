@@ -15,9 +15,10 @@ Examples
    
       import xplainable as xp
       import pandas as pd
+      import os
       
       # Initialise your session
-      xp.initialise()
+      xp.initialise(api_key=os.environ['XP_API_KEY'])
 
       # Load your data
       data = pd.read_csv('data.csv')
