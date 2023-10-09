@@ -176,4 +176,7 @@ class XEvolutionaryNetwork:
             self.future_layers.remove(layer)
             self.layer_id += 1
 
+        # Set optimised flag
+        self.model.metadata["optimised"] = True
+
         return self
