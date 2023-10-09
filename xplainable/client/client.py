@@ -745,9 +745,8 @@ class Client:
             return response.status_code
 
     def _gpt_report(
-            self, model_id, version_id, target_info='',
-            project_objective='', max_features=15, temperature=0.5,
-            markdown=False):
+            self, model_id, version_id, target_description='',
+            project_objective='', max_features=15, temperature=0.5):
 
         url = (
             f'{self.hostname}/v1/{self.__ext}/models/{model_id}/versions/'
@@ -755,7 +754,7 @@ class Client:
         )
 
         params = {
-            'target_info': target_info,
+            'target_description': target_description,
             'project_objective': project_objective,
             'max_features': max_features,
             'temperature': temperature
@@ -763,9 +762,9 @@ class Client:
 
         response = self.__session.put(
             url=url,
-            params=params,
+            json=params,
             )
         
         content = get_response_content(response)
 
-        return Markdown(content) if markdown else content
+        return content
