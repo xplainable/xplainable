@@ -3,7 +3,7 @@ import json
 from IPython.display import display, Markdown
 
 def gpt_explainer(
-        model_id, version_id, target_info='', project_objective='',
+        model_id, version_id, target_description='', project_objective='',
         max_features=15, temperature=0.5, markdown=True
         ):
     """
@@ -12,7 +12,7 @@ def gpt_explainer(
     Args:
         model_id (str): The model ID.
         version_id (str): The version ID.
-        target_info (str): The target information.
+        target_description (str): The target description.
         project_objective (str): The project objective.
         max_features (int): The maximum number of features to analyse.
 
@@ -26,7 +26,13 @@ def gpt_explainer(
             "You must initialise a valid API key to use this feature.") \
                 from None
 
-    return xp.client._gpt_report(
-        model_id, version_id, target_info, project_objective, max_features, 
-        temperature, markdown)
+    report_json = xp.client._gpt_report(
+        model_id, version_id, target_description, project_objective,
+        max_features, temperature)
+    
+    report_text = f"#{report_json['heading']} \n>{report_json['tagline']}\n\n{report_json['body']}"
 
+    if markdown:
+        display(Markdown(report_text))
+    else:
+        return report_text
