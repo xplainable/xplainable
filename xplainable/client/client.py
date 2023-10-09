@@ -761,7 +761,7 @@ class Client:
             'temperature': temperature
         }
 
-        response = self.__session.get(
+        response = self.__session.put(
             url=url,
             params=params,
             )

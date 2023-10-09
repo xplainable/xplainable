@@ -444,7 +444,7 @@ def regressor(df):
             start = time.time()
             model.fit(X_train, y_train, id_columns=id_cols)
             
-            model.metadata['optimisation'] = {}
+            model.metadata['optimiser'] = {}
             
             if _toggle_optimise_ts.value:
                 kvt.update_data({
@@ -457,7 +457,7 @@ def regressor(df):
                 model.optimise_tail_sensitivity(X_train, y_train)
                 elapsed = round(time.time()-start, 4)
 
-                model.metadata['optimisation'][
+                model.metadata['optimiser'][
                     'tail_sensitivity_optimise_time'] = elapsed
             
             if len(network.future_layers) > 0:
@@ -488,8 +488,8 @@ def regressor(df):
                 network.optimise(callback=callback)
 
                 elapsed = round(time.time()-start, 4)
-                model.metadata['optimisation']['optimise_time'] = elapsed
-                model.metadata['optimisation']['layers'] = len(
+                model.metadata['optimiser']['optimise_time'] = elapsed
+                model.metadata['optimiser']['layers'] = len(
                     network.completed_layers)
 
                 with bar_plot_output:
