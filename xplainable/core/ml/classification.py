@@ -72,7 +72,7 @@ class XClassifier(BaseModel):
         power_degree: float = 1,
         sigmoid_exponent: float = 1,
         map_calibration: bool = True
-        ):
+    ):
 
         super().__init__(max_depth, min_leaf_size, min_info_gain, alpha)
 
@@ -95,7 +95,7 @@ class XClassifier(BaseModel):
             dict: The model parameters.
         """
 
-        params =  {
+        params = {
             'max_depth': self.max_depth,
             'min_leaf_size': self.min_leaf_size,
             'alpha': self.alpha,
@@ -163,7 +163,6 @@ class XClassifier(BaseModel):
 
         assert 0 <= self.sigmoid_exponent <= 1, \
             'sigmoid_exponent must be between 0 and 1'
-
 
     def _map_calibration(self, y, y_prob, smooth=15):
         """ Maps the associated probability for each possible feature score.
@@ -356,7 +355,7 @@ class XClassifier(BaseModel):
         for i in range(x.shape[1]):
             f = x[:, i]
             xconst = XConstructor(
-                regressor=False, # classifier
+                regressor=False,  # classifier
                 max_depth=self.max_depth,
                 min_info_gain=self.min_info_gain,
                 min_leaf_size=self.min_leaf_size,
@@ -508,7 +507,7 @@ class XClassifier(BaseModel):
 
     def predict(
             self, x: Union[pd.DataFrame, np.ndarray], use_prob: bool=False,
-            threshold: float=0.5, remap: bool=True) -> np.array:
+            threshold: float = 0.5, remap: bool = True) -> np.array:
         """ Predicts the target for each row in the data.
 
         Args:
@@ -530,8 +529,8 @@ class XClassifier(BaseModel):
 
     def evaluate(
             self, x: Union[pd.DataFrame, np.ndarray],
-            y: Union[pd.Series, np.array], use_prob: bool=False,
-            threshold: float=0.5):
+            y: Union[pd.Series, np.array], use_prob: bool = False,
+            threshold: float = 0.5):
         """ Evaluates the model performance.
 
         Args:
@@ -636,7 +635,7 @@ class PartitionedClassifier(BasePartition):
         self.partition_on = partition_on
 
     def predict_score(
-            self, x: Union[pd.DataFrame, np.ndarray], proba: bool=False):
+            self, x: Union[pd.DataFrame, np.ndarray], proba: bool = False):
         """ Predicts the score for each row in the data across all partitions.
 
         The partition_on columns will be used to determine which model to use
@@ -723,7 +722,7 @@ class PartitionedClassifier(BasePartition):
 
         return scores
 
-    def predict(self, x, use_prob=False, threshold=0.5):
+    def predict(self, x, use_prob = False, threshold = 0.5):
         """ Predicts the target for each row in the data across all partitions.
 
         The partition_on columns will be used to determine which model to use
@@ -743,7 +742,7 @@ class PartitionedClassifier(BasePartition):
         # Return 1 if feature value > threshold else 0
         pred = pd.Series(y_pred).map(lambda x: 1 if x >= threshold else 0)
 
-        map_inv  = self.partitions['__dataset__'].target_map_inv
+        map_inv = self.partitions['__dataset__'].target_map_inv
 
         if map_inv:
             return np.array(pred.map(map_inv))
