@@ -16,7 +16,7 @@ class XSurrogateClassifier(XClassifier):
     def __init__(
         self,
         child_model,
-        child_predict_method: None,
+        child_predict_method: None,  # if you want to specify a method that is not .predict()
         max_depth: int = 8,
         min_info_gain: float = -1,
         min_leaf_size: float = -1,
@@ -83,7 +83,7 @@ class XSurrogateRegressor(XRegressor):
     def __init__(
         self,
         child_model,
-        child_predict_method: None,
+        child_predict_method: None,  # if you want to specify a method that is not .predict()
         max_depth: int = 8,
         min_leaf_size: float = 0.02,
         min_info_gain: float = 0.02,
