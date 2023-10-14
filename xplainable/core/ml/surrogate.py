@@ -11,6 +11,8 @@ from regression import XRegressor
 
 class XSurrogateClassifier(XClassifier):
 
+    # Surrogate branch
+
     def __init__(
         self,
         child_model,
