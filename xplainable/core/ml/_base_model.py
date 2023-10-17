@@ -251,7 +251,7 @@ class BaseModel:
         return id_map
 
     def convert_to_model_profile_categories(self, x):
-
+        return self._get_leaf_ids(x)
 
     def _get_leaf_ids(self, x):
 
@@ -266,7 +266,7 @@ class BaseModel:
 
             nodes = np.array(self._profile[i])
             if len(nodes) > 1:
-                idx = np.searchsorted(nodes[:, 1], x[:,i])
+                idx = np.searchsorted(nodes[:, 1], x[:, i])
                 x[:,i] = np.vectorize(lambda x: id_map[i][x])(idx.astype(int))
             else:
                 x[:,i] = 0
