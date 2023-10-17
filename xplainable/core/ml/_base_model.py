@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import is_bool_dtype
 
+
 class BaseModel:
 
     def __init__(
@@ -17,6 +18,7 @@ class BaseModel:
         self.columns = []
         self.id_columns = []
         self._profile = []
+        self.base_value = None
         self.base_value = None
         self.target_map = {}
         self.target_map_inv = {}
@@ -247,6 +249,9 @@ class BaseModel:
             id_map.append(fmap)
         
         return id_map
+
+    def convert_to_model_profile_categories(self, x):
+
 
     def _get_leaf_ids(self, x):
 
