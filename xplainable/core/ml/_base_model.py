@@ -240,37 +240,24 @@ class BaseModel:
 
         return t
 
+    def encode_column(self, column_name, column_data):
+        column = column_data.copy()
+        if column_name in self.feature_map:
+            column = column.map(  # convert categories strings into index ints
+                self.feature_map[column_name]  # get dictionary mapping
+            )
+        column_index = self.columns.index(column_name)
 
-    def _build_leaf_id_map(self):
-        id_map = []
+        nodes = np.array(self._profile[column_index])
+        column[:] = np.searchsorted(nodes[:, 1], column).astype(int)
 
-        for idx in range(len(self._profile)):
-            fmap = [i for i in range(len(self._profile[idx]))]
-            id_map.append(fmap)
-        
-        return id_map
-
-    def convert_to_model_profile_categories(self, x):
-
+        return column.astype(int)
 
     def _get_leaf_ids(self, x):
-
+        print("Pizza Time")
         x = x.copy()
-        
-        x = self._encode(x)
-        x = self._preprocess(x).values
-
-        id_map = self._build_leaf_id_map()
-
-        for i in range(x.shape[1]):
-
-            nodes = np.array(self._profile[i])
-            if len(nodes) > 1:
-                idx = np.searchsorted(nodes[:, 1], x[:,i])
-                x[:,i] = np.vectorize(lambda x: id_map[i][x])(idx.astype(int))
-            else:
-                x[:,i] = 0
-
+        for column_name in x.columns:
+            x[column_name] = self.encode_column(column_name, x[column_name])
         return x.astype(int)
 
     def _get_profile(self):
