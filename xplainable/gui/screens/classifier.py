@@ -453,20 +453,13 @@ def classifier(df):
     footer = widgets.VBox(
         [divider, widgets.HBox([train_button, close_button])])
 
-    
-
     # SCREEN – Build final screen
     screen = widgets.VBox([header.show(), body, footer, outt])
     
-    # Close screen
-    def close():
-        body.close()
-        footer.close()
-
     # Close and clear
     def close_button_click(_):
+        screen.close()
         outt.close()
-        close()
         clear_output()
 
     def id_cols_changed(_):
@@ -484,7 +477,6 @@ def classifier(df):
 
         opt_bars.bar_layout.height='20px'
         opt_bars.bar_layout.margin='6px 0 0 0'
-
         
         opt_bars.set_bounds(['iteration'], 0, n_trials.value)
         opt_bars.set_suffix(['iteration'], f'/{n_trials.value}')
@@ -707,7 +699,7 @@ def classifier(df):
                     part_progress.set_value('Partitions', i+1)
                     
                 except Exception as e:
-                    close()
+                    screen.close()
                     clear_output()
                     raise RuntimeError(e)
             

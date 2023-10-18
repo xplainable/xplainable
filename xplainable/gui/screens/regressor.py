@@ -369,6 +369,9 @@ def regressor(df):
         _button_train.partitions.update(parts)
 
     _dropdown_partition_on.observe(partition_change, names=['value'])
+
+    def close_button_click(_):
+        screen.close()
     
     def on_train(b):
 
@@ -584,6 +587,8 @@ def regressor(df):
     _button_close = widgets.Button(description='Close')
 
     _button_close.layout = widgets.Layout(margin=' 10px 0 10px 10px')
+
+    _button_close.on_click(close_button_click)
 
     footer = widgets.VBox(
         [divider, widgets.HBox([_button_train, _button_close])])

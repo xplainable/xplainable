@@ -108,7 +108,7 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
     
     def close_button_clicked(_):
         """Clears all output"""
-        clear_output()
+        screen.close()
 
     def load_button_clicked(_):
         """Updates preprocessor object with loaded metadata"""
@@ -121,7 +121,7 @@ def load_preprocessor(preprocessor_id=None, version_id=None):
         p = preprocessors.preprocessor
         v = preprocessors.metadata[versions.index-1]['version_number']
         vid = preprocessors.metadata[versions.index-1]['version_id']
-        clear_output()
+        screen.close()
         print(f"Successfully loaded preprocessor {p} version {v} (version_id: {vid})")
 
     # --- HEADER ---
@@ -242,7 +242,7 @@ def load_regressor(model_id=None, version_id=None):
     
     def close_button_clicked(_):
         """Clears all output"""
-        clear_output()
+        screen.close()
 
     def load_button_clicked(_):
         """Updates model object with loaded metadata"""
@@ -251,7 +251,7 @@ def load_regressor(model_id=None, version_id=None):
         v = versions.metadata[versions.index-1]['version_number']
         
         xplainable.client.load_regressor(m, vid, model=partitioned_model)
-        clear_output()
+        screen.close()
         print(f"Successfully loaded model {m} version {v} (version_id: {vid})")
 
     # --- HEADER ---
@@ -381,7 +381,7 @@ def load_classifier(model_id=None, version_id=None):
     
     def close_button_clicked(_):
         """Clears all output"""
-        clear_output()
+        screen.close()
 
     def load_button_clicked(_):
         """Updates model object with loaded metadata"""
@@ -390,7 +390,7 @@ def load_classifier(model_id=None, version_id=None):
         v = versions.metadata[versions.index-1]['version_number']
         
         xplainable.client.load_classifier(m, vid, model=partitioned_model)
-        clear_output()
+        screen.close()
         print(f"Successfully loaded model {m} version {v} (version_id: {vid})")
 
     if model_id is not None:
