@@ -254,8 +254,8 @@ class BaseModel:
         return column.astype(int)
 
     def _get_leaf_ids(self, x):
-        print("Pizza Time")
         x = x.copy()
+        x = x[[c for c in self.columns if c in x.columns]]
         for column_name in x.columns:
             x[column_name] = self.encode_column(column_name, x[column_name])
         return x.astype(int)
