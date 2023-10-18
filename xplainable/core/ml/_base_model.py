@@ -258,7 +258,7 @@ class BaseModel:
         x = x[[c for c in self.columns if c in x.columns]]
         for column_name in x.columns:
             x[column_name] = self.encode_column(column_name, x[column_name])
-        return x.astype(int)
+        return x.astype(int).values
 
     def _get_profile(self):
         # instantiate Profile
