@@ -61,7 +61,9 @@ def initialise(api_key=None, hostname='https://api.xplainable.io'):
         data = {
             "xplainable version": XP_VERSION,
             "python version": PY_VERSION,
-            "user": xplainable.client._user['username']
+            "user": xplainable.client._user['username'],
+            "organisation": xplainable.client._user['organisation_name'],
+            "team": xplainable.client._user['team_name'],
         }
 
         if config.OUTPUT_TYPE == 'raw':
