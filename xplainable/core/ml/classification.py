@@ -9,7 +9,7 @@ from ._base_model import BaseModel, BasePartition
 from ._constructor import XConstructor
 from sklearn.metrics import *
 import copy
-import time
+from time import time
 from typing import Union
 
 
@@ -145,17 +145,7 @@ class XClassifier(BaseModel):
         self.sigmoid_exponent = sigmoid_exponent
 
     def _check_param_bounds(self):
-
-        assert self.max_depth >= 0, \
-            'max_depth must be greater than or equal to 0'
-        
-        assert -1 <= self.min_leaf_size < 1, \
-            'min_leaf_size must be between -1 and 1'
-        
-        assert -1 <= self.min_info_gain < 1, \
-            'min_info_gain must be between -1 and 1'
-        
-        assert 0 <= self.alpha <= 1, 'alpha must be between 0 and 1'
+        super()._check_param_bounds()
 
         assert 0 <= self.weight <= 3, 'weight must be between 0 and 3'
 
@@ -309,40 +299,16 @@ class XClassifier(BaseModel):
             XClassifier: The fitted model.
         """
 
-        start = time.time()
+        start = time()
 
-        # Ensure parameters are valid
-        self._check_param_bounds()
-
-        x = x.copy()
-        y = y.copy()
-
-        # casts ndarray to pandas
-        x, y = self._cast_to_pandas(x, y, target_name, column_names)
-        
-        if self.map_calibration:
-            x_cal = x.copy()
-            y_cal = y.copy()
-
-        # Store meta data
-        self.id_columns = id_columns
-
-        if type(x) == np.ndarray:
-            x = pd.DataFrame(x)
-
-        x = x.drop(columns=id_columns)
-
-        # Preprocess data
-        x, y = self._coerce_dtypes(x, y)
-        self._fetch_meta(x, y)
-        self._learn_encodings(x, y)
-        x, y = self._encode(x, y)
-        self._calculate_category_meta(x, y)
-        x, y = self._preprocess(x, y)
-
-        x = x.values
-        y = y.values
-        self.base_value = np.mean(y)
+        x, y, x_cal, y_cal = super()._fit_check(
+            x,
+            y,
+            id_columns,
+            column_names,
+            target_name,
+            map_calibration=self.map_calibration
+        )
 
         # Dynamic min_leaf_size
         if self.min_leaf_size == -1:  # TODO might remove if cats are all individual
@@ -381,7 +347,7 @@ class XClassifier(BaseModel):
         self.feature_params = {c: copy.copy(params) for c in self.columns}
         
         # record metadata
-        self.metadata['fit_time'] = time.time() - start
+        self.metadata['fit_time'] = time() - start
         self.metadata['observations'] = x.shape[0]
         self.metadata['features'] = x.shape[1]
 

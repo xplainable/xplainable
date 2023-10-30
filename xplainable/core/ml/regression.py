@@ -9,7 +9,7 @@ from ._base_model import BaseModel, BasePartition
 from ._constructor import XConstructor
 from sklearn.metrics import *
 import copy
-import time
+from time import time
 from typing import Union
 
 
@@ -46,7 +46,7 @@ class XRegressor(BaseModel):
 
         
     Example:
-        >>> from xplainable.core.models import XRgressor
+        >>> from xplainable.core.models import XRegressor
         >>> import pandas as pd
         >>> from sklearn.model_selection import train_test_split
 
@@ -143,17 +143,7 @@ class XRegressor(BaseModel):
         self.tail_sensitivity = tail_sensitivity
 
     def _check_param_bounds(self):
-
-        assert self.max_depth >= 0, \
-            'max_depth must be greater than or equal to 0'
-        
-        assert -1 <= self.min_leaf_size < 1, \
-            'min_leaf_size must be between -1 and 1'
-        
-        assert -1 <= self.min_info_gain < 1, \
-            'min_info_gain must be between -1 and 1'
-        
-        assert 0 <= self.alpha < 1, 'alpha must be between 0 and 1'
+        super()._check_param_bounds()
 
         assert 1 <= self.tail_sensitivity <= 2, \
             'tail_sensitivity must be between 1 and 2'
@@ -177,10 +167,11 @@ class XRegressor(BaseModel):
         
         return self
 
-    def fit(self, x: Union[pd.DataFrame, np.ndarray],
-            y: Union[pd.Series, np.ndarray], id_columns: list = [],
-            column_names: list = None, target_name: str = 'target'
-            ) -> 'XRegressor':
+    def fit(
+        self, x: Union[pd.DataFrame, np.ndarray],
+        y: Union[pd.Series, np.ndarray], id_columns: list = [],
+        column_names: list = None, target_name: str = 'target'
+    ) -> 'XRegressor':
         """ Fits the model to the data.
 
         Args:
@@ -194,32 +185,16 @@ class XRegressor(BaseModel):
             XRegressor: The fitted model.
         """
 
-        start = time.time()
+        start = time()
 
-        # Ensure parameters are valid
-        self._check_param_bounds()
+        x, y, _, _ = super()._fit_check(
+            x,
+            y,
+            id_columns,
+            column_names,
+            target_name
+        )
 
-        x = x.copy()
-        y = y.copy()
-
-        # casts ndarray to pandas
-        x, y = self._cast_to_pandas(x, y, target_name, column_names)
-        
-        # Store meta data
-        self.id_columns = id_columns
-        x = x.drop(columns=id_columns)
-        
-        # Preprocess data
-        x, y = self._coerce_dtypes(x, y)
-        self._fetch_meta(x, y)
-        self._learn_encodings(x, y)
-        x, y = self._encode(x, y)
-        self._calculate_category_meta(x, y)
-        x, y = self._preprocess(x, y)
-
-        x = x.values
-        y = y.values
-        self.base_value = np.mean(y)
         self.samples = y.size
         
         for i in range(x.shape[1]):
@@ -242,7 +217,7 @@ class XRegressor(BaseModel):
         self.feature_params = {c: copy.copy(params) for c in self.columns}
         
         # record metadata
-        self.metadata['fit_time'] = time.time() - start
+        self.metadata['fit_time'] = time() - start
         self.metadata['observations'] = x.shape[0]
         self.metadata['features'] = x.shape[1]
 

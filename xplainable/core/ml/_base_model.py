@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_bool_dtype
+from typing import Union
 
 
 class BaseModel:
@@ -361,6 +362,57 @@ class BaseModel:
         t['base_value'] = self.base_value
 
         return _plot_local_explainer(self, t, subsample)
+
+    def _check_param_bounds(self):
+        assert self.max_depth >= 0, \
+            'max_depth must be greater than or equal to 0'
+
+        assert -1 <= self.min_leaf_size < 1, \
+            'min_leaf_size must be between -1 and 1'
+
+        assert -1 <= self.min_info_gain < 1, \
+            'min_info_gain must be between -1 and 1'
+
+        assert 0 <= self.alpha <= 1, 'alpha must be between 0 and 1'
+
+    def _fit_check(  # TODO better function name
+        self, x: Union[pd.DataFrame, np.ndarray],
+        y: Union[pd.Series, np.ndarray], id_columns: list = [],
+        column_names: list = None, target_name: str = 'target', map_calibration=False
+    ):  # TODO clarify return type: ndarray, ndarray, df, df
+        # Ensure parameters are valid
+        self._check_param_bounds()
+
+        x = x.copy()
+        y = y.copy()
+
+        # casts ndarray to pandas
+        x, y = self._cast_to_pandas(x, y, target_name, column_names)
+
+        if map_calibration:
+            x_cal = x.copy()
+            y_cal = y.copy()
+
+        # Store meta data
+        self.id_columns = id_columns
+        x = x.drop(columns=id_columns)
+
+        # Preprocess data
+        x, y = self._coerce_dtypes(x, y)
+        self._fetch_meta(x, y)
+        self._learn_encodings(x, y)
+        x, y = self._encode(x, y)
+        self._calculate_category_meta(x, y)
+        x, y = self._preprocess(x, y)
+
+        x = x.values
+        y = y.values
+        self.base_value = np.mean(y)
+
+        if map_calibration:
+            return x, y, x_cal, y_cal
+        else:
+            return x, y, None, None
 
 
 class BasePartition:
