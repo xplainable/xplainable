@@ -6,7 +6,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import pandas as pd
 from ._base_model import BaseModel, BasePartition
-from ._constructor import XConstructor
+from ._constructor import XConstructor  # , XClfConstructor, XRegConstructor
 from sklearn.metrics import *
 import copy
 from time import time

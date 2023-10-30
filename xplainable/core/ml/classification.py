@@ -6,7 +6,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import pandas as pd
 from ._base_model import BaseModel, BasePartition
-from ._constructor import XConstructor
+from ._constructor import XConstructor, XClfConstructor, XRegConstructor
 from sklearn.metrics import *
 import copy
 from time import time
@@ -320,8 +320,9 @@ class XClassifier(BaseModel):
         
         for i in range(x.shape[1]):
             f = x[:, i]
-            xconst = XConstructor(
-                regressor=False,  # classifier
+            constructor = XRegConstructor if self.columns[i] in self.categorical_columns else XRegConstructor
+
+            xconst = constructor(
                 max_depth=self.max_depth,
                 min_info_gain=self.min_info_gain,
                 min_leaf_size=self.min_leaf_size,
@@ -330,8 +331,9 @@ class XClassifier(BaseModel):
                 power_degree=self.power_degree,
                 sigmoid_exponent=self.sigmoid_exponent,
             )
-
+            print(self.columns[i])
             xconst.fit(f, y)
+            input()
             self._constructs.append(xconst)
             
         self._build_profile()
