@@ -73,7 +73,7 @@ class XConstructor:
     
     @staticmethod
     @njit(parallel=True, fastmath=True, nogil=True)
-    def _init_clf(splits, X, y):
+    def _init_splits(splits, X, y):
         """ Instantiates metadata at each split """
 
         _meta = np.empty((len(splits), 2, 2), dtype=np.float64)
@@ -94,57 +94,16 @@ class XConstructor:
             for v in prange(_len_y):
                 if X[v] <= _split:
                     _0_cnt += 1
-                    if y[v] == 1:
-                        _0_pos += 1
+                    _0_pos += y[v]
 
                 else:
                     _1_cnt += 1
-                    if y[v] == 1:
-                        _1_pos += 1
+                    _1_pos += y[v]
 
             _0_mean = _0_pos / _0_cnt
             _1_mean = _1_pos / _1_cnt
 
             _meta[i, 0, 0] = _0_cnt  # TODO just put it in matrx form: _meta[i] = [[_0_cnt, _0_mean],[_1_cnt, _1_mean]]
-            _meta[i, 0, 1] = _0_mean
-            _meta[i, 1, 0] = _1_cnt
-            _meta[i, 1, 1] = _1_mean
-
-        return _meta
-
-    @staticmethod
-    @njit(parallel=True, fastmath=True, nogil=True)
-    def _init_reg(splits, X, y):
-        """ Instantiates metadata at each split """
-
-        _meta = np.empty((len(splits), 2, 2), dtype=np.float64)
-
-        _len_y = y.size
-        _n_splits = splits.size
-
-        for i in prange(_n_splits):
-
-            _split = splits[i]
-
-            _0_cnt = 0
-            _0_tot = 0
-            _1_cnt = 0
-            _1_tot = 0
-
-            # Create splits
-            for v in prange(_len_y):
-                if X[v] <= _split:
-                    _0_cnt += 1
-                    _0_tot += y[v]
-
-                else:
-                    _1_cnt += 1
-                    _1_tot += y[v]
-
-            _0_mean = _0_tot / _0_cnt
-            _1_mean = _1_tot / _1_cnt
-
-            _meta[i, 0, 0] = _0_cnt
             _meta[i, 0, 1] = _0_mean
             _meta[i, 1, 0] = _1_cnt
             _meta[i, 1, 1] = _1_mean
@@ -340,8 +299,7 @@ class XConstructor:
         
         _psplits = self._psplits(X)  # TODO all possible splits? 'worst' case each individual value is split?
 
-        _init = self._init_reg if self.regressor else self._init_clf
-        _meta = _init(_psplits, X, y)
+        _meta = self._init_splits(_psplits, X, y)
         
         _parent = _depth = 0
         _dir = _path = np.array([])
