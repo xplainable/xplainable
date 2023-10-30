@@ -46,7 +46,7 @@ class XConstructor:
         nunq = unq.size
 
         # Reduce number of bins with alpha value
-        bins = int((nunq ** (1 - self.alpha) - 1) / (1 - self.alpha)) + 1
+        bins = int((nunq ** (1 - self.alpha) - 1) / (1 - self.alpha)) + 1  # TODO heh?
 
         # Calculate bin indices
         psplits = (unq[:-1] + unq[1:]) / 2
@@ -81,14 +81,14 @@ class XConstructor:
         _len_y = y.size
         _n_splits = splits.size
 
-        for i in prange(_n_splits):
+        for i in prange(_n_splits):  # TODO what is prange? seems identical to range from docs for njit magic?
 
             _split = splits[i]
 
-            _0_cnt = 0
-            _0_pos = 0
-            _1_cnt = 0
-            _1_pos = 0
+            _0_cnt = 0  # count left
+            _0_pos = 0  # positives in left
+            _1_cnt = 0  # count left
+            _1_pos = 0  # positives in right
 
             # Create splits
             for v in prange(_len_y):
@@ -105,10 +105,10 @@ class XConstructor:
             _0_mean = _0_pos / _0_cnt
             _1_mean = _1_pos / _1_cnt
 
-            _meta[i,0,0] = _0_cnt
-            _meta[i,0,1] = _0_mean
-            _meta[i,1,0] = _1_cnt
-            _meta[i,1,1] = _1_mean
+            _meta[i, 0, 0] = _0_cnt  # TODO just put it in matrx form: _meta[i] = [[_0_cnt, _0_mean],[_1_cnt, _1_mean]]
+            _meta[i, 0, 1] = _0_mean
+            _meta[i, 1, 0] = _1_cnt
+            _meta[i, 1, 1] = _1_mean
 
         return _meta
 
@@ -144,10 +144,10 @@ class XConstructor:
             _0_mean = _0_tot / _0_cnt
             _1_mean = _1_tot / _1_cnt
 
-            _meta[i,0,0] = _0_cnt
-            _meta[i,0,1] = _0_mean
-            _meta[i,1,0] = _1_cnt
-            _meta[i,1,1] = _1_mean
+            _meta[i, 0, 0] = _0_cnt
+            _meta[i, 0, 1] = _0_mean
+            _meta[i, 1, 0] = _1_cnt
+            _meta[i, 1, 1] = _1_mean
 
         return _meta
     
@@ -159,10 +159,10 @@ class XConstructor:
         bst = 0
         _idx = -1
 
-        for i in range(len(meta)):
+        for i in range(len(meta)):  # TODO why not prange? not parallel?
             l = meta[i][0]
             r = meta[i][1]
-            if (l[0] < mls) or (r[0] < mls):
+            if (l[0] < mls) or (r[0] < mls):  # TODO less than min leaf size
                 continue
 
             ld = abs(l[1] - bv)
@@ -171,10 +171,9 @@ class XConstructor:
             md = max([ld, rd])
 
             if md < mig:
-                continue
+                continue  # TODO less than min info gain, could be issue for categorical
 
-            s = (ld * np.log2(l[0] / samp * 100)) + (
-                rd * np.log2(r[0] / samp * 100))
+            s = (ld * np.log2(l[0] / samp * 100)) + (rd * np.log2(r[0] / samp * 100))  # TODO info gain equation?
 
             if s > bst:
                 bst = s
@@ -190,7 +189,7 @@ class XConstructor:
 
         while stack:
 
-            if len(stack) == 0:
+            if len(stack) == 0:  # TODO is this not in "while stack:"?
                 break
             
             # First parent split (_) is ignored
@@ -206,24 +205,14 @@ class XConstructor:
             
             if (idx == -1) or (_depth >= self.max_depth):
                 
-                if not self.regressor:
-                    score = self._activation(_freq*100) * (
-                        _mean - self.base_value)
-
-                else:
+                if self.regressor:
                     diff = _mean - self.base_value
+                    score = (abs(diff) ** self.tail_sensitivity) * np.sign(diff)
+                else:
+                    score = self._activation(_freq*100) * (_mean - self.base_value)
 
-                    if diff >= 0:
-                        score = diff ** self.tail_sensitivity
-                        
-                    else:
-                        score = (abs(diff) ** self.tail_sensitivity) * - 1
-
-                if score < self._min_score:
-                        self._min_score = score
-
-                if score > self._max_score:
-                    self._max_score = score
+                self._min_score = min(self._min_score, score)  # update min score
+                self._max_score = max(self._max_score, score)  # update max score
 
                 _upper = np.inf
                 _lower = -np.inf
@@ -331,8 +320,7 @@ class XConstructor:
         self.max_score = -np.inf
         self.min_score = np.inf
 
-        self.abs_min_leaf_size = np.max(
-            [1, int(self.min_leaf_size * self.samples)])
+        self.abs_min_leaf_size = np.max([1, int(self.min_leaf_size * self.samples)])
         
         root = self._copy_root()
         
@@ -346,12 +334,11 @@ class XConstructor:
     def fit(self, X, y):
         """ Fits feature data to target """
         
-        self.base_value = np.mean(y)
+        self.base_value = np.mean(y)  # TODO not really needed, can get from model
         self.samples = X.size
-        self.abs_min_leaf_size = np.max(
-            [1, int(self.min_leaf_size * self.samples)])
+        self.abs_min_leaf_size = np.max([1, int(self.min_leaf_size * self.samples)])
         
-        _psplits = self._psplits(X)
+        _psplits = self._psplits(X)  # TODO all possible splits? 'worst' case each individual value is split?
 
         _init = self._init_reg if self.regressor else self._init_clf
         _meta = _init(_psplits, X, y)

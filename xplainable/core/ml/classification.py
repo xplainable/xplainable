@@ -77,7 +77,7 @@ class XClassifier(BaseModel):
         super().__init__(max_depth, min_leaf_size, min_info_gain, alpha)
 
         self._constructs = []
-        self._calibration_map = {}
+        self._calibration_map = {}  # TODO what does this do
         self._support_map = {}
         self._profile = []
 
@@ -258,11 +258,11 @@ class XClassifier(BaseModel):
 
         # Negative scores normalise relative to worst case scenario
         elif score < 0:
-            return abs(score) / _sum_min * self.base_value
+            return (abs(score) / _sum_min) * self.base_value  # TODO which way would the brackets go
 
         # Positive scores normalise relative to best case scenario
         else:
-            return score / _sum_max * (1 - self.base_value)
+            return (score / _sum_max) * (1 - self.base_value)  # TODO huh?
     
     def _build_profile(self):
         """ Builds the profile from each feature construct.
@@ -285,17 +285,17 @@ class XClassifier(BaseModel):
         for idx in range(len(self._profile)):
             v = self._profile[idx]
             for i, node in enumerate(v):
-                self._profile[idx][i][2] = self._normalise_score(
-                    node[5], _sum_min, _sum_max)
+                self._profile[idx][i][2] = self._normalise_score(node[5], _sum_min, _sum_max)
         
         self._profile = np.array(self._profile, dtype=object)
 
         return self
 
     def fit(
-            self, x: Union[pd.DataFrame, np.ndarray],
-            y: Union[pd.Series, np.array], id_columns: list = [],
-            column_names: list = None, target_name: str = 'target') -> 'XClassifier':
+        self, x: Union[pd.DataFrame, np.ndarray],
+        y: Union[pd.Series, np.array], id_columns: list = [],
+        column_names: list = None, target_name: str = 'target'
+    ) -> 'XClassifier':
         """ Fits the model to the data.
 
         Args:
@@ -345,7 +345,7 @@ class XClassifier(BaseModel):
         self.base_value = np.mean(y)
 
         # Dynamic min_leaf_size
-        if self.min_leaf_size == -1:
+        if self.min_leaf_size == -1:  # TODO might remove if cats are all individual
             self.min_leaf_size = self.base_value / 10
 
         # Dynamic min_info_gain
@@ -363,7 +363,7 @@ class XClassifier(BaseModel):
                 weight=self.weight,
                 power_degree=self.power_degree,
                 sigmoid_exponent=self.sigmoid_exponent,
-                )
+            )
 
             xconst.fit(f, y)
             self._constructs.append(xconst)
@@ -506,8 +506,10 @@ class XClassifier(BaseModel):
         return scores
 
     def predict(
-            self, x: Union[pd.DataFrame, np.ndarray], use_prob: bool=False,
-            threshold: float = 0.5, remap: bool = True) -> np.array:
+            self, x: Union[pd.DataFrame, np.ndarray],
+            use_prob: bool=False, threshold: float = 0.5,
+            remap: bool = True
+    ) -> np.array:
         """ Predicts the target for each row in the data.
 
         Args:

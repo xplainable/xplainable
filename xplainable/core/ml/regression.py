@@ -166,8 +166,8 @@ class XRegressor(BaseModel):
         for i in range(len(self._constructs)):
             xconst = self._constructs[i]
 
-            if self.columns[i] in features or not features:
-                for n in range(len(xconst._nodes)):
+            if (self.columns[i] in features) or not features:
+                for n in range(len(xconst._nodes)):  # TODO try min max score thing
                     xconst._nodes[n][2] = xconst._nodes[n][5] / len(self.columns)
             
             # don't update the original leaf nodes

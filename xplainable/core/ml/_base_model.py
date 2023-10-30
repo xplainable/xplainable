@@ -80,12 +80,11 @@ class BaseModel:
         self.feature_map[name] = feature_map
 
         # Store inverse map for reversal
-        self.feature_map_inv[name] = {v: i for (i, v) in feature_map.items()}
+        self.feature_map_inv[name] = {v: i for (i, v) in feature_map.items()}  # TODO maybe use DualDict
 
         return
 
-    def _cast_to_pandas(
-            self, x, y=None, target_name='target', column_names=None):
+    def _cast_to_pandas(self, x, y=None, target_name='target', column_names=None):
         
         if isinstance(x, np.ndarray):
             x = pd.DataFrame(x)
@@ -95,7 +94,6 @@ class BaseModel:
                 x.columns = column_names
             else:
                 x.columns = [f"feature_{i}" for i in range(x.shape[1])]
-            
             x = x.apply(pd.to_numeric, errors='ignore')
 
         if y is not None: 
@@ -133,7 +131,7 @@ class BaseModel:
         self.numeric_columns = list(x.select_dtypes('number'))
 
         # Store categorical column names
-        self.categorical_columns = list(x.select_dtypes('object'))
+        self.categorical_columns = list(x.select_dtypes('object'))  # TODO make categorical
 
         self.columns = list(x.columns)
 
@@ -150,7 +148,7 @@ class BaseModel:
                 group.groupby(col)['target'].mean())
 
             self.category_meta[col]["freqs"] = dict(
-                x[col].value_counts() / len(y))
+                x[col].value_counts() / len(y))  # TODO potential dov by 0?
 
     def _preprocess(self, x, y=None):
         
@@ -179,7 +177,8 @@ class BaseModel:
 
     def _learn_encodings(self, x, y):
         
-        if y.dtype == 'object': self._encode_target(y)
+        if y.dtype == 'object':
+            self._encode_target(y)
 
         for f in self.categorical_columns:
             self._encode_feature(x[f], y)
@@ -211,13 +210,13 @@ class BaseModel:
 
         for i in range(x.shape[1]):
             nodes = np.array(self._profile[i])
-            idx = np.searchsorted(nodes[:, 1], x[:,i])
+            idx = np.searchsorted(nodes[:, 1], x[:, i])  # TODO get the bin ids?
 
             known = np.where(idx < len(nodes))
-            unknown = np.where(idx >= len(nodes)) # flag unknown categories
+            unknown = np.where(idx >= len(nodes))  # flag unknown categories
             
-            x[unknown, i] = 0 # Set new categories to 0 contribution
-            x[known, i] = nodes[idx[known], 2]
+            x[unknown, i] = 0  # Set new categories to 0 contribution
+            x[known, i] = nodes[idx[known], 2]  # TODO is this score?
         
         return x
     
