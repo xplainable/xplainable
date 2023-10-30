@@ -105,11 +105,7 @@ class ModelPersist:
                 model_description.value = desc
 
         def close(_):
-            button_display.close()
-            model_details.close()
-            model_loader.close()
-            divider.close()
-            action_buttons.close()
+            screen.close()
 
         def name_change(_):
             if model_name.value is None or model_name.value == '':
@@ -377,7 +373,7 @@ class PreprocessorPersist:
                 preprocessor_description.value = desc
 
         def close(_):
-            clear_output()
+            screen.close()
 
         def name_change(_):
             if preprocessor_name.value is None or preprocessor_name.value == '':
