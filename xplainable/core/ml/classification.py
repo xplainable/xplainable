@@ -88,39 +88,28 @@ class XClassifier(BaseModel):
         self.map_calibration = map_calibration
         self.feature_params = {}
         
-    def _get_params(self) -> dict:
+    def _get_params(self) -> dict:  # TODO checked
         """ Returns the parameters of the model.
 
         Returns:
             dict: The model parameters.
         """
-
-        params = {
-            'max_depth': self.max_depth,
-            'min_leaf_size': self.min_leaf_size,
-            'alpha': self.alpha,
-            'min_info_gain': self.min_info_gain,
-            'weight': self.weight,
-            'power_degree': self.power_degree,
-            'sigmoid_exponent': self.sigmoid_exponent
+        params = super()._get_params()
+        params.update(
+            {
+                'weight': self.weight,
+                'power_degree': self.power_degree,
+                'sigmoid_exponent': self.sigmoid_exponent
             }
+        )
 
         return params
-    
-    @property
-    def params(self) -> dict:
-        """ Returns the parameters of the model.
-
-        Returns:
-            dict: The model parameters.
-        """
-
-        return self._get_params()
 
     def set_params(
             self, max_depth: int, min_leaf_size: float, min_info_gain: float,
             alpha: float, weight: float, power_degree: float,
-            sigmoid_exponent: float, *args, **kwargs) -> None:
+            sigmoid_exponent: float, *args, **kwargs
+    ) -> None:
         """ Sets the parameters of the model. Generally used for model tuning.
 
         Args:
@@ -144,13 +133,10 @@ class XClassifier(BaseModel):
         self.power_degree = power_degree
         self.sigmoid_exponent = sigmoid_exponent
 
-    def _check_param_bounds(self):
+    def _check_param_bounds(self):  # TODO checked
         super()._check_param_bounds()
-
         assert 0 <= self.weight <= 3, 'weight must be between 0 and 3'
-
         assert self.power_degree in [1, 3, 5], 'power_degree must be 1, 3, or 5'
-
         assert 0 <= self.sigmoid_exponent <= 1, \
             'sigmoid_exponent must be between 0 and 1'
 
@@ -268,14 +254,13 @@ class XClassifier(BaseModel):
 
             # don't update the original leaf nodes
             self._profile.append(np.array([list(x) for x in xconst._nodes]))
-
         _sum_min = np.sum(_min_scores)
         _sum_max = np.sum(_max_scores)
 
         for idx in range(len(self._profile)):
             v = self._profile[idx]
             for i, node in enumerate(v):
-                self._profile[idx][i][2] = self._normalise_score(node[5], _sum_min, _sum_max)
+                self._profile[idx][i][-4] = self._normalise_score(node[-1], _sum_min, _sum_max)
         
         self._profile = np.array(self._profile, dtype=object)
 
@@ -309,31 +294,27 @@ class XClassifier(BaseModel):
             target_name,
             map_calibration=self.map_calibration
         )
-
-        # Dynamic min_leaf_size
-        if self.min_leaf_size == -1:  # TODO might remove if cats are all individual
-            self.min_leaf_size = self.base_value / 10
-
-        # Dynamic min_info_gain
-        if self.min_info_gain == -1:
-            self.min_info_gain = self.base_value / 10
         
         for i in range(x.shape[1]):
             f = x[:, i]
-            constructor = XRegConstructor if self.columns[i] in self.categorical_columns else XRegConstructor
+            print()
+            print(self.columns[i])
+
+            # chooses constructor type based on type of input feature
+            constructor = XClfConstructor if self.columns[i] in self.categorical_columns else XRegConstructor
 
             xconst = constructor(
+                regressor=False,
                 max_depth=self.max_depth,
                 min_info_gain=self.min_info_gain,
                 min_leaf_size=self.min_leaf_size,
-                alpha=self.alpha,
-                weight=self.weight,
-                power_degree=self.power_degree,
-                sigmoid_exponent=self.sigmoid_exponent,
+                alpha=self.alpha,  # only used for XRegConstructor
+                weight=self.weight,  # only used for XClfConstructor
+                power_degree=self.power_degree,  # only used for XClfConstructor
+                sigmoid_exponent=self.sigmoid_exponent,  # only used for XClfConstructor
             )
-            print(self.columns[i])
             xconst.fit(f, y)
-            input()
+            xconst.construct()
             self._constructs.append(xconst)
             
         self._build_profile()
@@ -357,7 +338,7 @@ class XClassifier(BaseModel):
 
     def update_feature_params(
             self,
-            features: list,
+            features: list = [],
             max_depth: int = None,
             min_info_gain: float = None,
             min_leaf_size: float = None,
@@ -366,7 +347,7 @@ class XClassifier(BaseModel):
             sigmoid_exponent: float = None,
             x: Union[pd.DataFrame, np.ndarray] = None,
             y: Union[pd.Series, np.array] = None, *args, **kwargs
-            ) -> 'XClassifier':
+        ) -> 'XClassifier':
         """ Updates the parameters for a subset of features.
 
         XClassifier allows you to update the parameters for a subset of features
@@ -397,33 +378,28 @@ class XClassifier(BaseModel):
         """
 
         max_depth = max_depth if max_depth is not None else self.max_depth
-        
-        min_info_gain = min_info_gain if min_info_gain is not None \
-            else self.min_info_gain
-        
-        min_leaf_size = min_leaf_size if min_leaf_size is not None \
-            else self.min_leaf_size
-        
+        min_info_gain = min_info_gain if min_info_gain is not None else self.min_info_gain
+        min_leaf_size = min_leaf_size if min_leaf_size is not None else self.min_leaf_size
         weight = weight if weight is not None else self.weight
+        power_degree = power_degree if power_degree is not None else self.power_degree
+        sigmoid_exponent = sigmoid_exponent if sigmoid_exponent is not None else self.sigmoid_exponent
 
-        power_degree = power_degree if power_degree is not None \
-            else self.power_degree
-        
-        sigmoid_exponent = sigmoid_exponent if sigmoid_exponent is not None \
-            else self.sigmoid_exponent
-        
+        if not features:  # TODO for testing
+            features = self.columns
+
         for feature in features:
             idx = self.columns.index(feature)
 
-            self._constructs[idx].reconstruct(
-                max_depth = max_depth,
-                min_info_gain = min_info_gain,
-                min_leaf_size = min_leaf_size,
-                alpha = self.alpha,
-                weight = weight,
-                power_degree = power_degree,
-                sigmoid_exponent = sigmoid_exponent
+            self._constructs[idx].set_parameters(
+                weight=weight,
+                power_degree=power_degree,
+                sigmoid_exponent=sigmoid_exponent,
+                max_depth=max_depth,
+                min_info_gain=min_info_gain,
+                min_leaf_size=min_leaf_size,
+                alpha=self.alpha,
             )
+            self._constructs[idx].construct()
 
             self.feature_params[feature].update({
                 'max_depth': max_depth,
@@ -497,6 +473,22 @@ class XClassifier(BaseModel):
 
         return pred
 
+    def predict_explain(self, x):
+        """ Predictions with explanations.
+
+        Args:
+            x (array-like): data to predict
+
+        Returns:
+            pd.DataFrame: prediction and explanation
+        """
+
+        t = super().predict_explain(x)
+        t['proba'] = (t['score'] * 100).astype(int).map(self._calibration_map)
+        t['support'] = (t['score'] * 100).astype(int).map(self._support_map)
+
+        return t
+
     def evaluate(
             self, x: Union[pd.DataFrame, np.ndarray],
             y: Union[pd.Series, np.array], use_prob: bool = False,
@@ -515,7 +507,7 @@ class XClassifier(BaseModel):
 
         # Make predictions
         y_prob = self.predict_proba(x) if use_prob else self.predict_score(x)
-        y_prob = np.clip(y_prob, 0, 1) # because of rounding errors
+        y_prob = np.clip(y_prob, 0, 1)  # because of rounding errors
         y_pred = (y_prob > threshold).astype(int)
 
         if (len(self.target_map) > 0) and (y.dtype == 'object'):

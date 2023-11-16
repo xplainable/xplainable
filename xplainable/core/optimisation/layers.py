@@ -388,13 +388,12 @@ class Evolve(BaseLayer):
 
         for l, v in zip(self.xnetwork.leaves, chromosome):
             f, _id = l.split("_")
-            self.xnetwork.model._profile[int(f)][int(_id)][2] = v
-            self.xnetwork.model._constructs[int(f)]._nodes[int(_id)][2] = v
+            self.xnetwork.model._profile[int(f)][int(_id)][-4] = v
+            self.xnetwork.model._constructs[int(f)]._nodes[int(_id)][-4] = v
 
         return self.xnetwork.model._profile
 
-    def transform(
-            self, xnetwork: XEvolutionaryNetwork, x: np.ndarray,
+    def transform(self, xnetwork: XEvolutionaryNetwork, x: np.ndarray,
             y: np.array, callback=None):
         """ Optimises an XRegressor profile given the set of parameters.
 
@@ -631,7 +630,7 @@ class Tighten(BaseLayer):
 
         # Update profile
         f, _id = self.xnetwork.leaves[bstloc].split("_")
-        self.xnetwork.model._profile[int(f)][int(_id)][2] += change
+        self.xnetwork.model._profile[int(f)][int(_id)][-4] += change
 
         return x
 

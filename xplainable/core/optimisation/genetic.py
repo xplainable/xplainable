@@ -83,7 +83,7 @@ class XEvolutionaryNetwork:
     def fit(
             self, x: Union[pd.DataFrame, np.ndarray], 
             y: Union[pd.Series, np.ndarray], subset: list = []
-            ) -> 'XEvolutionaryNetwork':
+        ) -> 'XEvolutionaryNetwork':
         """ Fits the model and data to the evolutionary network.
 
         Args:
@@ -99,8 +99,7 @@ class XEvolutionaryNetwork:
 
         # Remove id columns if they exist
         if len(self.model.id_columns) > 0:
-            x = x.drop(
-                columns=[i for i in self.model.id_columns if i in x.columns])
+            x = x.drop(columns=[i for i in self.model.id_columns if i in x.columns])
 
         # Handlers for subsetting
         if len(subset) > 0:
@@ -128,8 +127,7 @@ class XEvolutionaryNetwork:
                 columns=mask_columns
                 )
             id_df = id_df[subset_locs]
-            _mask = pd.get_dummies(
-                id_df, columns=subset_locs, prefix_sep='_') != 0
+            _mask = pd.get_dummies(id_df, columns=subset_locs, prefix_sep='_') != 0
 
         self._mask_df = _mask
         self._mask = _mask.values
@@ -143,7 +141,7 @@ class XEvolutionaryNetwork:
          # create values column for each leaf
         for i in _df.columns:
             f, _id = i.split("_")
-            score = self.model._profile[int(f)][int(_id)][2]
+            score = self.model._profile[int(f)][int(_id)][-4]
 
             _df[i] = _df[i].map({True: score})
             self.root_chromosome = np.append(self.root_chromosome, score)
@@ -169,8 +167,7 @@ class XEvolutionaryNetwork:
         for i, layer in enumerate(list(self.future_layers)):
             self.layer_name = type(layer).__name__
 
-            self.x, self.root_chromosome = layer.transform(
-                self, self.x, self.y, callback)
+            self.x, self.root_chromosome = layer.transform(self, self.x, self.y, callback)
 
             self.completed_layers.append(layer)
             self.future_layers.remove(layer)

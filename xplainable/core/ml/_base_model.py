@@ -9,8 +9,9 @@ from typing import Union
 class BaseModel:
 
     def __init__(
-            self, max_depth: int = 8, min_leaf_size: float = 0.02,
-            min_info_gain: float = 0.02, alpha: float = 0.01):
+        self, max_depth: int = 8, min_leaf_size: float = 0.02,
+        min_info_gain: float = 0.02, alpha: float = 0.01
+    ):
         self.max_depth = max_depth
         self.min_leaf_size = min_leaf_size
         self.min_info_gain = min_info_gain
@@ -30,7 +31,7 @@ class BaseModel:
         self.metadata = {"optimised": False}
 
     @property
-    def feature_importances(self) -> dict:
+    def feature_importances(self) -> dict:  # TODO checked
         """ Calculates the feature importances for the model decision process.
 
         Returns:
@@ -39,7 +40,7 @@ class BaseModel:
         return self._get_feature_importances()
     
     @property
-    def profile(self) -> dict:
+    def profile(self) -> dict:  # TODO checked
         """ Returns the model profile.
 
         The model profile contains more granular information about the model and
@@ -50,6 +51,77 @@ class BaseModel:
             dict: The model profile.
         """
         return self._get_profile()
+
+    def _get_profile(self):  # TODO checked
+        # instantiate Profile
+        profile = {
+            'base_value': self.base_value,
+            'numeric': {c: [] for c in self.numeric_columns},
+            'categorical': {c: [] for c in self.categorical_columns}
+        }
+        for c, p in zip(self.columns, self._profile):
+            p = np.array(p)
+            _key = "numeric" if c in self.numeric_columns else "categorical"
+
+            if len(p) < 2:
+                profile[_key][c] = []
+                continue
+
+            leaf_nodes = []
+            for v in p:
+                if _key == "categorical":
+                    _prof = {
+                        'category': self.feature_map_inv[c][v[0]],
+                        'score': v[1],
+                        'mean': v[2],
+                        'freq': v[3],
+                    }
+                else:
+                    _prof = {
+                        'lower': v[0],
+                        'upper': v[1],
+                        'score': v[2],
+                        'mean': v[3],
+                        'freq': v[4]
+                    }
+
+                leaf_nodes.append(_prof)
+
+            profile[_key][c] = leaf_nodes
+
+        return profile
+
+    @property
+    def params(self) -> dict:  # TODO checked
+        """ Returns the parameters of the model.
+
+        Returns:
+            dict: The model parameters.
+        """
+
+        return self._get_params()
+
+    def _get_params(self) -> dict:  # TODO checked
+        """ Returns the parameters of the model.
+
+        Returns:
+            dict: The model parameters.
+        """
+
+        params = {
+            'max_depth': self.max_depth,
+            'min_leaf_size': self.min_leaf_size,
+            'alpha': self.alpha,
+            'min_info_gain': self.min_info_gain,
+        }
+
+        return params
+
+    def _check_param_bounds(self):  # TODO checked
+        assert self.max_depth >= 0, 'max_depth must be greater than or equal to 0'
+        assert -1 <= self.min_leaf_size < 1, 'min_leaf_size must be between -1 and 1'
+        assert -1 <= self.min_info_gain < 1, 'min_info_gain must be between -1 and 1'
+        assert 0 <= self.alpha <= 1, 'alpha must be between 0 and 1'
 
     def _encode_feature(self, x, y):
         """ Encodes features in order of their relationship with the target.
@@ -68,21 +140,16 @@ class BaseModel:
 
         if len(self.target_map) > 0:
             y = y.map(self.target_map)
-
         # Order categories by their relationship with the target variable
         ordered_values = pd.DataFrame(
             {'x': x, 'y': y}).groupby('x').agg({'y': 'mean'}).sort_values(
             'y', ascending=True).reset_index()
-
         # Encode feature
         feature_map = {val: i for i, val in enumerate(ordered_values['x'])}
-
         # Store map for transformation
         self.feature_map[name] = feature_map
-
         # Store inverse map for reversal
         self.feature_map_inv[name] = {v: i for (i, v) in feature_map.items()}  # TODO maybe use DualDict
-
         return
 
     def _cast_to_pandas(self, x, y=None, target_name='target', column_names=None):
@@ -124,7 +191,7 @@ class BaseModel:
 
         return
 
-    def _fetch_meta(self, x, y):
+    def _fetch_meta(self, x, y):  # TODO checked
         # Assign target variable
         self.target = y.name
 
@@ -149,13 +216,14 @@ class BaseModel:
                 group.groupby(col)['target'].mean())
 
             self.category_meta[col]["freqs"] = dict(
-                x[col].value_counts() / len(y))  # TODO potential dov by 0?
+                x[col].value_counts() / len(y))
 
     def _preprocess(self, x, y=None):
+        """Removes unknown categories and puts them into the self.columns order"""
         
         x = x[[c for c in self.columns if c in x.columns]]
 
-        x = x.astype('float64')
+        x = x.astype('float64')  # TODO float might not be needed
         if y is not None:
             y = y.astype('float64')
             return x, y
@@ -200,10 +268,9 @@ class BaseModel:
         
         return x
 
-    def _transform(self, x):
+    def _transform(self, x):  # TODO checked
 
         x = x.copy()
-        
         x = self._cast_to_pandas(x, column_names=self.columns)
         x = self._coerce_dtypes(x)
         x = self._encode(x)
@@ -211,35 +278,34 @@ class BaseModel:
 
         for i in range(x.shape[1]):
             nodes = np.array(self._profile[i])
-            idx = np.searchsorted(nodes[:, 1], x[:, i])  # TODO get the bin ids?
+            idx = np.searchsorted(nodes[:, -5], x[:, i])  # TODO get the bin ids?
+            # print(idx)
+            # exit()
 
             known = np.where(idx < len(nodes))
             unknown = np.where(idx >= len(nodes))  # flag unknown categories
             
             x[unknown, i] = 0  # Set new categories to 0 contribution
-            x[known, i] = nodes[idx[known], 2]  # TODO is this score?
-        
+            x[known, i] = nodes[idx[known], -4]  # get score
+
         return x
-    
+
     def predict_explain(self, x):
         """ Predictions with explanations.
-        
+
         Args:
             x (array-like): data to predict
 
         Returns:
             pd.DataFrame: prediction and explanation
         """
-        
+
         t = pd.DataFrame(self._transform(x), columns=self.columns)
         t['base_value'] = self.base_value
         t['score'] = t.sum(axis=1)
-        t['proba'] = (t['score'] * 100).astype(int).map(self._calibration_map)
         t['multiplier'] = t['proba'] / t['base_value']
-        t['support'] = (t['score'] * 100).astype(int).map(self._support_map)
 
         return t
-
 
     def _build_leaf_id_map(self):
         id_map = []
@@ -253,7 +319,7 @@ class BaseModel:
     def convert_to_model_profile_categories(self, x):
         return self._get_leaf_ids(x)
 
-    def _get_leaf_ids(self, x):
+    def _get_leaf_ids(self, x):  # TODO might Needs work
 
         x = x.copy()
         
@@ -266,83 +332,33 @@ class BaseModel:
 
             nodes = np.array(self._profile[i])
             if len(nodes) > 1:
-                idx = np.searchsorted(nodes[:, 1], x[:, i])
+                idx = np.searchsorted(nodes[:, -5], x[:, i])
                 x[:,i] = np.vectorize(lambda x: id_map[i][x])(idx.astype(int))
             else:
                 x[:,i] = 0
 
         return x.astype(int)
-
-    def _get_profile(self):
-        # instantiate Profile
-        profile = {
-            'base_value': self.base_value,
-            'numeric': {c: [] for c in self.numeric_columns},
-            'categorical': {c: [] for c in self.categorical_columns}
-        }
-        for i, (c, p) in enumerate(zip(self.columns, self._profile)):
-            p = np.array(p)
-            _key = "numeric" if c in self.numeric_columns else "categorical"
-
-            if len(p) < 2:
-                profile[_key][c] = []
-                continue
-
-            leaf_nodes = []
-            for v in p:
-                _prof = {
-                    'lower': v[0],
-                    'upper': v[1],
-                    'score': v[2],
-                    'mean': v[3],
-                    'freq': v[4]
-                    }
-                if _key == "categorical":
-                    _prof.update({
-                        'categories': [],
-                        'means': [],
-                        'frequencies': []
-                    })
-
-                leaf_nodes.append(_prof)
-
-            if _key == 'categorical':
-                mapp_inv = self.feature_map_inv[c]
-                for k in np.array(list(mapp_inv.keys())):
-                    idx = np.where((p[:, 0] < k) & (k < p[:, 1]))
-                    leaf_nodes[idx[0][0]]['categories'].append(mapp_inv[k])
-                    
-                    leaf_nodes[idx[0][0]]['means'].append(
-                        self.category_meta[c]["means"][k])
-
-                    leaf_nodes[idx[0][0]]['frequencies'].append(
-                        self.category_meta[c]["freqs"][k])
-
-            profile[_key][c] = leaf_nodes
-
-        return profile
     
-    def _get_feature_importances(self):
+    def _get_feature_importances(self):  # TODO checked
         """ Calculates the feature importances for the model decision process.
 
         Returns:
             dict: The feature importances.
         """
-
         importances = {}
         total_importance = 0
         profile = self.profile
         for i in ["numeric", "categorical"]:
-            for feature, leaves in profile[i].items():        
+            for feature, leaves in profile[i].items():
                 importance = 0
                 for leaf in leaves:
+                    # print(leaf['score'], leaf['freq'])
                     importance += abs(leaf['score']) * np.log2(leaf['freq']*100)
                 
                 importances[feature] = importance
                 total_importance += importance
 
-        return {k: v/total_importance for k, v in sorted(
-            importances.items(), key=lambda item: item[1])}
+        return {k: v/total_importance for k, v in sorted(importances.items(), key=lambda item: item[1])}
     
     def explain(self, label_rounding=5):
         try:
@@ -363,19 +379,7 @@ class BaseModel:
 
         return _plot_local_explainer(self, t, subsample)
 
-    def _check_param_bounds(self):
-        assert self.max_depth >= 0, \
-            'max_depth must be greater than or equal to 0'
-
-        assert -1 <= self.min_leaf_size < 1, \
-            'min_leaf_size must be between -1 and 1'
-
-        assert -1 <= self.min_info_gain < 1, \
-            'min_info_gain must be between -1 and 1'
-
-        assert 0 <= self.alpha <= 1, 'alpha must be between 0 and 1'
-
-    def _fit_check(  # TODO better function name
+    def _fit_check(  # TODO better function name  # TODO checked
         self, x: Union[pd.DataFrame, np.ndarray],
         y: Union[pd.Series, np.ndarray], id_columns: list = [],
         column_names: list = None, target_name: str = 'target', map_calibration=False
@@ -401,13 +405,21 @@ class BaseModel:
         x, y = self._coerce_dtypes(x, y)
         self._fetch_meta(x, y)
         self._learn_encodings(x, y)
-        x, y = self._encode(x, y)
+        x, y = self._encode(x, y)  # turns categories into into bin indices
         self._calculate_category_meta(x, y)
         x, y = self._preprocess(x, y)
 
         x = x.values
         y = y.values
         self.base_value = np.mean(y)
+
+        # Dynamic min_leaf_size
+        if self.min_leaf_size == -1:
+            self.min_leaf_size = self.base_value / 10
+
+        # Dynamic min_info_gain
+        if self.min_info_gain == -1:
+            self.min_info_gain = self.base_value / 10
 
         if map_calibration:
             return x, y, x_cal, y_cal
@@ -499,7 +511,7 @@ class BasePartition:
 
         for i in range(x.shape[1]):
             nodes = np.array(profile[i])
-            idx = np.searchsorted(nodes[:, 1], x[:,i])
+            idx = np.searchsorted(nodes[:, -5], x[:, i])
 
             known = np.where(idx < len(nodes))
             unknown = np.where(idx >= len(nodes)) # flag unknown categories

@@ -6,9 +6,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import pandas as pd
 from ._base_model import BaseModel, BasePartition
-from ._constructor import XConstructor  # , XClfConstructor, XRegConstructor
+from ._constructor import XConstructor, XClfConstructor, XRegConstructor
 from sklearn.metrics import *
-import copy
 from time import time
 from typing import Union
 
@@ -93,32 +92,20 @@ class XRegressor(BaseModel):
         self.feature_params = {}
         self.samples = None
 
-    def _get_params(self) -> dict:
+    def _get_params(self) -> dict:  # TODO checked
         """ Returns the parameters of the model.
 
         Returns:
             dict: The model parameters.
         """
-
-        params =  {
-            'max_depth': self.max_depth,
-            'min_leaf_size': self.min_leaf_size,
-            'alpha': self.alpha,
-            'min_info_gain': self.min_info_gain,
-            'tail_sensitivity': self.tail_sensitivity
+        params = super()._get_params()
+        params.update(
+            {
+                'tail_sensitivity': self.tail_sensitivity
             }
+        )
 
         return params
-    
-    @property
-    def params(self) -> dict:
-        """ Returns the parameters of the model.
-
-        Returns:
-            dict: The model parameters.
-        """
-
-        return self._get_params()
 
     def set_params(
             self, max_depth: int , min_leaf_size: float, min_info_gain: float,
@@ -158,7 +145,7 @@ class XRegressor(BaseModel):
 
             if (self.columns[i] in features) or not features:
                 for n in range(len(xconst._nodes)):  # TODO try min max score thing
-                    xconst._nodes[n][2] = xconst._nodes[n][5] / len(self.columns)
+                    xconst._nodes[n][-4] = xconst._nodes[n][-1] / len(self.columns)
             
             # don't update the original leaf nodes
             self._profile.append(np.array([list(x) for x in xconst._nodes]))
@@ -199,7 +186,11 @@ class XRegressor(BaseModel):
         
         for i in range(x.shape[1]):
             f = x[:, i]
-            xconst = XConstructor(
+
+            # chooses constructor type based on type of input feature
+            constructor = XClfConstructor if self.columns[i] in self.categorical_columns else XRegConstructor
+
+            xconst = constructor(
                 regressor=True,
                 max_depth=self.max_depth,
                 min_info_gain=self.min_info_gain,
@@ -209,13 +200,14 @@ class XRegressor(BaseModel):
                 )
 
             xconst.fit(f, y)
+            xconst.construct()
             self._constructs.append(xconst)
-            
+
         self._build_profile()
 
-        params = self.params
-        self.feature_params = {c: copy.copy(params) for c in self.columns}
-        
+        params = self.params.copy()
+        self.feature_params = {c: params for c in self.columns}
+
         # record metadata
         self.metadata['fit_time'] = time() - start
         self.metadata['observations'] = x.shape[0]
@@ -321,13 +313,14 @@ class XRegressor(BaseModel):
         for feature in features:
             idx = self.columns.index(feature)
 
-            self._constructs[idx].reconstruct(
-                max_depth = max_depth,
-                min_info_gain = min_info_gain,
-                min_leaf_size = min_leaf_size,
-                alpha = alpha,
-                tail_sensitivity = tail_sensitivity
+            self._constructs[idx].set_parameters(
+                max_depth=max_depth,
+                min_info_gain=min_info_gain,
+                min_leaf_size=min_leaf_size,
+                alpha=self.alpha,
+                tail_sensitivity=tail_sensitivity
             )
+            self._constructs[idx].construct()
 
             self.feature_params[feature].update({
                 'max_depth': max_depth,
