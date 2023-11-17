@@ -7,7 +7,7 @@ find = {}
 
 [project]
 name = "xplainable"
-version = "1.0.17"
+version = "1.0.18"
 authors = [
   { name="xplainable pty ltd", email="contact@xplainable.io" },
 ]
