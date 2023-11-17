@@ -13,9 +13,10 @@ from ..utils.encoders import NpEncoder
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from ..gui.screens.preprocessor import Preprocessor
+from ..preprocessing.pipeline import XPipeline
 from ..preprocessing import transformers as xtf
 from ..utils.exceptions import AuthenticationError
+from ..utils.helpers import get_df_delta
 from ..quality.scanner import XScan
 from ..metrics.metrics import evaluate_classification, evaluate_regression
 from ..core.models import (XClassifier, XRegressor, PartitionedRegressor,
@@ -156,7 +157,7 @@ class Client:
 
     def load_preprocessor(
             self, preprocessor_id: int, version_id: int,
-            response_only: bool = False):
+            gui_object: bool = False, response_only: bool = False):
         """ Loads a preprocessor by preprocessor_id and version_id.
 
         Args:
@@ -165,7 +166,7 @@ class Client:
             response_only (bool, optional): Returns the preprocessor metadata.
 
         Returns:
-            xplainable.preprocessing.Preprocessor: The loaded preprocessor
+            xplainable.preprocessing.pipeline.Pipeline: The loaded pipeline
         """
 
         def build_transformer(stage):
@@ -189,20 +190,28 @@ class Client:
             if response_only:
                 return response
 
-            stages = response['stages']
-            deltas = response['deltas']
-            
         except Exception as e:
             raise ValueError(
             f'Preprocessor with ID {preprocessor_id}:{version_id} does not exist')
-            
-        xp = Preprocessor()
-        xp.pipeline.stages = [{"feature": i["feature"], "name": i["name"], \
-            "transformer": build_transformer(i)} for i in stages]
-        xp.df_delta = deltas
-        xp.state = len(xp.pipeline.stages)
+        
+        stages = response['stages']
+        deltas = response['deltas']
 
-        return xp
+        pipeline = XPipeline()
+        pipeline.stages = [{"feature": i["feature"], "name": i["name"], \
+                "transformer": build_transformer(i)} for i in stages]
+        
+        if not gui_object:
+            return pipeline
+
+        else:
+            from ..gui.screens.preprocessor import Preprocessor
+            pp = Preprocessor()
+            pp.pipeline = pipeline
+            pp.df_delta = deltas
+            pp.state = len(pipeline.stages)
+
+            return pp
     
     def load_classifier(self, model_id: int, version_id: int, model=None):
         """ Loads a binary classification model by model_id
@@ -364,14 +373,13 @@ class Client:
         return preprocessor_id
     
     def create_preprocessor_version(
-            self, preprocessor_id: str, preprocessor) -> str:
+            self, preprocessor_id: str, pipeline: list, df: pd.DataFrame = None
+            ) -> str:
         """ Creates a new preprocessor version and returns the version id.
 
         Args:
             preprocessor_id (int): The preprocessor id
-            stages (dict): The preprocessor stages
-            deltas (dict): The preprocessor deltas
-            versions (dict): Versions of current environment
+            pipeline (xplainable.preprocessing.pipeline.Pipeline): pipeline
 
         Returns:
             int: The preprocessor version id
@@ -379,7 +387,14 @@ class Client:
 
         # Structure the stages and deltas
         stages = []
-        for stage in preprocessor.pipeline.stages:
+        deltas = []
+        if df is not None:
+            before = df.copy()
+            deltas.append({"start": json.loads(before.head(10).to_json(
+                orient='records'))})
+            delta_gen = pipeline.transform_generator(before)
+
+        for stage in pipeline.stages:
             step = {
                 'feature': stage['feature'],
                 'name': stage['name'],
@@ -388,7 +403,11 @@ class Client:
 
             stages.append(step)
 
-        deltas = preprocessor.df_delta
+            if df is not None:
+                after = delta_gen.__next__()
+                delta = get_df_delta(before.copy(), after.copy())
+                deltas.append(delta)
+                before = after.copy()
 
         # Get current versions
         versions = {
@@ -414,7 +433,7 @@ class Client:
         version_id = get_response_content(response)
 
         return version_id
-    
+        
     def _detect_model_type(self, model):
 
         if 'Partitioned' in model.__class__.__name__:

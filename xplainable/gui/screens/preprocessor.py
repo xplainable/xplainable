@@ -26,7 +26,6 @@ class Preprocessor:
         self._df_trans = pd.DataFrame()
         self.state = 0
         self.scan = {}
-        self.df_delta = []
 
         self.preprocessor_options = None
         self.screen = None
@@ -271,24 +270,6 @@ class Preprocessor:
             else:
                 docs_text.value = ""
 
-        # Get the difference in dataframes from dataset transformers
-        def get_df_delta(df1, df2):
-            """ Gets the delta between two dataframs"""
-            changed_features = [c for c in df1.columns.intersection(
-                df2.columns) if not df1[c].head(10).equals(df2[c].head(10))]
-
-            output = {
-                "drop": [col for col in df1.columns if col not in df2.columns],
-                "add": [{"feature": col, "values": json.loads(
-                df2[col].head(10).to_json(orient='records'))} for col in \
-                    df2.columns if col not in df1.columns],
-                "update": [{
-                    "feature": col,
-                    "values": json.loads(df2[col].head(10).to_json(
-                        orient='records'))} for col in changed_features]}
-
-            return output
-
         def get_tf_description(name):
             """Retreives transformer function documentation (first line)"""
             matches = [c for c in clsmembers if c[0] == name]
@@ -396,11 +377,6 @@ class Preprocessor:
 
             dataset_changed()
             
-            # record delta changes
-            self.df_delta.append(
-                    get_df_delta(head_before.copy(), head_after.copy())
-                    )
-
             if tf_feature == '__dataset__':
                 #rescan data
                 if always_rescan_dataset.value:
@@ -437,9 +413,6 @@ class Preprocessor:
             pipeline_list.options = [
                 f'{i}: {s["feature"]} --> {s["name"]} --> {s["transformer"].__dict__}' \
                     for i, s in enumerate(self.pipeline.stages)]
-
-            for i in sorted(list(idx), reverse=True):
-                del self.df_delta[i+1]
 
             rerun_pipeline()
             dataset_changed()
@@ -734,11 +707,6 @@ class Preprocessor:
             self._df_trans = df.copy()
             if len(self.pipeline.stages) > 0:
                 self._df_trans = self.transform(self._df_trans)
-
-        # Instantiate delta tracking
-        if len(self.df_delta) == 0:
-            self.df_delta.append(
-                {"start": json.loads(df.head(10).to_json(orient='records'))})
 
         # Retrieve all transformers
         clsmembers = inspect.getmembers(xtf, inspect.isclass)
