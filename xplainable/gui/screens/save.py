@@ -470,7 +470,8 @@ class PreprocessorPersist:
             # Create preprocessor version
             preprocessor_id = xplainable.client.create_preprocessor_version(
                 preprocessor_id,
-                self.preprocessor
+                self.preprocessor.pipeline,
+                self.preprocessor._df_trans
                 )
 
             confirm_button.description = "Saved"
