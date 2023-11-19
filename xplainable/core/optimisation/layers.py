@@ -7,6 +7,7 @@ from numba import njit, prange
 from ...utils.numba_funcs import *
 from .genetic import XEvolutionaryNetwork
 import warnings
+from tqdm import tqdm
 
 
 class BaseLayer:
@@ -438,8 +439,13 @@ class Evolve(BaseLayer):
 
         # iterations since best
         isb = 0
-        
-        for i in range(1, self.generations+1):
+        # pbar = tqdm(["a", "b", "c", "d"])
+        # for char in pbar:
+        #     time.sleep(0.25)
+        #     pbar.set_description("Processing %s" % char)
+        generation_range = tqdm(range(1, self.generations+1))
+        generation_range.set_description("Evolve Layer")
+        for i in generation_range:
             # Handle Early stopping
             if (self.early_stopping) is not None and (isb >= self.early_stopping):
                 if callback:
@@ -667,8 +673,9 @@ class Tighten(BaseLayer):
         isb = 0
         
         # start optimisation process
-        for i in range(1, self.iterations+1):
-
+        generation_range = tqdm(range(1, self.iterations + 1))
+        generation_range.set_description("Tighten Layer")
+        for i in generation_range:
             # stop early if early stopping threshold reached
             if (self.early_stopping) is not None and (isb >= self.early_stopping):
                 if callback:
