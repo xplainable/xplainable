@@ -155,8 +155,9 @@ class Client:
 
 
     def load_preprocessor(
-            self, preprocessor_id: int, version_id: int,
-            response_only: bool = False):
+            self, preprocessor_id: int,
+            version_id: int, response_only: bool = False
+    ):
         """ Loads a preprocessor by preprocessor_id and version_id.
 
         Args:

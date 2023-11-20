@@ -83,8 +83,7 @@ class XPipeline:
                 continue
 
             # Check for features that have appeared before
-            prev_feature_transformers = [
-                s for s in self.stages[:i] if s['feature'] == stage["feature"]]
+            prev_feature_transformers = [s for s in self.stages[:i] if s['feature'] == stage["feature"]]
             
             # Apply previous transformation if appeared before (for chaining)
             if len(prev_feature_transformers) > 0:

@@ -27,6 +27,7 @@ class XConstructor:
         self.samples = 0
         self.base_partition = None
         self.base_meta = None
+        self.null_meta = [0, 0]
 
         self._nodes = None
         self._max_score = -np.inf
@@ -50,7 +51,11 @@ class XConstructor:
     def _get_base_partition(self, X: np.array):  # TODO checked
         """ Gets all the categories for the feature """
         # Sort unique categories ascending
-        return np.sort(np.unique(X))
+        cats = np.unique(X)
+        cats = numpy.delete(cats, (numpy.where(np.isnan(cats))))  # Remove nan
+        # if any(np.isnan(cats)):
+        #     cats = numpy.delete(cats, np.nan)
+        return cats
 
     def _activation(self, v):  # TODO checked
         """ Activation function for frequency weighting """
@@ -83,8 +88,24 @@ class XConstructor:
 
         self.base_partition = self._get_base_partition(X)
         self.base_meta = self._get_base_meta(self.base_partition, X, y)
+        self.null_meta = self._get_null_meta(X, y)
 
         return self
+
+    def _get_null_meta(self, X, y):
+        """ Instantiates metadata at each category"""
+        _len_y = y.size
+        null_cnt = 0
+        null_pos = 0
+        for v in prange(_len_y):
+            if np.isnan(X[v]):
+                null_cnt += 1
+                null_pos += y[v]
+
+        null_mean = 0
+        if null_cnt != 0:
+            null_mean = null_pos / null_cnt
+        return [null_cnt, null_mean]
 
     def construct(self):
         self._nodes = self._construct()
@@ -166,6 +187,25 @@ class XClfConstructor(XConstructor):
                     score
                 ]
             )
+
+        _count, _mean = self.null_meta
+        _freq = _count/self.samples
+
+        diff = _mean - self.base_value
+        if self.regressor:
+            score = (abs(diff) ** self.tail_sensitivity) * np.sign(diff)
+        else:
+            score = self._activation(_freq*100) * diff
+
+        _nodes.append(
+            [
+                np.nan,
+                score,
+                _mean,
+                _freq,
+                score
+            ]
+        )
 
         self._min_score = min([a[-4] for a in _nodes])
         self._max_score = max([a[-4] for a in _nodes])
@@ -409,6 +449,29 @@ class XRegConstructor(XConstructor):
 
             stack.append(_1_node)
             stack.append(_0_node)
+
+        _count, _mean = self.null_meta
+        _freq = _count / self.samples
+
+        if _count == 0:
+            score = 0
+        else:
+            diff = _mean - self.base_value
+            if self.regressor:
+                score = (abs(diff) ** self.tail_sensitivity) * np.sign(diff)
+            else:
+                score = self._activation(_freq * 100) * diff
+
+        _nodes.append(
+            [
+                np.nan,
+                np.nan,
+                score,
+                _mean,
+                _freq,
+                score
+            ]
+        )
 
         return np.array(_nodes)
 

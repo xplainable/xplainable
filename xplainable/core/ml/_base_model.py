@@ -70,8 +70,11 @@ class BaseModel:
             leaf_nodes = []
             for v in p:
                 if _key == "categorical":
+                    cat = "Null"
+                    if not np.isnan(v[0]):
+                        cat = self.feature_map_inv[c][v[0]]
                     _prof = {
-                        'category': self.feature_map_inv[c][v[0]],
+                        'category': cat,
                         'score': v[1],
                         'mean': v[2],
                         'freq': v[3],
