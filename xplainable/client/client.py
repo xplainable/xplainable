@@ -16,10 +16,10 @@ from requests.packages.urllib3.util.retry import Retry
 from ..gui.screens.preprocessor import Preprocessor
 from ..preprocessing import transformers as xtf
 from ..utils.exceptions import AuthenticationError
+from ..utils.dualdict import FeatureMap, TargetMap
 from ..quality.scanner import XScan
 from ..metrics.metrics import evaluate_classification, evaluate_regression
-from ..core.models import (XClassifier, XRegressor, PartitionedRegressor,
-                           PartitionedClassifier)
+from ..core.models import (XClassifier, XRegressor, PartitionedRegressor, PartitionedClassifier, ConstructorParams)
 
 from ..config import OUTPUT_TYPE
 
@@ -241,18 +241,18 @@ class Client:
                 int(i): v for i, v in p['support_map'].items()}
             
             model.base_value = p['base_value']
-            model.target_map = p['target_map']
-            model.feature_map = p['feature_map']
-
-            model.feature_map_inv = {k: {v: k2 for k2, v in v.items()} for \
-                                     k, v in p['feature_map'].items()}
+            model.target_map = TargetMap(p['target_map'], True)
+            model.feature_map = FeatureMap(p['feature_map'])
+            model.default_parameters = ConstructorParams(p['default_parameters'])
             
             model.columns = p['columns']
             model.id_columns = p['id_columns']
+
             model.categorical_columns = p['feature_map'].keys()
-            
-            model.numeric_columns = [c for c in model.columns if c not \
-                                     in model.categorical_columns]
+            model.numeric_columns = [c for c in model.columns if c not in model.categorical_columns]
+
+            model.constructs_from_json(p['constructs'])
+
             model.category_meta = {
                 i: {ii: {int(float(k)): v for k, v in vv.items()} for ii, vv \
                     in v.items()} for i, v in p['category_meta'].items()}
@@ -287,17 +287,18 @@ class Client:
             model._profile = np.array([
                 np.array(i) for i in json.loads(p['profile'])])
             model.base_value = p['base_value']
-            model.target_map = p['target_map']
-            model.feature_map = p['feature_map']
+            model.target_map = TargetMap(p['target_map'], True)
+            model.feature_map = {k: FeatureMap(v) for k, v in p['feature_map']}
+            model.default_parameters = ConstructorParams(p['default_parameters'])
 
-            model.feature_map_inv = {k: {v: k2 for k2, v in v.items()} for \
-                                     k, v in p['feature_map'].items()}
-            
             model.columns = p['columns']
             model.id_columns = p['id_columns']
+
             model.categorical_columns = p['feature_map'].keys()
-            model.numeric_columns = [c for c in model.columns if c \
-                                     not in model.categorical_columns]
+            model.numeric_columns = [c for c in model.columns if c not in model.categorical_columns]
+
+            model.constructs_from_json(p['constructs'])
+
             model.category_meta = {
                 i: {ii: {int(float(k)): v for k, v in vv.items()} for ii, vv \
                     in v.items()} for i, v in p['category_meta'].items()}
@@ -526,7 +527,7 @@ class Client:
 
         # Create a new version and fetch id
         url = f'{self.hostname}/v1/{self.__ext}/models/{model_id}/add-version'
-        response = self.__session.post(url=url,json=payload)
+        response = self.__session.post(url=url, json=payload)
 
         version_id = get_response_content(response)
 
@@ -559,16 +560,16 @@ class Client:
                 json.dumps(model.id_columns, cls=NpEncoder)),
             "columns": json.loads(
                 json.dumps(model.columns, cls=NpEncoder)),
-            "target_map": json.loads(
-                json.dumps(model.target_map_inv, cls=NpEncoder)),
-            "parameters": json.loads(
-                json.dumps(model.params, cls=NpEncoder)),
+            "default_parameters": model.params.to_json(),
             "base_value": json.loads(
                 json.dumps(model.base_value, cls=NpEncoder)),
             "feature_map": json.loads(
-                json.dumps(model.feature_map, cls=NpEncoder)),
+                json.dumps({k: fm.forward for k, fm in model.feature_map.items()}, cls=NpEncoder)),
+            "target_map": json.loads(
+                json.dumps(model.target_map.reverse, cls=NpEncoder)),
             "category_meta": json.loads(
                 json.dumps(model.category_meta, cls=NpEncoder)),
+            "constructs": model.constructs_to_json(),
             "calibration_map": None,
             "support_map": None
             }
@@ -578,19 +579,23 @@ class Client:
                 "calibration_map": json.loads(
                     json.dumps(model._calibration_map, cls=NpEncoder)),
                 "support_map": json.loads(
-                json.dumps(model._support_map, cls=NpEncoder))
+                    json.dumps(model._support_map, cls=NpEncoder))
             })
 
             evaluation = model.metadata.get('evaluation', {})
             if evaluation == {}:
                 y_prob = model.predict_score(x)
+                print(model.predict(x))
+                print(y)
+                print(y_prob)
+                exit()
 
                 if model.target_map:
                     y = y.map(model.target_map)
 
                 evaluation = {
-                            'train': evaluate_classification(y, y_prob)
-                        }
+                    'train': evaluate_classification(y, y_prob)
+                }
                 
         elif model_type == 'regression':
             evaluation = model.metadata.get('evaluation', {})

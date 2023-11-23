@@ -444,7 +444,7 @@ class Evolve(BaseLayer):
         #     time.sleep(0.25)
         #     pbar.set_description("Processing %s" % char)
         generation_range = tqdm(range(1, self.generations+1))
-        generation_range.set_description("Evolve Layer")
+        generation_range.set_description(f"Layer {len(self.xnetwork.completed_layers) + 1} (Evolve)")
         for i in generation_range:
             # Handle Early stopping
             if (self.early_stopping) is not None and (isb >= self.early_stopping):
@@ -674,7 +674,7 @@ class Tighten(BaseLayer):
         
         # start optimisation process
         generation_range = tqdm(range(1, self.iterations + 1))
-        generation_range.set_description("Tighten Layer")
+        generation_range.set_description(f"Layer {len(self.xnetwork.completed_layers) + 1} (Tighten)")
         for i in generation_range:
             # stop early if early stopping threshold reached
             if (self.early_stopping) is not None and (isb >= self.early_stopping):

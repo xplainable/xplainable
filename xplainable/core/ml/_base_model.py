@@ -4,29 +4,33 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import is_bool_dtype
 from typing import Union
+from ...utils.dualdict import FeatureMap, TargetMap
+from ._constructor_parameters import ConstructorParams
+from ._constructor import XConstructor
 
 
 class BaseModel:
 
     def __init__(
-        self, max_depth: int = 8, min_leaf_size: float = 0.02,
-        min_info_gain: float = 0.02, alpha: float = 0.01
+        self,
+        default_parameters: ConstructorParams
     ):
-        self.max_depth = max_depth
-        self.min_leaf_size = min_leaf_size
-        self.min_info_gain = min_info_gain
-        self.alpha = alpha
+        self.default_parameters = default_parameters
 
         self.columns = []
         self.id_columns = []
+
+        self._constructs = []
         self._profile = []
+
         self.base_value = None
         self.base_value = None
-        self.target_map = {}
-        self.target_map_inv = {}
-        self.feature_map = {}
-        self.feature_map_inv = {}
+        self.target_map = TargetMap()
+        self.feature_map = FeatureMap()
         self.category_meta = {}
+
+        self.min_seen = 0
+        self.max_seen = 1
 
         self.metadata = {"optimised": False}
 
@@ -70,11 +74,8 @@ class BaseModel:
             leaf_nodes = []
             for v in p:
                 if _key == "categorical":
-                    cat = "Null"
-                    if not np.isnan(v[0]):
-                        cat = self.feature_map_inv[c][v[0]]
                     _prof = {
-                        'category': cat,
+                        'category': self.feature_map[c].get_item_directional(v[0], reverse=True),
                         'score': v[1],
                         'mean': v[2],
                         'freq': v[3],
@@ -95,36 +96,45 @@ class BaseModel:
         return profile
 
     @property
-    def params(self) -> dict:  # TODO checked
+    def params(self) -> ConstructorParams:  # TODO checked
         """ Returns the parameters of the model.
 
         Returns:
-            dict: The model parameters.
+            ConstructorParams: The default model parameters.
         """
 
-        return self._get_params()
+        return self.default_parameters
 
-    def _get_params(self) -> dict:  # TODO checked
-        """ Returns the parameters of the model.
+    def set_params(
+            self,
+            default_parameters: ConstructorParams
+    ) -> None:
+        """ Sets the parameters of the model. Generally used for model tuning.
+
+        Args:
+            default_parameters (ConstructorParams): default constructor parameters
 
         Returns:
-            dict: The model parameters.
+            None
         """
+        self.default_parameters = default_parameters
 
-        params = {
-            'max_depth': self.max_depth,
-            'min_leaf_size': self.min_leaf_size,
-            'alpha': self.alpha,
-            'min_info_gain': self.min_info_gain,
-        }
+    def _build_profile(self):
+        """ Builds the profile from each feature construct."""
+        self._profile = []
+        _sum_min, _sum_max = [
+            sum(m) for m in zip(
+                *[
+                    (const.min_raw_score, const.max_raw_score) for const in self._constructs
+                ]
+            )
+        ]
 
-        return params
+        for xconst in self._constructs:
+            xconst.normalise_scores(_sum_min, _sum_max, self.base_value, self.min_seen, self.max_seen)
+            self._profile.append(np.array([list(x) for x in xconst._nodes]))
 
-    def _check_param_bounds(self):  # TODO checked
-        assert self.max_depth >= 0, 'max_depth must be greater than or equal to 0'
-        assert -1 <= self.min_leaf_size < 1, 'min_leaf_size must be between -1 and 1'
-        assert -1 <= self.min_info_gain < 1, 'min_info_gain must be between -1 and 1'
-        assert 0 <= self.alpha <= 1, 'alpha must be between 0 and 1'
+        return self
 
     def _encode_feature(self, x, y):
         """ Encodes features in order of their relationship with the target.
@@ -145,18 +155,19 @@ class BaseModel:
             y = y.map(self.target_map)
         # Order categories by their relationship with the target variable
         ordered_values = pd.DataFrame(
-            {'x': x, 'y': y}).groupby('x').agg({'y': 'mean'}).sort_values(
-            'y', ascending=True).reset_index()
+            {'x': x, 'y': y}
+        ).groupby('x').agg({'y': 'mean'}).sort_values(
+            'y', ascending=True
+        ).reset_index()
         # Encode feature
-        feature_map = {val: i for i, val in enumerate(ordered_values['x'])}
-        # Store map for transformation
-        self.feature_map[name] = feature_map
-        # Store inverse map for reversal
-        self.feature_map_inv[name] = {v: i for (i, v) in feature_map.items()}  # TODO maybe use DualDict
+        self.feature_map[name] = FeatureMap(
+            {val: i for i, val in enumerate(ordered_values['x'])}
+        )
         return
 
-    def _cast_to_pandas(self, x, y=None, target_name='target', column_names=None):
-        
+    @staticmethod
+    def _cast_to_pandas(x, y=None, target_name='target', column_names=None):
+
         if isinstance(x, np.ndarray):
             x = pd.DataFrame(x)
             if column_names is not None:
@@ -167,7 +178,7 @@ class BaseModel:
                 x.columns = [f"feature_{i}" for i in range(x.shape[1])]
             x = x.apply(pd.to_numeric, errors='ignore')
 
-        if y is not None: 
+        if y is not None:
             if isinstance(y, np.ndarray):
                 y = pd.Series(y)
                 assert isinstance(target_name, str), \
@@ -185,25 +196,18 @@ class BaseModel:
         # Cast as category
         target_ = y.astype('category')
 
-        # Get the inverse label map
-        self.target_map_inv = dict(enumerate(target_.cat.categories))
-
         # Get the label map
-        self.target_map = {
-            value: key for key, value in self.target_map_inv.items()}
+        self.target_map = TargetMap({value: key for key, value in dict(enumerate(target_.cat.categories)).items()})
 
         return
 
     def _fetch_meta(self, x, y):  # TODO checked
         # Assign target variable
         self.target = y.name
-
         # Store numeric column names
         self.numeric_columns = list(x.select_dtypes('number'))
-
         # Store categorical column names
         self.categorical_columns = list(x.select_dtypes('object'))  # TODO make categorical
-
         self.columns = list(x.columns)
 
     def _calculate_category_meta(self, x, y):
@@ -215,11 +219,8 @@ class BaseModel:
                 'target': y
             })
             
-            self.category_meta[col]["means"] = dict(
-                group.groupby(col)['target'].mean())
-
-            self.category_meta[col]["freqs"] = dict(
-                x[col].value_counts() / len(y))
+            self.category_meta[col]["means"] = dict(group.groupby(col)['target'].mean())
+            self.category_meta[col]["freqs"] = dict(x[col].value_counts() / len(y))
 
     def _preprocess(self, x, y=None):
         """Removes unknown categories and puts them into the self.columns order"""
@@ -234,45 +235,33 @@ class BaseModel:
         return x
 
     def _coerce_dtypes(self, x, y=None):
-
         for col in x.columns:
             if is_bool_dtype(x[col]):
                 x[col] = x[col].astype(str)
-
         if y is not None:
             if is_bool_dtype(y):
                 y = y.astype(int)
-            
             return x, y
-        
         return x
 
     def _learn_encodings(self, x, y):
-        
-        if y.dtype == 'object':
+        if y.dtype == 'object':  # TODO make categorical
             self._encode_target(y)
-
         for f in self.categorical_columns:
             self._encode_feature(x[f], y)
-
         return
 
     def _encode(self, x, y=None):
-        # Apply encoding
         for f, m in self.feature_map.items():
             x.loc[:, f] = x.loc[:, f].map(m)
-
         if y is not None:
             if len(self.target_map) > 0:
                 y = y.map(self.target_map)
-                
             y = y.astype(float)
             return x, y
-        
         return x
 
     def _transform(self, x):  # TODO checked
-
         x = x.copy()
         x = self._cast_to_pandas(x, column_names=self.columns)
         x = self._coerce_dtypes(x)
@@ -281,12 +270,10 @@ class BaseModel:
 
         for i in range(x.shape[1]):
             nodes = np.array(self._profile[i])
-            idx = np.searchsorted(nodes[:, -5], x[:, i])  # TODO get the bin ids?
-            # print(idx)
-            # exit()
+            idx = np.searchsorted(nodes[:, -5], x[:, i])
 
             known = np.where(idx < len(nodes))
-            unknown = np.where(idx >= len(nodes))  # flag unknown categories
+            unknown = np.where(idx >= len(nodes))  # flag unknown categories  # TODO nan
             
             x[unknown, i] = 0  # Set new categories to 0 contribution
             x[known, i] = nodes[idx[known], -4]  # get score
@@ -342,7 +329,7 @@ class BaseModel:
 
         return x.astype(int)
     
-    def _get_feature_importances(self):  # TODO checked
+    def _get_feature_importances(self):
         """ Calculates the feature importances for the model decision process.
 
         Returns:
@@ -350,16 +337,14 @@ class BaseModel:
         """
         importances = {}
         total_importance = 0
-        profile = self.profile
-        for i in ["numeric", "categorical"]:
-            for feature, leaves in profile[i].items():
-                importance = 0
-                for leaf in leaves:
-                    # print(leaf['score'], leaf['freq'])
-                    importance += abs(leaf['score']) * np.log2(leaf['freq']*100)
-                
-                importances[feature] = importance
-                total_importance += importance
+
+        for i, feature_name in enumerate(self.columns):
+            importance = 0
+            for leaf in self._profile[i][:-1 if self.params.ignore_nan else len(self._profile)]:
+                importance += abs(leaf[-4]) * np.log2(leaf[-2] * 100) if leaf[-2] > 0 else 0
+
+            importances[feature_name] = importance
+            total_importance += importance
 
         return {k: v/total_importance for k, v in sorted(importances.items(), key=lambda item: item[1])}
     
@@ -387,8 +372,6 @@ class BaseModel:
         y: Union[pd.Series, np.ndarray], id_columns: list = [],
         column_names: list = None, target_name: str = 'target', map_calibration=False
     ):  # TODO clarify return type: ndarray, ndarray, df, df
-        # Ensure parameters are valid
-        self._check_param_bounds()
 
         x = x.copy()
         y = y.copy()
@@ -417,17 +400,29 @@ class BaseModel:
         self.base_value = np.mean(y)
 
         # Dynamic min_leaf_size
-        if self.min_leaf_size == -1:
+        if self.params.min_leaf_size == -1:
             self.min_leaf_size = self.base_value / 10
 
         # Dynamic min_info_gain
-        if self.min_info_gain == -1:
+        if self.params.min_info_gain == -1:
             self.min_info_gain = self.base_value / 10
 
         if map_calibration:
             return x, y, x_cal, y_cal
         else:
             return x, y, None, None
+
+    def constructs_to_json(self):
+        constructs = []
+        for c in self._constructs:
+            constructs.append(c.to_json(self.params))
+            # XConstructor.from_json(c.to_json(model.params), default_parameter_set)
+        return constructs
+
+    def constructs_from_json(self, data):
+        self._constructs = []
+        for c in data:
+            self._constructs.append(XConstructor.from_json(c))
 
 
 class BasePartition:
@@ -501,8 +496,7 @@ class BasePartition:
             pandas.DataFrame: The transformed dataset.
         """
 
-        assert str(partition) in self.partitions.keys(), \
-            f'Partition {partition} does not exist'
+        assert str(partition) in self.partitions.keys(), f'Partition {partition} does not exist'
 
         x = x.copy()
         partition = str(partition)

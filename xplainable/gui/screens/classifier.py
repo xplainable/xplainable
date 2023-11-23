@@ -2,7 +2,7 @@
 
 from IPython.display import display, clear_output
 import ipywidgets as widgets
-from ...core.models import XClassifier, PartitionedClassifier
+from ...core.models import XClassifier, PartitionedClassifier, ConstructorParams
 from ...core.optimisation.bayesian import XParamOptimiser
 from ...utils import TrainButton
 from ...utils.activation import flex_activation
@@ -26,6 +26,7 @@ from ..._dependencies import _check_critical_versions
 
 import os
 os.environ['KMP_WARNINGS'] = '0'
+
 
 def classifier(df):
     """ Trains an xplainable classifier via a simple GUI.
@@ -671,7 +672,7 @@ def classifier(df):
                         params = opt.optimise(X_train, y_train, verbose=False,
                                      callback=callback)
                         
-                        model.set_params(**params)
+                        model.set_params(ConstructorParams(**params))
                         model.metadata["optimised"] = True
                         model.metadata["optimiser"] = opt.metadata
 

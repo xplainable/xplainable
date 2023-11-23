@@ -6,7 +6,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import pandas as pd
 from ._base_model import BaseModel, BasePartition
-from ._constructor import XConstructor, XClfConstructor, XRegConstructor
+from ._constructor import XConstructor, XCatConstructor, XNumConstructor, ConstructorParams
 from sklearn.metrics import *
 from time import time
 from typing import Union
@@ -70,94 +70,30 @@ class XRegressor(BaseModel):
         max_depth (int): The maximum depth of each decision tree.
         min_leaf_size (float): The minimum number of samples required to make a split.
         min_info_gain (float): The minimum information gain required to make a split.
-        alpha (float): Sets the number of possible splits with respect to unique values.
         tail_sensitivity (float): Adds weight to divisive leaf nodes.
         prediction_range (tuple): The lower and upper limits for predictions.
     
     """
 
     def __init__(
-            self, max_depth: int = 8, min_leaf_size: float = 0.02,
-            min_info_gain: float = 0.02, alpha: float = 0.01,
-            tail_sensitivity: float = 1,
-            prediction_range: tuple = (-np.inf, np.inf)):
-        
-        super().__init__(max_depth, min_leaf_size, min_info_gain, alpha)
+        self,
+        default_parameters: ConstructorParams,
+        prediction_range: tuple = (-np.inf, np.inf)
+    ):
+        super().__init__(default_parameters)
 
-        self.tail_sensitivity = tail_sensitivity
         self.prediction_range = prediction_range
 
-        self._constructs = []
-        self._profile = []
         self.feature_params = {}
         self.samples = None
 
-    def _get_params(self) -> dict:  # TODO checked
-        """ Returns the parameters of the model.
+        self.min_seen = 0
+        self.max_seen = 0
 
-        Returns:
-            dict: The model parameters.
-        """
-        params = super()._get_params()
-        params.update(
-            {
-                'tail_sensitivity': self.tail_sensitivity
-            }
-        )
-
-        return params
-
-    def set_params(
-            self, max_depth: int , min_leaf_size: float, min_info_gain: float,
-            alpha: float, tail_sensitivity: float, *args, **kwargs) -> None:
-        """ Sets the parameters of the model. Generally used for model tuning.
-
-        Args:
-            max_depth (int): The maximum depth of each decision tree.
-            min_leaf_size (float): The minimum number of samples required to make a split.
-            min_info_gain (float): The minimum information gain required to make a split.
-            alpha (float): Sets the number of possible splits with respect to unique values.
-            tail_sensitivity (float): Adds weight to divisive leaf nodes.
-
-        Returns:
-            None
-        """
-
-        self.max_depth = max_depth
-        self.min_leaf_size = min_leaf_size
-        self.min_info_gain = min_info_gain
-        self.alpha = alpha
-        self.tail_sensitivity = tail_sensitivity
-
-    def _check_param_bounds(self):
-        super()._check_param_bounds()
-
-        assert 1 <= self.tail_sensitivity <= 2, \
-            'tail_sensitivity must be between 1 and 2'
-
-    def _build_profile(self, features: list=[]) -> 'XRegressor':
-        """ Builds the profile from each feature construct.
-        """
-        self._profile = []
-
-        for i in range(len(self._constructs)):
-            xconst = self._constructs[i]
-
-            if (self.columns[i] in features) or not features:
-                for n in range(len(xconst._nodes)):  # TODO try min max score thing
-                    xconst._nodes[n][-4] = xconst._nodes[n][-1] / len(self.columns)
-            
-            # don't update the original leaf nodes
-            self._profile.append(np.array([list(x) for x in xconst._nodes]))
-
-        self._profile = np.array(self._profile, dtype=object)
-        
-        return self
-
-    def fit(
+    def fit(  # TODO move up to base_model
         self, x: Union[pd.DataFrame, np.ndarray],
         y: Union[pd.Series, np.ndarray], id_columns: list = [],
-        column_names: list = None, target_name: str = 'target'
+        column_names: list = None, target_name: str = 'target', alpha=0.1
     ) -> 'XRegressor':
         """ Fits the model to the data.
 
@@ -172,6 +108,9 @@ class XRegressor(BaseModel):
             XRegressor: The fitted model.
         """
 
+        self.min_seen = y.min()
+        self.max_seen = y.max()
+
         start = time()
 
         x, y, _, _ = super()._fit_check(
@@ -183,30 +122,19 @@ class XRegressor(BaseModel):
         )
 
         self.samples = y.size
-        
         for i in range(x.shape[1]):
             f = x[:, i]
 
             # chooses constructor type based on type of input feature
-            constructor = XClfConstructor if self.columns[i] in self.categorical_columns else XRegConstructor
+            constructor = XCatConstructor if self.columns[i] in self.categorical_columns else XNumConstructor
 
-            xconst = constructor(
-                regressor=True,
-                max_depth=self.max_depth,
-                min_info_gain=self.min_info_gain,
-                min_leaf_size=self.min_leaf_size,
-                alpha=self.alpha,
-                tail_sensitivity=self.tail_sensitivity
-                )
+            xconst = constructor(True, self.default_parameters.__copy__())
 
-            xconst.fit(f, y)
+            xconst.fit(f, y, alpha)
             xconst.construct()
             self._constructs.append(xconst)
 
         self._build_profile()
-
-        params = self.params.copy()
-        self.feature_params = {c: params for c in self.columns}
 
         # record metadata
         self.metadata['fit_time'] = time() - start
@@ -278,8 +206,12 @@ class XRegressor(BaseModel):
         return self
 
     def update_feature_params(
-            self, features: list, max_depth: int, min_info_gain: float,
-            min_leaf_size: float, alpha: float, tail_sensitivity: float,
+            self, features: list,
+            max_depth: int,
+            min_info_gain: float,
+            min_leaf_size: float,
+            ignore_nan: bool,
+            tail_sensitivity: float,
             *args, **kwargs) -> 'XRegressor':
         """ Updates the parameters for a subset of features.
 
@@ -309,12 +241,22 @@ class XRegressor(BaseModel):
         Returns:
             XRegressor: The refitted model.
         """
+
+        max_depth = max_depth if max_depth is not None else self.max_depth
+        min_info_gain = min_info_gain if min_info_gain is not None else self.min_info_gain
+        min_leaf_size = min_leaf_size if min_leaf_size is not None else self.min_leaf_size
+        ignore_nan = ignore_nan if ignore_nan is not None else self.ignore_nan
+        tail_sensitivity = tail_sensitivity if tail_sensitivity is not None else self.tail_sensitivity
+
+        if not features:  # TODO update all, just for testing
+            features = self.columns
         
         for feature in features:
             idx = self.columns.index(feature)
 
             self._constructs[idx].set_parameters(
                 max_depth=max_depth,
+                ignore_nan=ignore_nan,
                 min_info_gain=min_info_gain,
                 min_leaf_size=min_leaf_size,
                 alpha=self.alpha,
@@ -326,7 +268,8 @@ class XRegressor(BaseModel):
                 'max_depth': max_depth,
                 'min_info_gain': min_info_gain,
                 'min_leaf_size': min_leaf_size,
-                'alpha': alpha,
+                'ignore_nan': ignore_nan,
+                'alpha': self.alpha,
                 'tail_sensitivity': tail_sensitivity
             })
 
