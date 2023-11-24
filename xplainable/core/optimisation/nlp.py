@@ -7,6 +7,7 @@ import sklearn.metrics as skm
 import numpy as np
 import pandas as pd
 from ..models import XClassifier
+from ...utils.dualdict import TargetMap
 
 
 class NLPOptimiser:
@@ -123,12 +124,8 @@ class NLPOptimiser:
             # Cast as category
             target_ = y.astype('category')
 
-            # Get the inverse label map
-            target_map_inv = dict(enumerate(target_.cat.categories))
-
             # Get the label map
-            target_map = {
-                value: key for key, value in target_map_inv.items()}
+            target_map = TargetMap(dict(enumerate(target_.cat.categories)), True)
 
             # Encode the labels
             y = y.map(target_map)

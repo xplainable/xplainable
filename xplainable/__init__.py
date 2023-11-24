@@ -17,7 +17,6 @@ def _check_optional_dependencies_gui():
                           "this feature.") from None
     
 # Filter retry warnings as retries are expected and already handled
-warnings.filterwarnings(
-    "ignore", category=UserWarning, module="urllib3.connectionpool")
+warnings.filterwarnings("ignore", category=UserWarning, module="urllib3.connectionpool")
 
 client = None

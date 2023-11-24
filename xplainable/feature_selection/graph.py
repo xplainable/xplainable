@@ -1,6 +1,7 @@
 import pandas as pd
 import networkx as nx
 from tqdm.auto import tqdm
+from..utils.dualdict import TargetMap
 
 class GraphSelector:
     """ A feature selector that uses a graph network to select features.
@@ -27,9 +28,7 @@ class GraphSelector:
         
         self.selected_features_ = None
         self.target_map = {}
-        self.target_map_inv = {}
         self.feature_map = {}
-        self.feature_map_inv = {}
         
         self.dropped = []
         self.graphs = []
@@ -45,12 +44,8 @@ class GraphSelector:
         # Cast as category
         target_ = y.astype('category')
 
-        # Get the inverse label map
-        self.target_map_inv = dict(enumerate(target_.cat.categories))
-
         # Get the label map
-        self.target_map = {
-            value: key for key, value in self.target_map_inv.items()}
+        self.target_map = TargetMap(dict(enumerate(target_.cat.categories)), True)
 
         return
     
@@ -81,10 +76,7 @@ class GraphSelector:
         feature_map = {val: i for i, val in enumerate(ordered_values['X'])}
 
         # Store map for transformation
-        self.feature_map[name] = feature_map
-
-        # Store inverse map for reversal
-        self.feature_map_inv[name] = {v: i for (i, v) in feature_map.items()}
+        self.feature_map[name] = TargetMap(feature_map)
 
         return
     
