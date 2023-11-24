@@ -173,8 +173,6 @@ class XRegressor(BaseModel):
         Returns:
             XRegressor: The optimised model.
         """
-    
-        params = self.params
         
         centre = 0.1
         window = 0.1
@@ -185,8 +183,8 @@ class XRegressor(BaseModel):
             _best_i = None
         
             for i, ts in enumerate([a, b, c]):
-                params.update({"tail_sensitivity": ts})
-                self.update_feature_params(self.columns, **params)
+                self.update_feature_params(self.columns, tail_sensitivity = 1+ts)
+                
                 _metric = self.evaluate(X, y)['MAE']
                 if _metric < _best_metric:
                     _best_metric = _metric
@@ -218,8 +216,7 @@ class XRegressor(BaseModel):
                     break
                 centre = int(centre/2)
         
-        params.update({"tail_sensitivity": round(1+ts, 2)})
-        self.update_feature_params(self.columns, **params)
+        self.update_feature_params(self.columns, tail_sensitivity = 1+ts)
         
         return self
 

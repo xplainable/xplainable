@@ -79,27 +79,31 @@ class XConstructor:
 
     def normalise_scores(self, min, max, base_value, min_seen=0, max_seen=1):
         """ Normalise the scores to fit between 0 - 1 relative to base value.
-
         Args:
             score (float): The score to normalise.
-
         Returns:
             float: The normalised score.
         """
+        if self.regressor:
+            spline = CubicSpline([min, 0, max], [min_seen-base_value, 0, max_seen-base_value])
+            normal_bins, nan_bin = self._nodes[:-1], self._nodes[-1]
+            for i, node in enumerate(normal_bins):
+                self._nodes[i][-4] = spline(node[-1])
+            self._nodes[-1][-4] = 0 if self.params.ignore_nan else spline(nan_bin[-1])
+
+            return
+        
         def old(score):
             # Return 0 scores as float
             if score == 0:
                 return 0
-
             # Negative scores normalise relative to worst case scenario
             elif score < 0:
                 return abs(score) / min * self.base_value
-
             # Positive scores normalise relative to best case scenario
             else:
                 return score / max * (1 - self.base_value)
-
-        # spline = CubicSpline([min, 0, max], [0-base_value, 0, 1-base_value])
+            
         normal_bins, nan_bin = self._nodes[:-1], self._nodes[-1]
         for i, node in enumerate(normal_bins):
             self._nodes[i][-4] = old(node[-1])

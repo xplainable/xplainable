@@ -702,8 +702,8 @@ def classifier(df):
                     part_progress.set_value('Partitions', i+1)
                     
                 except Exception as e:
-                    screen.close()
-                    clear_output()
+                    # screen.close()
+                    # clear_output()
                     raise RuntimeError(e)
             
             if optimise.value:
