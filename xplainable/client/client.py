@@ -228,7 +228,6 @@ class Client:
             partitioned_model = model
 
         for p in response['partitions']:
-
             model = XClassifier()
 
             model._profile = np.array([
@@ -242,8 +241,7 @@ class Client:
             
             model.base_value = p['base_value']
             model.target_map = TargetMap(p['target_map'], True)
-            model.feature_map = FeatureMap(p['feature_map'])
-            model.default_parameters = ConstructorParams(p['default_parameters'])
+            model.feature_map = {k: FeatureMap(v) for k, v in p['feature_map'].items()}
             
             model.columns = p['columns']
             model.id_columns = p['id_columns']
@@ -251,7 +249,8 @@ class Client:
             model.categorical_columns = p['feature_map'].keys()
             model.numeric_columns = [c for c in model.columns if c not in model.categorical_columns]
 
-            model.constructs_from_json(p['constructs'])
+            if 'constructs' in p:
+                model.constructs_from_json(p['constructs'])
 
             model.category_meta = {
                 i: {ii: {int(float(k)): v for k, v in vv.items()} for ii, vv \
@@ -284,8 +283,7 @@ class Client:
 
         for p in response['partitions']:
             model = XRegressor()
-            model._profile = np.array([
-                np.array(i) for i in json.loads(p['profile'])])
+            model._profile = np.array([np.array(i) for i in json.loads(p['profile'])])
             model.base_value = p['base_value']
             model.target_map = TargetMap(p['target_map'], True)
             model.feature_map = {k: FeatureMap(v) for k, v in p['feature_map']}
@@ -297,7 +295,8 @@ class Client:
             model.categorical_columns = p['feature_map'].keys()
             model.numeric_columns = [c for c in model.columns if c not in model.categorical_columns]
 
-            model.constructs_from_json(p['constructs'])
+            if 'constructs' in p:
+                model.constructs_from_json(p['constructs'])
 
             model.category_meta = {
                 i: {ii: {int(float(k)): v for k, v in vv.items()} for ii, vv \
@@ -315,9 +314,7 @@ class Client:
             return get_response_content(response)
 
         except Exception as e:
-            raise ValueError(
-            f'Model with ID {model_id}:{version_id} does not exist')
-
+            raise ValueError(f'Model with ID {model_id}:{version_id} does not exist')
 
     def get_user_data(self) -> dict:
         """ Retrieves the user data for the active user.
@@ -560,7 +557,7 @@ class Client:
                 json.dumps(model.id_columns, cls=NpEncoder)),
             "columns": json.loads(
                 json.dumps(model.columns, cls=NpEncoder)),
-            "default_parameters": model.params.to_json(),
+            "parameters": model.params.to_json(),
             "base_value": json.loads(
                 json.dumps(model.base_value, cls=NpEncoder)),
             "feature_map": json.loads(
@@ -572,7 +569,7 @@ class Client:
             "constructs": model.constructs_to_json(),
             "calibration_map": None,
             "support_map": None
-            }
+        }
 
         if model_type == 'binary_classification':
             data.update({
@@ -585,10 +582,6 @@ class Client:
             evaluation = model.metadata.get('evaluation', {})
             if evaluation == {}:
                 y_prob = model.predict_score(x)
-                print(model.predict(x))
-                print(y)
-                print(y_prob)
-                exit()
 
                 if model.target_map:
                     y = y.map(model.target_map)

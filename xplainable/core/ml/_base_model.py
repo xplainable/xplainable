@@ -119,6 +119,62 @@ class BaseModel:
         """
         self.default_parameters = default_parameters
 
+    def update_feature_params(  # TODO ignore
+        self,
+        features: list,
+        max_depth=None,
+        min_info_gain=None,
+        min_leaf_size=None,
+        ignore_nan=None,
+        weight=None,
+        power_degree=None,
+        sigmoid_exponent=None,
+        tail_sensitivity=None,
+        *args, **kwargs
+    ) -> 'XClassifier':
+        """ Updates the parameters for a subset of features.
+
+        XClassifier allows you to update the parameters for a subset of features
+        for a more granular approach to model tuning. This is useful when you
+        identify under or overfitting on some features, but not all.
+
+        This also refered to as 'refitting' the model to a new set of params.
+        Refitting parameters to an xplainable model is extremely fast as it has
+        already pre-computed the complex metadata required for training.
+        This can yeild huge performance gains compared to refitting
+        traditional models, and is particularly powerful when parameter tuning.
+        The desired result is to have a model that is well calibrated across all
+        features without spending considerable time on parameter tuning.
+
+        Args:
+            features (list): The features to update.
+            parameters (ConstructorParams): parameter set to apply to all features in features argument
+            x (pd.DataFrame | np.ndarray, optional): The x variables used for training. Use if map_calibration is True.
+            y (pd.Series | np.array, optional): The target values. Use if map_calibration is True.
+
+        Returns:
+            XClassifier: The refitted model.
+        """
+        if not features:  # TODO update all, just for testing
+            features = self.columns
+
+        for feature in features:
+            idx = self.columns.index(feature)
+            self._constructs[idx].params.update_parameters(
+                max_depth,
+                min_info_gain,
+                min_leaf_size,
+                ignore_nan,
+                weight,
+                power_degree,
+                sigmoid_exponent,
+                tail_sensitivity
+            )
+
+        self._build_profile()
+
+        return self
+
     def _build_profile(self):
         """ Builds the profile from each feature construct."""
         self._profile = []
@@ -273,7 +329,7 @@ class BaseModel:
             idx = np.searchsorted(nodes[:, -5], x[:, i])
 
             known = np.where(idx < len(nodes))
-            unknown = np.where(idx >= len(nodes))  # flag unknown categories  # TODO nan
+            unknown = np.where(idx >= len(nodes))  # flag unknown categories, the addition of nan might change this
             
             x[unknown, i] = 0  # Set new categories to 0 contribution
             x[known, i] = nodes[idx[known], -4]  # get score

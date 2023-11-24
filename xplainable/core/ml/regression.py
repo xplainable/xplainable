@@ -77,10 +77,28 @@ class XRegressor(BaseModel):
 
     def __init__(
         self,
-        default_parameters: ConstructorParams,
+        max_depth=8,
+        min_info_gain=0.0001,
+        min_leaf_size=0.0001,
+        ignore_nan=False,
+        weight=1,
+        power_degree=1,
+        sigmoid_exponent=0,
+        tail_sensitivity: float = 1.0,
         prediction_range: tuple = (-np.inf, np.inf)
     ):
-        super().__init__(default_parameters)
+        super().__init__(
+            ConstructorParams(
+                max_depth,
+                min_info_gain,
+                min_leaf_size,
+                ignore_nan,
+                weight,
+                power_degree,
+                sigmoid_exponent,
+                tail_sensitivity
+            )
+        )
 
         self.prediction_range = prediction_range
 
@@ -207,11 +225,14 @@ class XRegressor(BaseModel):
 
     def update_feature_params(
             self, features: list,
-            max_depth: int,
-            min_info_gain: float,
-            min_leaf_size: float,
-            ignore_nan: bool,
-            tail_sensitivity: float,
+            max_depth=None,
+            min_info_gain=None,
+            min_leaf_size=None,
+            ignore_nan=None,
+            weight=None,
+            power_degree=None,
+            sigmoid_exponent=None,
+            tail_sensitivity=None,
             *args, **kwargs) -> 'XRegressor':
         """ Updates the parameters for a subset of features.
 
@@ -242,38 +263,18 @@ class XRegressor(BaseModel):
             XRegressor: The refitted model.
         """
 
-        max_depth = max_depth if max_depth is not None else self.max_depth
-        min_info_gain = min_info_gain if min_info_gain is not None else self.min_info_gain
-        min_leaf_size = min_leaf_size if min_leaf_size is not None else self.min_leaf_size
-        ignore_nan = ignore_nan if ignore_nan is not None else self.ignore_nan
-        tail_sensitivity = tail_sensitivity if tail_sensitivity is not None else self.tail_sensitivity
-
-        if not features:  # TODO update all, just for testing
-            features = self.columns
-        
-        for feature in features:
-            idx = self.columns.index(feature)
-
-            self._constructs[idx].set_parameters(
-                max_depth=max_depth,
-                ignore_nan=ignore_nan,
-                min_info_gain=min_info_gain,
-                min_leaf_size=min_leaf_size,
-                alpha=self.alpha,
-                tail_sensitivity=tail_sensitivity
-            )
-            self._constructs[idx].construct()
-
-            self.feature_params[feature].update({
-                'max_depth': max_depth,
-                'min_info_gain': min_info_gain,
-                'min_leaf_size': min_leaf_size,
-                'ignore_nan': ignore_nan,
-                'alpha': self.alpha,
-                'tail_sensitivity': tail_sensitivity
-            })
-
-        self._build_profile(features)
+        super().update_feature_params(
+            features,
+            max_depth,
+            min_info_gain,
+            min_leaf_size,
+            ignore_nan,
+            weight,
+            power_degree,
+            sigmoid_exponent,
+            tail_sensitivity,
+            *args, **kwargs
+        )
         
         return self
 

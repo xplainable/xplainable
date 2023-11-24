@@ -6,12 +6,10 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import pandas as pd
 from ._base_model import BaseModel, BasePartition
-from ._constructor import XConstructor, XCatConstructor, XNumConstructor, ConstructorParams
+from ._constructor import XCatConstructor, XNumConstructor, ConstructorParams
 from sklearn.metrics import *
-import copy
 from time import time
 from typing import Union
-from scipy.interpolate import CubicSpline
 
 
 class XClassifier(BaseModel):
@@ -65,11 +63,28 @@ class XClassifier(BaseModel):
 
     def __init__(
         self,
-        parameters: ConstructorParams,
+        max_depth=8,
+        min_info_gain=0.0001,
+        min_leaf_size=0.0001,
+        ignore_nan=False,
+        weight=1,
+        power_degree=1,
+        sigmoid_exponent=0,
+        tail_sensitivity: float = 1.0,
         map_calibration: bool = True
     ):
-
-        super().__init__(parameters)
+        super().__init__(
+            ConstructorParams(
+                max_depth,
+                min_info_gain,
+                min_leaf_size,
+                ignore_nan,
+                weight,
+                power_degree,
+                sigmoid_exponent,
+                tail_sensitivity
+            )
+        )
 
         self._calibration_map = {}
         self._support_map = {}
@@ -213,7 +228,14 @@ class XClassifier(BaseModel):
     def update_feature_params(  # TODO ignore
         self,
         features: list,
-        parameters: ConstructorParams,
+        max_depth=None,
+        min_info_gain=None,
+        min_leaf_size=None,
+        ignore_nan=None,
+        weight=None,
+        power_degree=None,
+        sigmoid_exponent=None,
+        tail_sensitivity=None,
         x: Union[pd.DataFrame, np.ndarray] = None,
         y: Union[pd.Series, np.array] = None, *args, **kwargs
     ) -> 'XClassifier':
@@ -240,14 +262,19 @@ class XClassifier(BaseModel):
         Returns:
             XClassifier: The refitted model.
         """
-        if not features:  # TODO update all, just for testing
-            features = self.columns
 
-        for feature in features:
-            idx = self.columns.index(feature)
-            self._constructs[idx].set_parameters(parameters)
-
-        self._build_profile()
+        super().update_feature_params(
+            features,
+            max_depth,
+            min_info_gain,
+            min_leaf_size,
+            ignore_nan,
+            weight,
+            power_degree,
+            sigmoid_exponent,
+            tail_sensitivity,
+            *args, **kwargs
+        )
 
         if self.map_calibration and x is not None and y is not None:
             y_prob = self.predict_score(x)

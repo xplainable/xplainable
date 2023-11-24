@@ -86,13 +86,24 @@ class XConstructor:
         Returns:
             float: The normalised score.
         """
-        spline = CubicSpline([min, 0, max], [min_seen-base_value, 0, max_seen-base_value])
+        def old(score):
+            # Return 0 scores as float
+            if score == 0:
+                return 0
+
+            # Negative scores normalise relative to worst case scenario
+            elif score < 0:
+                return abs(score) / min * self.base_value
+
+            # Positive scores normalise relative to best case scenario
+            else:
+                return score / max * (1 - self.base_value)
+
+        # spline = CubicSpline([min, 0, max], [0-base_value, 0, 1-base_value])
         normal_bins, nan_bin = self._nodes[:-1], self._nodes[-1]
         for i, node in enumerate(normal_bins):
-            self._nodes[i][-4] = spline(node[-1])
-        self._nodes[-1][-4] = 0 if self.params.ignore_nan else spline(nan_bin[-1])
-
-        # max([a[-1] for a in self._nodes[:-1]])
+            self._nodes[i][-4] = old(node[-1])
+        self._nodes[-1][-4] = 0 if self.params.ignore_nan else old(nan_bin[-1])
 
     def _construct(self) -> np.ndarray:  # TODO checked
         """ Constructs nodes for score binning """
@@ -127,12 +138,12 @@ class XConstructor:
     def to_json(self, default_parameters: ConstructorParams = None):
         return {
             "type": self.type,
-            "r": self.regressor,
-            "f_s": self.fitted_samples,
-            "b_v": self.base_value,
-            "b_p": json.loads(json.dumps(self.base_partition, cls=NpEncoder)),
-            "b_m": json.loads(json.dumps(self.base_meta, cls=NpEncoder)),
-            "n_m": json.loads(json.dumps(self.null_meta, cls=NpEncoder)),
+            "regressor": self.regressor,
+            "fitted_samples": self.fitted_samples,
+            "base_value": self.base_value,
+            "base_partition": json.loads(json.dumps(self.base_partition, cls=NpEncoder)),
+            "base_meta": json.loads(json.dumps(self.base_meta, cls=NpEncoder)),
+            "null_meta": json.loads(json.dumps(self.null_meta, cls=NpEncoder)),
             'params': None if self.params == default_parameters else self.params.to_json()
         }
 
@@ -141,24 +152,24 @@ class XConstructor:
         type = data["type"]
         if type == "categorical":
             constructor = XCatConstructor(
-                data["r"],
+                data["regressor"],
                 ConstructorParams.from_json(data["params"]) if data["params"] is not None
                 else default_parameters
             )
         elif type == "numeric":
             constructor = XNumConstructor(
-                data["r"],
+                data["regressor"],
                 ConstructorParams.from_json(data["params"]) if data["params"] is not None
                 else default_parameters
             )
         else:
             raise ValueError(f"Unknown constructor type: {type}")
 
-        constructor.fitted_samples = data["f_s"]
-        constructor.base_value = data["b_v"]
-        constructor.base_partition = data["b_p"]
-        constructor.base_meta = data["b_m"]
-        constructor.null_meta = data["n_m"]
+        constructor.fitted_samples = data["fitted_samples"]
+        constructor.base_value = data["base_value"]
+        constructor.base_partition = data["base_partition"]
+        constructor.base_meta = data["base_meta"]
+        constructor.null_meta = data["null_meta"]
 
 
 class XCatConstructor(XConstructor):
@@ -262,7 +273,6 @@ class XNumConstructor(XConstructor):
         return psplits
 
     @staticmethod
-    # @njit(parallel=True, fastmath=True, nogil=True)
     def _get_base_meta(base_partition, X, y):  # TODO checked
         """ Instantiates metadata at each split """
         _meta = np.empty((len(base_partition), 2, 2), dtype=np.float64)
@@ -445,6 +455,6 @@ class XNumConstructor(XConstructor):
 
     def fit(self, X, y, alpha=0.1):
         """ Fits feature data to target """
-        super().fit(X, y)
+        super().fit(X, y, alpha)
         self.abs_min_leaf_size = np.max([1, int(self.params.min_leaf_size * self.fitted_samples)])
         return self

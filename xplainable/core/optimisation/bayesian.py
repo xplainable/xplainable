@@ -108,7 +108,7 @@ class XParamOptimiser:
         self.x = None
         self.y = None
         self.id_columns = []
-        self.models = {i: XClassifier(ConstructorParams(), map_calibration=False) for i in range(n_folds)}
+        self.models = {i: XClassifier(map_calibration=False) for i in range(n_folds)}
         self.folds = {}
         self.results = []
 
@@ -135,7 +135,7 @@ class XParamOptimiser:
         for i, model in self.models.items():
             
             # Instantiate and fit model
-            model.update_feature_params(model.columns, ConstructorParams(**params))
+            model.update_feature_params(model.columns, **params)
 
             test_index = self.folds[i]['test_index']
 
@@ -387,10 +387,7 @@ class XParamOptimiser:
             
             else:
                 for i, model in self.models.items():
-                    print(model.params)
                     model.params.update_parameters(**{n: p})
-                    print(model.params)
-                    exit()
                     # Instantiate and fit model
                     # model.update_feature_params(model.columns, **{n: p})
                 

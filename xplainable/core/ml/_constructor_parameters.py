@@ -31,13 +31,7 @@ class ConstructorParams:
         assert self.max_depth >= 0, 'max_depth must be greater than or equal to 0'
         assert -1 <= self.min_info_gain < 1, 'min_info_gain must be between -1 and 1'
         assert -1 <= self.min_leaf_size < 1, 'min_leaf_size must be between -1 and 1'
-
-        #  try:
         assert self.ignore_nan in [True, False, 1, 0]
-        # except:
-        #     print(self.ignore_nan)
-        #     print(type(self.ignore_nan))
-        #     exit()
         assert 0 <= self.weight <= 3, 'weight must be between 0 and 3'
         assert self.power_degree in [1, 3, 5], 'powed_r_degree must be 1, 3, or 5'
         assert 0 <= self.sigmoid_exponent <= 1, 'sigmoiexponent must be between 0 and 1'
@@ -66,27 +60,27 @@ class ConstructorParams:
 
     def to_json(self):
         return {
-            "m_d": self.max_depth,
-            "mig": self.min_info_gain,
-            "mls": self.min_leaf_size,
-            "i_n": self.ignore_nan,
-            "w": self.weight,
-            "p_d": self.power_degree,
-            "s_e": self.sigmoid_exponent,
-            "t_s": self.tail_sensitivity
+            "max_depth": self.max_depth,
+            "min_info_gain": self.min_info_gain,
+            "min_leaf_size": self.min_leaf_size,
+            "ignore_nan": self.ignore_nan,
+            "weight": self.weight,
+            "power_degree": self.power_degree,
+            "sigmoid_exponent": self.sigmoid_exponent,
+            "tail_sensitivity": self.tail_sensitivity
         }
 
     @staticmethod
     def from_json(data):
         return ConstructorParams(
-            max_depth=data["m_d"],
-            min_info_gain=data["mig"],
-            min_leaf_size=data["mls"],
-            ignore_nan=data["i_n"],
-            weight=data["w"],
-            power_degree=data["p_d"],
-            sigmoid_exponent=data["s_e"],
-            tail_sensitivity=data["t_s"]
+            max_depth=data["max_depth"],
+            min_info_gain=data["min_info_gain"],
+            min_leaf_size=data["min_leaf_size"],
+            ignore_nan=data["ignore_nan"],
+            weight=data["weight"],
+            power_degree=data["power_degree"],
+            sigmoid_exponent=data["sigmoid_exponent"],
+            tail_sensitivity=data["tail_sensitivity"]
         )
 
     def __copy__(self):

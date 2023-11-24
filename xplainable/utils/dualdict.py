@@ -107,7 +107,7 @@ class FeatureMap(DualDict):
 
     def __setitem__(self, key, value):
         if type(key) == ArrayLike:
-            if isnan(key) or key == "Null": return -1
+            if isnan(key) or key == "Null": return nan
         if key in self._reverse:
             self.set_item_directional(key, value, True)
         else:
