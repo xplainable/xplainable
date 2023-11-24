@@ -7,7 +7,7 @@ import sklearn.metrics as skm
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
 import pandas as pd
-from ..ml.classification import XClassifier, ConstructorParams
+from ..ml.classification import XClassifier
 from ...utils.dualdict import TargetMap
 import numpy as np
 import time
@@ -261,7 +261,7 @@ class XParamOptimiser:
 
         # Callback is used for jupyter gui
         if self.callback:
-            self.callback.update_params(ConstructorParams(**params))
+            self.callback.update_params(**params)
 
         # Run cross validation and get score
         score = self._cv_fold(params)
@@ -386,9 +386,8 @@ class XParamOptimiser:
             
             else:
                 for i, model in self.models.items():
-                    model.params.update_parameters(**{n: p})
                     # Instantiate and fit model
-                    # model.update_feature_params(model.columns, **{n: p})
+                    model.update_feature_params(model.columns, **{n: p})
                 
                 best_params[n] = p
             
