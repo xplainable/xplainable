@@ -133,7 +133,6 @@ class XParamOptimiser:
         start = time.time()
         # Run iteration over n_folds
         for i, model in self.models.items():
-            
             # Instantiate and fit model
             model.update_feature_params(model.columns, **params)
 

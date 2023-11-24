@@ -22,6 +22,7 @@ def _generate_explain_plot_data(model, label_rounding=5):
             prof = pd.DataFrame(_profile['categorical'][f])
             if prof.empty:
                 return
+
             prof = prof[['category', 'score', 'mean', 'freq']]
             prof = prof.rename(columns={'category': 'value'})
             prof = prof.explode(['value', 'mean', 'freq'])
@@ -29,8 +30,7 @@ def _generate_explain_plot_data(model, label_rounding=5):
             return
 
         prof['feature'] = f
-        prof['score_label'] = prof['score'].apply(
-            lambda x: str(round(x*100, 1)))
+        prof['score_label'] = prof['score'].apply(lambda x: str(round(x*100, 1)))
         
         prof = prof.rename(columns={'score': 'contribution', 'freq': 'frequency'})
 

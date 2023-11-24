@@ -257,6 +257,7 @@ class XRegressor(BaseModel):
             max_depth (int): The maximum depth of each decision tree in the subset.
             min_info_gain (float): The minimum information gain required to make a split in the subset.
             min_leaf_size (float): The minimum number of samples required to make a split in the subset.
+            ignore_nan (bool): Whether to ignore nan/null/empty values
             tail_sensitivity (float): Adds weight to divisive leaf nodes in the subset.
 
         Returns:
@@ -265,14 +266,14 @@ class XRegressor(BaseModel):
 
         super().update_feature_params(
             features,
-            max_depth,
-            min_info_gain,
-            min_leaf_size,
-            ignore_nan,
-            weight,
-            power_degree,
-            sigmoid_exponent,
-            tail_sensitivity,
+            max_depth=max_depth,
+            min_info_gain=min_info_gain,
+            min_leaf_size=min_leaf_size,
+            ignore_nan=ignore_nan,
+            weight=weight,
+            power_degree=power_degree,
+            sigmoid_exponent=sigmoid_exponent,
+            tail_sensitivity=tail_sensitivity,
             *args, **kwargs
         )
         
