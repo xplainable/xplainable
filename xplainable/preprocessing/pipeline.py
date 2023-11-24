@@ -164,6 +164,30 @@ class XPipeline:
 
         return x
     
+    def transform_generator(self, x):
+        """transform generator"""
+
+        x = x.copy()
+
+        for stage in self.stages:
+            try:
+                # If the stage is for the entire dataset, transform and yield
+                if stage['feature'] == '__dataset__':
+                    x = stage['transformer'].transform(x)
+                    yield x
+                    continue
+
+                # Apply transformation for a specific feature and yield
+                x_transformed = x.copy()
+                x_transformed[stage['feature']] = stage['transformer'].transform(
+                    x[stage['feature']])
+                yield x_transformed
+            
+            except Exception:
+                tf_name = stage['transformer'].__class__.__name__
+                raise TransformerError(
+                    f"Transformer {tf_name} for {stage['feature']} failed. Ensure the datatypes are compatible") from None
+    
     def inverse_transform(self, x: pd.DataFrame):
         """ Iterates through pipeline stages applying inverse transformations.
         
