@@ -24,18 +24,15 @@ def _generate_explain_plot_data(model, label_rounding=5):
             if prof.empty:
                 return
 
-            prof['mean'] = prof['means']
-            prof['freq'] = prof['frequencies']
-            prof = prof[['categories', 'score', 'mean', 'freq']]
-            prof = prof.rename(columns={'categories': 'value'})
+            prof = prof[['category', 'score', 'mean', 'freq']]
+            prof = prof.rename(columns={'category': 'value'})
             prof = prof.explode(['value', 'mean', 'freq'])
 
         else:
             return
 
         prof['feature'] = f
-        prof['score_label'] = prof['score'].apply(
-            lambda x: str(round(x*100, 1)))
+        prof['score_label'] = prof['score'].apply(lambda x: str(round(x*100, 1)))
         
         prof = prof.rename(columns={'score': 'contribution', 'freq': 'frequency'})
 

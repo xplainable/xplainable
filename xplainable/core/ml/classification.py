@@ -182,6 +182,7 @@ class XClassifier(BaseModel):
             id_columns (list, optional): id_columns to ignore from training.
             column_names (list, optional): column_names to use for training if using a np.ndarray
             target_name (str, optional): The name of the target column if using a np.array
+            alpha (float): Controlls the number of possible splits with respect to unique values.
 
         Returns:
             XClassifier: The fitted model.
@@ -245,7 +246,7 @@ class XClassifier(BaseModel):
         for a more granular approach to model tuning. This is useful when you
         identify under or overfitting on some features, but not all.
 
-        This also refered to as 'refitting' the model to a new set of params.
+        This also referred to as 'refitting' the model to a new set of params.
         Refitting parameters to an xplainable model is extremely fast as it has
         already pre-computed the complex metadata required for training.
         This can yeild huge performance gains compared to refitting
@@ -255,7 +256,11 @@ class XClassifier(BaseModel):
 
         Args:
             features (list): The features to update.
-            parameters (ConstructorParams): parameter set to apply to all features in features argument
+            ignore_nan (bool): Whether to ignore nan/null/empty values
+            weight (float): Activation function weight.
+            power_degree (float): Activation function power degree.
+            sigmoid_exponent (float): Activation function sigmoid exponent.
+            tail_sensitivity (float): Adds weight to divisive leaf nodes in the subset.
             x (pd.DataFrame | np.ndarray, optional): The x variables used for training. Use if map_calibration is True.
             y (pd.Series | np.array, optional): The target values. Use if map_calibration is True.
 
@@ -265,14 +270,14 @@ class XClassifier(BaseModel):
 
         super().update_feature_params(
             features,
-            max_depth,
-            min_info_gain,
-            min_leaf_size,
-            ignore_nan,
-            weight,
-            power_degree,
-            sigmoid_exponent,
-            tail_sensitivity,
+            max_depth=max_depth,
+            min_info_gain=min_info_gain,
+            min_leaf_size=min_leaf_size,
+            ignore_nan=ignore_nan,
+            weight=weight,
+            power_degree=power_degree,
+            sigmoid_exponent=sigmoid_exponent,
+            tail_sensitivity=tail_sensitivity,
             *args, **kwargs
         )
 

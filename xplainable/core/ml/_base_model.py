@@ -170,6 +170,7 @@ class BaseModel:
                 sigmoid_exponent,
                 tail_sensitivity
             )
+            self._constructs[idx].construct()
 
         self._build_profile()
 

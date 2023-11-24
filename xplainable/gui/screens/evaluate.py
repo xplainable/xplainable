@@ -16,6 +16,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from ...core.optimisation.genetic import XEvolutionaryNetwork
 from ...core.optimisation.layers import Tighten, Evolve
 from ...callbacks.optimisation import RegressionCallback
+from ...visualisation.explain import _generate_explain_plot_data as gen_x_plot_data
 
 
 class EvaluateClassifier:
@@ -70,7 +71,7 @@ class EvaluateClassifier:
 
         # Encode y if required
         if len(self.model.target_map) and self.y.dtype == 'O':
-            self.y = self.y.map(self.model.target_map)
+            self.y = self.y.map(self.model.target_map.forward)
         
         def on_smoother_change(_):
             self.model._calibration_map = self.model._map_calibration(
@@ -100,7 +101,10 @@ class EvaluateClassifier:
         self.y_prob = self.model.predict_score(self.X)
                 
     def _generate_explain_plot_data(self):
+        gen_x_plot_data(self.model, 3)
 
+        # used to be a duplicate code block
+        '''
         def get_plot_data(f):
             """ 
             Args:
@@ -144,7 +148,7 @@ class EvaluateClassifier:
         prof = pd.concat(
             [i for i in plot_data if i is not None]).reset_index(drop=True)
         
-        return prof
+        return prof'''
     
     def _generate_feature_importance(self):
         def explore(b):
