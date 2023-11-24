@@ -616,10 +616,10 @@ def classifier(df):
                     max_depth=max_depth.value,
                     min_leaf_size=min_leaf_size.value,
                     min_info_gain=min_info_gain.value,
-                    alpha=alpha.value,
                     weight=weight.value,
                     power_degree=power_degree.value,
-                    sigmoid_exponent=sigmoid_exponent.value
+                    sigmoid_exponent=sigmoid_exponent.value,
+                    ignore_nan=False
                 )
 
                 try:
