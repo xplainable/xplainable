@@ -1,0 +1,10 @@
+{
+    "Telco Churn Example": {
+      "title": "Telco Churn",
+      "sidebar_label": "Telco Churn",
+      "path": "website/docs/tutorials/Telco Churn",
+      "nb_path": "website/docs/tutorials/Telco Churn Example.ipynb",
+      "github": "https://github.com/xplainable/xplainable/tree/main/tutorials",
+      "colab": "https://github.com/xplainable/xplainable/tree/main/tutorials"
+    }
+}

@@ -1,0 +1,47 @@
+<svg title="logo" version="1.1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="100" cy="100" r="14" fill="#E14067" id="1"/>
+    <circle cx="124" cy="124" r="11" fill=" #0080EA" id="2"/>
+    <circle cx="146" cy="146" r="9.6" fill="#E14067" id="3"/>
+    <circle cx="165" cy="165" r="7" fill=" #0080EA" id="4"/>
+    <circle cx="184" cy="184" r="4" fill="#E14067" id="5"/>
+    <circle cx="76" cy="76" r="11" fill=" #0080EA" id="6"/>
+    <circle cx="54" cy="54" r="9.6" fill="#E14067" id="7"/>
+    <circle cx="35" cy="35" r="7" fill=" #0080EA" id="8"/>
+    <circle cx="16" cy="16" r="4" fill="#E14067" id="9"/>
+    <circle cx="124" cy="76" r="11" fill=" #0080EA" id="10"/>
+    <circle cx="146" cy="54" r="9.6" fill="#E14067" id="11"/>
+    <circle cx="165" cy="35" r="7" fill=" #0080EA" id="12"/>
+    <circle cx="184" cy="16" r="4" fill="#E14067" id="13"/>
+    <circle cx="76" cy="124" r="11" fill=" #0080EA" id="14"/>
+    <circle cx="54" cy="146" r="9.6" fill="#E14067" id="15"/>
+    <circle cx="35" cy="165" r="7" fill=" #0080EA" id="16"/>
+    <circle cx="16" cy="184" r="4" fill="#E14067" id="17"/>
+    <circle cx="100" cy="138" r="9" fill="#E14067" id="18"/>
+    <circle cx="138" cy="100" r="9" fill="#E14067" id="19"/>
+    <circle cx="100" cy="62" r="9" fill="#E14067" id="20"/>
+    <circle cx="62" cy="100" r="9" fill="#E14067" id="21"/>
+    <circle cx="162" cy="126" r="7" fill="#E14067" id="22"/>
+    <circle cx="178" cy="146" r="5" fill="#E14067" id="23"/>
+    <circle cx="188" cy="166" r="4" fill="#E14067" id="24"/>
+    <circle cx="38" cy="74" r="7" fill="#E14067" id="25"/>
+    <circle cx="22" cy="54" r="5" fill="#E14067" id="26"/>
+    <circle cx="12" cy="34" r="4" fill="#E14067" id="27"/>
+    <circle cx="162" cy="74" r="7" fill="#E14067" id="28"/>
+    <circle cx="178" cy="54" r="5" fill="#E14067" id="29"/>
+    <circle cx="188" cy="34" r="4" fill="#E14067" id="30"/>
+    <circle cx="38" cy="126" r="7" fill="#E14067" id="31"/>
+    <circle cx="22" cy="146" r="5" fill="#E14067" id="32"/>
+    <circle cx="12" cy="166" r="4" fill="#E14067" id="33"/>
+    <circle cx="74" cy="38" r="7" fill="#E14067" id="34"/>
+    <circle cx="54" cy="22" r="5" fill="#E14067" id="35"/>
+    <circle cx="34" cy="12" r="4" fill="#E14067" id="36"/>
+    <circle cx="126" cy="162" r="7" fill="#E14067" id="37"/>
+    <circle cx="146" cy="178" r="5" fill="#E14067" id="38"/>
+    <circle cx="166" cy="188" r="4" fill="#E14067" id="39"/>
+    <circle cx="126" cy="38" r="7" fill="#E14067" id="40"/>
+    <circle cx="146" cy="22" r="5" fill="#E14067" id="41"/>
+    <circle cx="166" cy="12" r="4" fill="#E14067" id="42"/>
+    <circle cx="74" cy="162" r="7" fill="#E14067" id="43"/>
+    <circle cx="54" cy="178" r="5" fill="#E14067" id="44"/>
+    <circle cx="34" cy="188" r="4" fill="#E14067" id="45"/>
+</svg>
