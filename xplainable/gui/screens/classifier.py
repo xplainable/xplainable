@@ -611,14 +611,16 @@ def classifier(df):
                 display(opt_display)
 
             for i, (p, model) in enumerate(parts.items()):
-            
-                model.max_depth = max_depth.value
-                model.min_leaf_size = min_leaf_size.value
-                model.min_info_gain = min_info_gain.value
-                model.alpha = alpha.value
-                model.weight = weight.value
-                model.power_degree = power_degree.value
-                model.sigmoid_exponent = sigmoid_exponent.value
+
+                model.params.update_parameters(
+                    max_depth=max_depth.value,
+                    min_leaf_size=min_leaf_size.value,
+                    min_info_gain=min_info_gain.value,
+                    alpha=alpha.value,
+                    weight=weight.value,
+                    power_degree=power_degree.value,
+                    sigmoid_exponent=sigmoid_exponent.value
+                )
 
                 try:
                     if optimise.value:

@@ -256,6 +256,9 @@ class XClassifier(BaseModel):
 
         Args:
             features (list): The features to update.
+            max_depth (int): The maximum depth of each decision tree in the subset.
+            min_info_gain (float): The minimum information gain required to make a split in the subset.
+            min_leaf_size (float): The minimum number of samples required to make a split in the subset.
             ignore_nan (bool): Whether to ignore nan/null/empty values
             weight (float): Activation function weight.
             power_degree (float): Activation function power degree.

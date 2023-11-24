@@ -99,7 +99,7 @@ class EvaluateClassifier:
         self.feature_selector.observe(on_feature_change)
 
         self.y_prob = self.model.predict_score(self.X)
-                
+
     def _generate_explain_plot_data(self):
         gen_x_plot_data(self.model, 3)
 
@@ -672,7 +672,8 @@ class EvaluateRegressor:
         self.y_pred = self.model.predict(self.X)
                 
     def _generate_explain_plot_data(self):
-
+        gen_x_plot_data(self.model, 3)
+        '''
         def get_plot_data(f):
             """ 
             Args:
@@ -716,6 +717,7 @@ class EvaluateRegressor:
             [i for i in plot_data if i is not None]).reset_index(drop=True)
         
         return prof
+        '''
     
     def _generate_feature_importance(self):
         def explore(b):

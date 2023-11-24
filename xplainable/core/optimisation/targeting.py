@@ -146,8 +146,7 @@ class Target:
             if diff < self.best_diff:
                 self.best_diff = diff
                 self.best_score = self.score
-                self.best_idxs = [
-                    self.mappings[i][v] for i,v in enumerate(self.idxs)]
+                self.best_idxs = [self.mappings[i][v] for i, v in enumerate(self.idxs)]
 
             if diff <= self.tolerance:
                 self.values.append(self.best_score)

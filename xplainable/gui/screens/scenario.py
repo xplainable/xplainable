@@ -236,7 +236,6 @@ class ScenarioClassification:
         
         return proba, score, multi
 
-    
     def get_prediction_breakdown(self):
        
         profile = self.model.profile
@@ -261,7 +260,7 @@ class ScenarioClassification:
                 
             val = self.widgets[f].value
             
-            leaf = [l for l in nodes if val in l['categories']][0]
+            leaf = [l for l in nodes if val == l['category']][0]
             
             score += leaf['score']
             breakdown[f] = leaf['score']
