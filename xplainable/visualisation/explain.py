@@ -20,14 +20,12 @@ def _generate_explain_plot_data(model, label_rounding=5):
 
         elif f in _profile['categorical']:
             prof = pd.DataFrame(_profile['categorical'][f])
-
             if prof.empty:
                 return
 
             prof = prof[['category', 'score', 'mean', 'freq']]
             prof = prof.rename(columns={'category': 'value'})
             prof = prof.explode(['value', 'mean', 'freq'])
-
         else:
             return
 
