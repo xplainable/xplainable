@@ -23,7 +23,7 @@ const config = {
   organizationName: 'Xplainable', // Usually your GitHub org/user name.
   projectName: 'xplainable', // Usually your repo name.
 
-  onBrokenLinks: 'throw',
+  onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
 
   // Even if you don't use internationalization, you can use this field to set
@@ -98,8 +98,8 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Tutorial',
-                to: '/docs/intro',
+                label: 'Tutorials',
+                to: '/docs/category/tutorials',
               },
             ],
           },
