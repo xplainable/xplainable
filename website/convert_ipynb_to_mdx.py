@@ -6,6 +6,9 @@ from os import PathLike
 from pathlib import Path
 from typing import Dict, Tuple, Union
 
+import os
+import json
+
 import mdformat  # @manual=fbsource//third-party/pypi/mdformat:mdformat
 import nbformat
 import pandas as pd
@@ -630,9 +633,48 @@ def transform_notebook(path: Union[str, PathLike]) -> Tuple[str, str]:
     # Return the mdx and jsx strings for debugging purposes.
     return mdx, jsx
 
+def extract_title(notebook_path):
+    # Extract the title from the notebook filename or file content
+    return notebook_path.stem.replace('_', ' ').title()
+
+def generate_tutorials_json(examples_dir, tutorials_metadata):
+    tutorials_json = {}
+    for nb_file in os.listdir(examples_dir):
+        if nb_file.endswith(".ipynb"):
+            # Generate a dictionary entry for each notebook
+            title = extract_title(Path(nb_file))
+            nb_path = f"website/docs/tutorials/{nb_file}"
+            tutorials_json[title] = {
+                "title": title,
+                "sidebar_label": title,
+                "path": f"website/docs/tutorials/{title}",
+                "nb_path": nb_path,
+                "github": "https://github.com/xplainable/xplainable/tree/main/tutorials",
+                "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
+            }
+
+    # Merge with existing metadata
+    tutorials_json.update(tutorials_metadata)
+    return tutorials_json
+
 
 if __name__ == "__main__":
+
+    #Load the tutorials metadata
     tutorials_metadata = load_nbs_to_convert()
+
+    print("--------------------------------------------")
+    print("Creating the tutorials.json file output     ")
+    print("--------------------------------------------")
+    # Generate tutorials.json
+    examples_dir = LIB_DIR.joinpath('website/docs/tutorials')  # Adjust the path as needed
+    tutorials_json = generate_tutorials_json(examples_dir, tutorials_metadata)
+
+    # Write tutorials.json to disk
+    tutorials_json_path = DOCS_DIR.joinpath("tutorials.json")  # Adjust the path as needed
+    with open(tutorials_json_path, 'w') as f:
+        json.dump(tutorials_json, f, indent=4)
+
     print("--------------------------------------------")
     print("Converting tutorial notebooks into mdx files")
     print("--------------------------------------------")
