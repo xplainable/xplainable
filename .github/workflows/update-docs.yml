@@ -1,0 +1,63 @@
+name: Update Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'examples/**'
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout main branch
+      uses: actions/checkout@v2
+      with:
+        ref: main
+        path: main_repo
+
+    - name: Checkout docs branch
+      uses: actions/checkout@v2
+      with:
+        ref: docs
+        path: website
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install Dependencies
+      run: |
+        pip install -r website/requirements.txt
+        # Adjust if there are additional dependencies
+
+    - name: Copy Examples to website working directory
+      run: |
+        cp -R main_repo/examples/* website/docs/tutorials
+
+    - name: Run Conversion Script
+      run: |
+        cd website
+        python convert_ipynb_to_mdx.py
+
+    - name: Commit and Push Changes to docs branch
+      run: |
+        cd website
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git add .
+        git commit -m "Update documentation from Jupyter notebooks"
+        git push origin docs
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        branch: update-documentation-${{ github.run_id }}
+        title: "Update Documentation"
+        body: "Automatically generated documentation update"
+        base: docs
+        labels: documentation
