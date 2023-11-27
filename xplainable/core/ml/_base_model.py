@@ -26,7 +26,7 @@ class BaseModel:
         self.base_value = None
         self.base_value = None
         self.target_map = TargetMap()
-        self.feature_map = FeatureMap()
+        self.feature_map = dict()
         self.category_meta = {}
 
         self.min_seen = 0
