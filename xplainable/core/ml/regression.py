@@ -380,7 +380,7 @@ class PartitionedRegressor(BasePartition):
         super().__init__(*args, **kwargs)
         self.partition_on = partition_on
 
-    def predict(self, x: Union[pd.DataFrame, np.ndarray]) -> np.array:
+    def predict(self, x) -> np.array:
         """ Predicts the target value for each row in the data across all partitions.
 
         The partition_on columns will be used to determine which model to use
@@ -419,7 +419,7 @@ class PartitionedRegressor(BasePartition):
                 idx = part.index
 
                 # Use partition model first
-                part_trans = self._transform(part, partition)
+                part_trans = self.partitions[partition]._transform(part)
                 _base_value = self.partitions[partition].base_value
 
                 scores = pd.Series(part_trans.sum(axis=1) + _base_value)

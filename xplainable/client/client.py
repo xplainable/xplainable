@@ -6,8 +6,6 @@ import pyperclip
 import time
 import inspect
 import ast
-from IPython.display import clear_output, display, Markdown
-from .._dependencies import _check_ipywidgets
 from ..utils.api import get_response_content
 from ..utils.encoders import NpEncoder
 import requests
@@ -18,6 +16,7 @@ from ..preprocessing import transformers as xtf
 from ..utils.exceptions import AuthenticationError
 from ..utils.dualdict import FeatureMap, TargetMap
 from ..utils.helpers import get_df_delta
+from ..utils.encoders import profile_parse
 from ..quality.scanner import XScan
 from ..metrics.metrics import evaluate_classification, evaluate_regression
 from ..core.models import (XClassifier, XRegressor, PartitionedRegressor, PartitionedClassifier, ConstructorParams)
@@ -241,6 +240,8 @@ class Client:
             model._profile = np.array([
                 np.array(i) for i in json.loads(p['profile'])], dtype=object)
             
+            model._profile = profile_parse(model._profile)
+            
             model._calibration_map = {
                 int(i): v for i, v in p['calibration_map'].items()}
             
@@ -292,10 +293,10 @@ class Client:
         for p in response['partitions']:
             model = XRegressor()
             model._profile = np.array([np.array(i) for i in json.loads(p['profile'])])
+            model._profile = profile_parse(model._profile)
             model.base_value = p['base_value']
-            model.target_map = TargetMap(p['target_map'], True)
-            model.feature_map = {k: FeatureMap(v) for k, v in p['feature_map']}
-            model.default_parameters = ConstructorParams(p['default_parameters'])
+            model.feature_map = {k: FeatureMap(v) for k, v in p['feature_map'].items()}
+            #model.parameters = ConstructorParams(p['parameters']) #TODO: update params
 
             model.columns = p['columns']
             model.id_columns = p['id_columns']

@@ -27,3 +27,13 @@ def force_json_compliant(data, fill_value=None):
             data = fill_value
     return data
 
+def profile_parse(data):
+    if isinstance(data, np.ndarray) or isinstance(data, list):
+        for i in range(len(data)):
+            data[i] = profile_parse(data[i])
+    elif data is None:
+        try:
+            data = np.nan
+        except:
+            pass
+    return data
