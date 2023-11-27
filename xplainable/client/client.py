@@ -248,7 +248,7 @@ class Client:
                 int(i): v for i, v in p['support_map'].items()}
             
             model.base_value = p['base_value']
-            model.target_map = TargetMap(p['target_map'], True)
+            model.target_map = TargetMap({int(i): v for i, v in p['target_map'].items()}, True)
             model.feature_map = {k: FeatureMap(v) for k, v in p['feature_map'].items()}
             
             model.columns = p['columns']
