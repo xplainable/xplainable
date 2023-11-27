@@ -386,22 +386,35 @@ class BaseModel:
 
         return x.astype(int)
 
-    def calculate_gini_gain(self):
+    def _calculate_gini_gain(self):
         gini_gains = {}
 
         # Function to calculate Gini Impurity
         def gini_impurity(freqs):
             return 1 - sum(f ** 2 for f in freqs)
+        
         # Calculate Gini gain for categorical features
         for feature, categories in self.profile["categorical"].items():
-            impurity = gini_impurity([category["freq"] for category in categories])
-            weighted_impurity = impurity * sum(abs(category["score"]) for category in categories)
+
+            impurity = gini_impurity(
+                [category["freq"] for category in categories])
+
+            weighted_impurity = impurity * sum(abs(category["score"]) for \
+                                               category in categories)
+            
             gini_gains[feature] = weighted_impurity
+
         # Calculate Gini gain for numeric features
         for feature, ranges in self.profile["numeric"].items():
-            impurity = gini_impurity([range_info["freq"] for range_info in ranges])
-            weighted_impurity = impurity * sum(abs(range_info["score"]) for range_info in ranges)
+
+            impurity = gini_impurity(
+                [range_info["freq"] for range_info in ranges])
+            
+            weighted_impurity = impurity * sum(abs(range_info["score"]) for \
+                                               range_info in ranges)
+            
             gini_gains[feature] = weighted_impurity
+
         return gini_gains
 
     def _get_feature_importances(self):
@@ -411,21 +424,8 @@ class BaseModel:
             dict: The feature importances.
         """
 
-        return self.calculate_gini_gain()
+        return self._calculate_gini_gain()
 
-        importances = {}
-        total_importance = 0
-
-        for i, feature_name in enumerate(self.columns):
-            importance = 0
-            for leaf in self._profile[i][:-1 if self.params.ignore_nan else len(self._profile)]:
-                importance += abs(leaf[-4]) * np.log2(leaf[-2] * 100) if leaf[-2] > 0 else 0
-
-            importances[feature_name] = importance
-            total_importance += importance
-
-        return {k: v/total_importance for k, v in sorted(importances.items(), key=lambda item: item[1])}
-    
     def explain(self, label_rounding=5):
         try:
             from ...visualisation.explain import _plot_explainer
@@ -510,7 +510,9 @@ class BasePartition:
         self.partitions = {}
 
     def __verify_mappings(self, model):
-        assert model.target_map == self.partitions['__dataset__'].target_map, \
+        if '__dataset__' not in self.partitions.keys():
+            return
+        assert dict(model.target_map) == dict(self.partitions['__dataset__'].target_map), \
             "Target mappings are mismatched"
 
     def add_partition(self, model , partition: str):

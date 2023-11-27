@@ -508,7 +508,7 @@ class PartitionedClassifier(BasePartition):
                 idx = part.index
 
                 # Use partition model first
-                part_trans = self._transform(part, partition)
+                part_trans = self.partitions[partition]._transform(part)
                 _base_value = self.partitions[partition].base_value
 
                 scores = pd.Series(part_trans.sum(axis=1) + _base_value)
