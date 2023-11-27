@@ -385,13 +385,34 @@ class BaseModel:
                 x[:,i] = 0
 
         return x.astype(int)
-    
+
+    def calculate_gini_gain(self):
+        gini_gains = {}
+
+        # Function to calculate Gini Impurity
+        def gini_impurity(freqs):
+            return 1 - sum(f ** 2 for f in freqs)
+        # Calculate Gini gain for categorical features
+        for feature, categories in self.profile["categorical"].items():
+            impurity = gini_impurity([category["freq"] for category in categories])
+            weighted_impurity = impurity * sum(abs(category["score"]) for category in categories)
+            gini_gains[feature] = weighted_impurity
+        # Calculate Gini gain for numeric features
+        for feature, ranges in self.profile["numeric"].items():
+            impurity = gini_impurity([range_info["freq"] for range_info in ranges])
+            weighted_impurity = impurity * sum(abs(range_info["score"]) for range_info in ranges)
+            gini_gains[feature] = weighted_impurity
+        return gini_gains
+
     def _get_feature_importances(self):
         """ Calculates the feature importances for the model decision process.
 
         Returns:
             dict: The feature importances.
         """
+
+        return self.calculate_gini_gain()
+
         importances = {}
         total_importance = 0
 
