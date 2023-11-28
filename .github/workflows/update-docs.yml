@@ -56,8 +56,8 @@ jobs:
     - name: Commit and Push Changes to a New Branch
       run: |
         cd docs_repo/website
-        git config user.name github-actions
-        git config user.email github-actions@github.com
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
         git checkout -b update-documentation-${{ github.run_id }}
         git add .
         git commit -m "Update documentation from example Jupyter notebooks"
