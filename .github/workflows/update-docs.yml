@@ -58,10 +58,10 @@ jobs:
         cd docs_repo/website
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git checkout -b automated-update-documentation
+        git checkout -b update-documentation-${{ github.run_id }}
         git add .
         git commit -m "Update documentation from example Jupyter notebooks"
-        git push origin automated-update-documentation
+        git push origin update-documentation-${{ github.run_id }}
 
     - name: Verify Git Repository Status
       run: |
@@ -76,7 +76,7 @@ jobs:
         commit-message: Update the xplainable documentation
         committer: GitHub <noreply@github.com>
         author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
-        branch: automate-update-documentation
+        branch: update-documentation-${{ github.run_id }}
         base: docs_repo
         delete-branch: false
         title: "Update Documentation"
