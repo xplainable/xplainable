@@ -1,15 +1,15 @@
-jsonschema==4.4.0
+jsonschema
 pandas==1.4.1
 nbconvert==6.4.5
 nbformat==5.2.0
-mdformat==0.7.17
-mdformat_frontmatter==2.0.1
-mdformat_myst==0.1.5
-mdformat_tables==0.4.1
-mdit-py-plugins==0.3.5
+mdformat
+mdformat_frontmatter
+mdformat_myst
+mdformat_tables
+mdit-py-plugins
 mypy-extensions==1.0.0
-myst==1.0.4
-myst-parser==2.0.0
+myst
+myst-parser
 nbclient==0.5.13
 tabulate==0.9.0
-# jupyter==1.0.0
+
