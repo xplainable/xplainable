@@ -124,7 +124,7 @@ class XClassifier(BaseModel):
         df['nm'] = df['tm'].shift(-1)
 
         # np.nan is the same as 0
-        df.fillna(0, inplace=True)  # TODO new nan handler?
+        df.fillna(0, inplace=True)
 
         # Record rolling total for normalisation calc
         df['rt'] = df['tc'].rolling(3, center=True, min_periods=2).sum()
@@ -226,7 +226,7 @@ class XClassifier(BaseModel):
 
         return self
 
-    def update_feature_params(  # TODO ignore
+    def update_feature_params(
         self,
         features: list,
         max_depth=None,

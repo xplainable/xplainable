@@ -296,7 +296,7 @@ class Client:
             model._profile = profile_parse(model._profile)
             model.base_value = p['base_value']
             model.feature_map = {k: FeatureMap(v) for k, v in p['feature_map'].items()}
-            #model.parameters = ConstructorParams(p['parameters']) #TODO: update params
+            #model.parameters = ConstructorParams(p['parameters'])
 
             model.columns = p['columns']
             model.id_columns = p['id_columns']
@@ -585,7 +585,7 @@ class Client:
                 json.dumps(model.target_map.reverse, cls=NpEncoder)),
             "category_meta": json.loads(
                 json.dumps(model.category_meta, cls=NpEncoder)),
-            "constructs": model.constructs_to_json(),
+            # "constructs": model.constructs_to_json(),
             "calibration_map": None,
             "support_map": None
         }

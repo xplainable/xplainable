@@ -6,7 +6,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import pandas as pd
 from ._base_model import BaseModel, BasePartition
-from ._constructor import XConstructor, XCatConstructor, XNumConstructor, ConstructorParams
+from ._constructor import XCatConstructor, XNumConstructor, ConstructorParams
 from sklearn.metrics import *
 from time import time
 from typing import Union
@@ -108,7 +108,7 @@ class XRegressor(BaseModel):
         self.min_seen = 0
         self.max_seen = 0
 
-    def fit(  # TODO move up to base_model
+    def fit(
         self, x: Union[pd.DataFrame, np.ndarray],
         y: Union[pd.Series, np.ndarray], id_columns: list = [],
         column_names: list = None, target_name: str = 'target', alpha=0.1
@@ -120,7 +120,8 @@ class XRegressor(BaseModel):
             y (pd.Series | np.array): The target values.
             id_columns (list, optional): id_columns to ignore from training.
             column_names (list, optional): column_names to use for training if using a np.ndarray
-            target_name (str, optional): The name of the target column if using a np.array
+            target_name (str, optional): The name of the target column if using a np.ndarray
+            alpha (float, optional): Sets the number of possible splits with respect to unique values.
 
         Returns:
             XRegressor: The fitted model.
