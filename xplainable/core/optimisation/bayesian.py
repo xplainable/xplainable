@@ -57,7 +57,7 @@ class XParamOptimiser:
             random_state (int, optional): Random seed. Defaults to 1.
     """
 
-    def __init__(  # TODO ignore nan option
+    def __init__(
         self,
         metric='roc-auc',
         n_trials=30,

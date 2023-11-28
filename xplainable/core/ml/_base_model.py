@@ -35,7 +35,7 @@ class BaseModel:
         self.metadata = {"optimised": False}
 
     @property
-    def feature_importances(self) -> dict:  # TODO checked
+    def feature_importances(self) -> dict:
         """ Calculates the feature importances for the model decision process.
 
         Returns:
@@ -44,7 +44,7 @@ class BaseModel:
         return self._get_feature_importances()
     
     @property
-    def profile(self) -> dict:  # TODO checked
+    def profile(self) -> dict:
         """ Returns the model profile.
 
         The model profile contains more granular information about the model and
@@ -56,7 +56,7 @@ class BaseModel:
         """
         return self._get_profile()
 
-    def _get_profile(self):  # TODO checked
+    def _get_profile(self):
         # instantiate Profile
         profile = {
             'base_value': self.base_value,
@@ -96,7 +96,7 @@ class BaseModel:
         return profile
 
     @property
-    def params(self) -> ConstructorParams:  # TODO checked
+    def params(self) -> ConstructorParams:
         """ Returns the parameters of the model.
 
         Returns:
@@ -119,7 +119,7 @@ class BaseModel:
         """
         self.default_parameters = default_parameters
 
-    def update_feature_params(  # TODO ignore
+    def update_feature_params(
         self,
         features: list,
         max_depth=None,
@@ -148,15 +148,20 @@ class BaseModel:
 
         Args:
             features (list): The features to update.
-            parameters (ConstructorParams): parameter set to apply to all features in features argument
+            max_depth (int): The maximum depth of each decision tree in the subset.
+            min_info_gain (float): The minimum information gain required to make a split in the subset.
+            min_leaf_size (float): The minimum number of samples required to make a split in the subset.
+            ignore_nan (bool): Whether to ignore nan/missing values for training
+            weight (float): Activation function weight.
+            power_degree (float): Activation function power degree.
+            sigmoid_exponent (float): Activation function sigmoid exponent.
+            tail_sensitivity (float): Adds weight to divisive leaf nodes in the subset.
             x (pd.DataFrame | np.ndarray, optional): The x variables used for training. Use if map_calibration is True.
             y (pd.Series | np.array, optional): The target values. Use if map_calibration is True.
 
         Returns:
             XClassifier: The refitted model.
         """
-        if not features:  # TODO update all, just for testing
-            features = self.columns
 
         for feature in features:
             idx = self.columns.index(feature)
@@ -258,13 +263,13 @@ class BaseModel:
 
         return
 
-    def _fetch_meta(self, x, y):  # TODO checked
+    def _fetch_meta(self, x, y):
         # Assign target variable
         self.target = y.name
         # Store numeric column names
         self.numeric_columns = list(x.select_dtypes('number'))
         # Store categorical column names
-        self.categorical_columns = list(x.select_dtypes('object'))  # TODO make categorical
+        self.categorical_columns = list(x.select_dtypes('object'))
         self.columns = list(x.columns)
 
     def _calculate_category_meta(self, x, y):
@@ -284,7 +289,7 @@ class BaseModel:
         
         x = x[[c for c in self.columns if c in x.columns]]
 
-        x = x.astype('float64')  # TODO float might not be needed
+        x = x.astype('float64')
         if y is not None:
             y = y.astype('float64')
             return x, y
@@ -302,7 +307,7 @@ class BaseModel:
         return x
 
     def _learn_encodings(self, x, y):
-        if y.dtype == 'object':  # TODO make categorical
+        if y.dtype == 'object':
             self._encode_target(y)
         for f in self.categorical_columns:
             self._encode_feature(x[f], y)
@@ -318,7 +323,7 @@ class BaseModel:
             return x, y
         return x
 
-    def _transform(self, x):  # TODO checked
+    def _transform(self, x):
         x = x.copy()
         x = self._cast_to_pandas(x, column_names=self.columns)
         x = self._coerce_dtypes(x)
@@ -366,7 +371,7 @@ class BaseModel:
     def convert_to_model_profile_categories(self, x):
         return self._get_leaf_ids(x)
 
-    def _get_leaf_ids(self, x):  # TODO might Needs work
+    def _get_leaf_ids(self, x):
 
         x = x.copy()
         
@@ -394,24 +399,11 @@ class BaseModel:
             return 1 - sum(f ** 2 for f in freqs)
         
         # Calculate Gini gain for categorical features
-        for feature, categories in self.profile["categorical"].items():
+        for feature, categories in list(self.profile["categorical"].items()) + list(self.profile["numeric"].items()):
 
-            impurity = gini_impurity(
-                [category["freq"] for category in categories])
+            impurity = gini_impurity([category["freq"] for category in categories])
 
-            weighted_impurity = impurity * sum(abs(category["score"]) for \
-                                               category in categories)
-            
-            gini_gains[feature] = weighted_impurity
-
-        # Calculate Gini gain for numeric features
-        for feature, ranges in self.profile["numeric"].items():
-
-            impurity = gini_impurity(
-                [range_info["freq"] for range_info in ranges])
-            
-            weighted_impurity = impurity * sum(abs(range_info["score"]) for \
-                                               range_info in ranges)
+            weighted_impurity = impurity * sum(abs(category["score"]) for category in categories)
             
             gini_gains[feature] = weighted_impurity
 
@@ -445,11 +437,11 @@ class BaseModel:
 
         return _plot_local_explainer(self, t, subsample)
 
-    def _fit_check(  # TODO better function name  # TODO checked
+    def _fit_check(
         self, x: Union[pd.DataFrame, np.ndarray],
         y: Union[pd.Series, np.ndarray], id_columns: list = [],
         column_names: list = None, target_name: str = 'target', map_calibration=False
-    ):  # TODO clarify return type: ndarray, ndarray, df, df
+    ):
 
         x = x.copy()
         y = y.copy()

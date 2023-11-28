@@ -42,10 +42,12 @@ class XConstructor:
 
     @property
     def min_raw_score(self):
+        """Retruns the Least raw score across all bin, including nan in applicable"""
         return min([a[-1] for a in self._nodes[:-1]]) if self.params.ignore_nan else min([a[-1] for a in self._nodes])
 
     @property
     def max_raw_score(self):
+        """Retruns the Most raw score across all bin, including nan in applicable"""
         return max([a[-1] for a in self._nodes[:-1]]) if self.params.ignore_nan else max([a[-1] for a in self._nodes])
 
     def set_parameters(
@@ -56,14 +58,14 @@ class XConstructor:
         self.parameters = parameters
         self.construct()
 
-    def _get_base_partition(self, X: np.array, alpha=0.1):  # TODO checked
+    def _get_base_partition(self, X: np.array, alpha=0.1):
         """ Gets all the categories for the feature """
         # Sort unique categories ascending
         cats = np.unique(X)
         cats = numpy.delete(cats, (numpy.where(np.isnan(cats))))  # Remove nan
         return cats
 
-    def _activation(self, v):  # TODO checked
+    def _activation(self, v):
         """ Activation function for frequency weighting """
 
         _w, _pd, _sig = self.params.weight, self.params.power_degree, self.params.sigmoid_exponent
@@ -109,16 +111,16 @@ class XConstructor:
             self._nodes[i][-4] = old(node[-1])
         self._nodes[-1][-4] = 0 if self.params.ignore_nan else old(nan_bin[-1])
 
-    def _construct(self) -> np.ndarray:  # TODO checked
+    def _construct(self) -> np.ndarray:
         """ Constructs nodes for score binning """
         return np.array([])
 
     @staticmethod
     @njit(parallel=True, fastmath=True, nogil=True)
-    def _get_base_meta(base_partition, X, y):  # TODO checked
+    def _get_base_meta(base_partition, X, y):
         return np.empty((len(base_partition), 2), dtype=np.float64)
 
-    def fit(self, X, y, alpha=0.1):  # TODO checked
+    def fit(self, X, y, alpha=0.1):
         """ Fits feature data to target """
 
         self.fitted_samples = X.size
@@ -183,7 +185,7 @@ class XCatConstructor(XConstructor):
         self.type = "categorical"
 
     @staticmethod
-    def _get_base_meta(base_partition, X, y):  # TODO checked
+    def _get_base_meta(base_partition, X, y):
         """ Instantiates metadata at each category"""
         new_X = np.repeat(X[np.newaxis, :], len(base_partition), 0)
         cat_mask = np.where(new_X == base_partition[:, np.newaxis], 1, 0)
@@ -200,7 +202,7 @@ class XCatConstructor(XConstructor):
         )
         return meta
 
-    def _construct(self):  # TODO checked
+    def _construct(self):
         """ Constructs nodes for score binning """
 
         _nodes = []
@@ -277,7 +279,7 @@ class XNumConstructor(XConstructor):
         return psplits
 
     @staticmethod
-    def _get_base_meta(base_partition, X, y):  # TODO checked
+    def _get_base_meta(base_partition, X, y):
         """ Instantiates metadata at each split """
         _meta = np.empty((len(base_partition), 2, 2), dtype=np.float64)
         _len_y = y.size
