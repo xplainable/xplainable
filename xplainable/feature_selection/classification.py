@@ -49,7 +49,7 @@ class XClfFeatureSelector:
         self.id_columns = []
         self.columns = []
         self.results = []
-        self.model = XClassifier(alpha=alpha)
+        self.model = XClassifier()
         self.samples = []
 
         self.feature_scores = {}
@@ -138,7 +138,8 @@ class XClfFeatureSelector:
                 
         self.samples = self._get_even_samples(self.columns, self.n_samples)
         
-        self.model.fit(self.X_train, self.y_train, id_columns=self.id_columns)
+        self.model.fit(self.X_train, self.y_train, id_columns=self.id_columns,
+            alpha=self.alpha)
         
         params = self.model.params
         
