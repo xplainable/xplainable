@@ -31,8 +31,8 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        pip install -r website/requirements.txt
-        # Adjust if there are additional dependencies
+        cd website
+        pip install -r requirements.txt
 
     - name: Copy Examples to website working directory
       run: |
