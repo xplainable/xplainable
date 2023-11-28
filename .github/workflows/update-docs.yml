@@ -6,6 +6,12 @@ on:
       - main
     paths:
       - 'examples/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'examples/**'
+  workflow_dispatch:
 
 jobs:
   update-docs:
@@ -43,15 +49,16 @@ jobs:
         cd website
         python convert_ipynb_to_mdx.py
 
-    - name: Commit and Push Changes to docs branch
+    - name: Commit and Push Changes to a New Branch
       run: |
         cd website
         git config user.name github-actions
         git config user.email github-actions@github.com
+        git checkout -b update-documentation-${{ github.run_id }}
         git add .
-        git commit -m "Update documentation from Jupyter notebooks"
-        git push origin docs
-
+        git commit -m "Update documentation from example Jupyter notebooks"
+        git push origin update-documentation-${{ github.run_id }}
+      
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v3
       with:
@@ -61,3 +68,4 @@ jobs:
         body: "Automatically generated documentation update"
         base: docs
         labels: documentation
+      
