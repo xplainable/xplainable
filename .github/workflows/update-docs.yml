@@ -77,7 +77,7 @@ jobs:
         committer: GitHub <noreply@github.com>
         author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
         branch: update-documentation-${{ github.run_id }}
-        base: docs_repo
+        base: docs 
         delete-branch: false
         title: "Update Documentation"
         body: |
