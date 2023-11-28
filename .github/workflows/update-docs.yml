@@ -35,9 +35,15 @@ jobs:
       with:
         python-version: '3.x'
 
+    - name: List contents of the website directory
+      run: |
+        ls -lah website
+
     - name: Install Dependencies
       run: |
         cd website
+        pwd
+        ls
         pip install -r requirements.txt
 
     - name: Copy Examples to website working directory
