@@ -62,13 +62,31 @@ jobs:
         git add .
         git commit -m "Update documentation from example Jupyter notebooks"
         git push origin update-documentation-${{ github.run_id }}
-      
+
+    - name: Verify Git Repository Status
+      run: |
+        git status
+      working-directory: ./docs_repo
+    
     - name: Create Pull Request
+      id: cpr
       uses: peter-evans/create-pull-request@v3
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: Update the xplainable documentation
+        committer: GitHub <noreply@github.com>
+        author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
         branch: update-documentation-${{ github.run_id }}
+        delete-branch: false
         title: "Update Documentation"
-        body: "Automatically generated documentation update"
-        base: docs
-        labels: documentation
+        body: |
+          Automatically generated documentation with [create-pull-request][1]
+
+          [1]: https://github.com/peter-evans/create-pull-request
+        labels: |
+          documentation
+          automated pr
+        team-reviewers: |
+          owners
+          maintainers
+        draft: false
