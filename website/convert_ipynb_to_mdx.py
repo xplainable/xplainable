@@ -27,10 +27,15 @@ else:
     LIB_DIR = (Path(get_fbcode_dir()) / "xplainable" ).resolve()
 
 
-WEBSITE_DIR = LIB_DIR.joinpath("xplainable")
-DOCS_DIR = LIB_DIR.joinpath("website")
-OVERVIEW_DIR = DOCS_DIR.joinpath("docs")
-TUTORIALS_DIR = OVERVIEW_DIR.joinpath("tutorials")
+# WEBSITE_DIR = LIB_DIR.joinpath("xplainable")
+# DOCS_DIR = LIB_DIR.joinpath("website")
+# OVERVIEW_DIR = DOCS_DIR.joinpath("docs")
+# TUTORIALS_DIR = OVERVIEW_DIR.joinpath("tutorials")
+
+WEBSITE_DIR = LIB_DIR.joinpath("website")
+DOCS_DIR = WEBSITE_DIR.joinpath("docs")
+OVERVIEW_DIR = DOCS_DIR
+TUTORIALS_DIR = DOCS_DIR.joinpath("tutorials")
 
 
 def load_nbs_to_convert() -> Dict[str, Dict[str, str]]:
@@ -447,6 +452,9 @@ def transform_code_cell(
             #     #     altair_flag = True
 
                 if "text/html" in data and "alt.HConcatChart" in data.get("text/plain", ""):
+                    # Clear out old plot files before creating a new one
+                    clear_plot_data_files(plot_data_folder, extension=".html")
+
                     html_content = data["text/html"]
                     file_name = f"AltairPlot_{uuid.uuid4()}.html"
                     file_path = plot_data_folder.joinpath(file_name)
@@ -649,7 +657,7 @@ def generate_tutorials_json(examples_dir, tutorials_metadata):
                 "sidebar_label": title,
                 "path": f"website/docs/tutorials/{title}",
                 "nb_path": nb_path,
-                "github": "https://github.com/xplainable/xplainable/tree/main/tutorials",
+                "github": "https://github.com/xplainable/xplainable/tree/main/examples",
                 "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
             }
 
@@ -657,6 +665,10 @@ def generate_tutorials_json(examples_dir, tutorials_metadata):
     tutorials_json.update(tutorials_metadata)
     return tutorials_json
 
+def clear_plot_data_files(plot_data_folder: Path, extension: str = ".html"):
+    """Remove all files with the given extension in the specified directory."""
+    for file in plot_data_folder.glob(f'*{extension}'):
+        file.unlink()
 
 if __name__ == "__main__":
 
@@ -667,11 +679,13 @@ if __name__ == "__main__":
     print("Creating the tutorials.json file output     ")
     print("--------------------------------------------")
     # Generate tutorials.json
-    examples_dir = LIB_DIR.joinpath('website/docs/tutorials')  # Adjust the path as needed
+    # examples_dir = LIB_DIR.joinpath('website/docs/tutorials')  # Adjust the path as needed
+    examples_dir = TUTORIALS_DIR
+    print(examples_dir)
     tutorials_json = generate_tutorials_json(examples_dir, tutorials_metadata)
 
     # Write tutorials.json to disk
-    tutorials_json_path = DOCS_DIR.joinpath("tutorials.json")  # Adjust the path as needed
+    tutorials_json_path = WEBSITE_DIR.joinpath("tutorials.json")  # Adjust the path as needed
     with open(tutorials_json_path, 'w') as f:
         json.dump(tutorials_json, f, indent=4)
 

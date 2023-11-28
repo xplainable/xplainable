@@ -4,7 +4,7 @@
         "sidebar_label": "Telco Churn",
         "path": "website/docs/tutorials/Telco Churn",
         "nb_path": "website/docs/tutorials/Telco Churn.ipynb",
-        "github": "https://github.com/xplainable/xplainable/tree/main/tutorials",
+        "github": "https://github.com/xplainable/xplainable/tree/main/examples",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
     }
 }
