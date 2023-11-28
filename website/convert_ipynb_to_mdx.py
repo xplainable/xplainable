@@ -18,25 +18,22 @@ try:
     from libfb.py.fbcode_root import get_fbcode_dir
 except ImportError:
     SCRIPTS_DIR = Path(__file__).parent.resolve()
-    # Go two levels up from SCRIPTS_DIR to get to the base 'xplainable' directory
-    # and then into the 'docs' directory.
-    LIB_DIR = (SCRIPTS_DIR.parent.parent / "xplainable" ).resolve()
+    # If SCRIPTS_DIR is `website`, then just use its parent.
+    LIB_DIR = SCRIPTS_DIR.parent.resolve()
 else:
-    # If the try block is successful, you need to adjust this path as well
-    # to point to the 'xplainable/docs' directory.
-    LIB_DIR = (Path(get_fbcode_dir()) / "xplainable" ).resolve()
-
-
-# WEBSITE_DIR = LIB_DIR.joinpath("xplainable")
-# DOCS_DIR = LIB_DIR.joinpath("website")
-# OVERVIEW_DIR = DOCS_DIR.joinpath("docs")
-# TUTORIALS_DIR = OVERVIEW_DIR.joinpath("tutorials")
+    # If the try block is successful, you only need the root directory.
+    LIB_DIR = Path(get_fbcode_dir()).resolve()
 
 WEBSITE_DIR = LIB_DIR.joinpath("website")
 DOCS_DIR = WEBSITE_DIR.joinpath("docs")
 OVERVIEW_DIR = DOCS_DIR
 TUTORIALS_DIR = DOCS_DIR.joinpath("tutorials")
 
+
+# WEBSITE_DIR = LIB_DIR.joinpath("xplainable")
+# DOCS_DIR = LIB_DIR.joinpath("website")
+# OVERVIEW_DIR = DOCS_DIR.joinpath("docs")
+# TUTORIALS_DIR = OVERVIEW_DIR.joinpath("tutorials")
 
 def load_nbs_to_convert() -> Dict[str, Dict[str, str]]:
     """Load the metadata and list of notebooks to convert to mdx.
@@ -49,7 +46,7 @@ def load_nbs_to_convert() -> Dict[str, Dict[str, str]]:
         to mdx.
 
     """
-    tutorials_json_path = Path("tutorials.json")
+    tutorials_json_path = WEBSITE_DIR.joinpath("tutorials.json")
     with open(str(tutorials_json_path), "r") as f:
         tutorials_data = json.load(f)
 
