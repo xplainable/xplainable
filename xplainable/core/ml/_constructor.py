@@ -279,8 +279,46 @@ class XNumConstructor(XConstructor):
         return psplits
 
     @staticmethod
+    @njit(parallel=True, fastmath=True, nogil=True)
     def _get_base_meta(base_partition, X, y):
+
         """ Instantiates metadata at each split """
+
+        _meta = np.empty((len(base_partition), 2, 2), dtype=np.float64)
+
+        _len_y = y.size
+        _n_splits = base_partition.size
+
+        for i in prange(_n_splits):
+
+            _split = base_partition[i]
+
+            _0_cnt = 0
+            _0_tot = 0
+            _1_cnt = 0
+            _1_tot = 0
+
+            # Create splits
+            for v in prange(_len_y):
+                if X[v] <= _split:
+                    _0_cnt += 1
+                    _0_tot += y[v]
+
+                else:
+                    _1_cnt += 1
+                    _1_tot += y[v]
+
+            _0_mean = _0_tot / _0_cnt
+            _1_mean = _1_tot / _1_cnt
+
+            _meta[i, 0, 0] = _0_cnt
+            _meta[i, 0, 1] = _0_mean
+            _meta[i, 1, 0] = _1_cnt
+            _meta[i, 1, 1] = _1_mean
+
+        return _meta
+
+        """ Instantiates metadata at each split 
         _meta = np.empty((len(base_partition), 2, 2), dtype=np.float64)
         _len_y = y.size
 
@@ -300,7 +338,7 @@ class XNumConstructor(XConstructor):
                 ])
             )
 
-        return _meta
+        return _meta"""
 
     @staticmethod
     @njit(parallel=False, fastmath=True, nogil=True)
@@ -315,16 +353,28 @@ class XNumConstructor(XConstructor):
             r = meta[i][1]
             if (l[0] < mls) or (r[0] < mls):
                 continue
+            s = - (
+                    (
+                        0 if l[1] <= 0 else l[1] * np.log2(l[1])
+                    ) + (
+                        0 if r[1] <= 0 else r[1] * np.log2(r[1])
+                    )
+            )  # info gain equation
 
-            ld = abs(l[1] - bv)
-            rd = abs(r[1] - bv)
+            # ld = abs(l[1] - bv)
+            # rd = abs(r[1] - bv)
 
-            md = max([ld, rd])
+            # md = max([ld, rd])
 
-            if md < mig:
+            if s < mig:
                 continue
 
-            s = (ld * np.log2(l[0] / samp * 100)) + (rd * np.log2(r[0] / samp * 100))
+            # s = (ld * np.log2(l[0] / samp * 100)) + (rd * np.log2(r[0] / samp * 100))
+
+            # print(s)
+            # s = -(ld * np.log2(ld) + rd * np.log2(rd))
+            # print(s)
+            # print()
 
             if s > bst:
                 bst = s
