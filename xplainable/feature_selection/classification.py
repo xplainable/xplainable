@@ -141,7 +141,7 @@ class XClfFeatureSelector:
         self.model.fit(self.X_train, self.y_train, id_columns=self.id_columns,
             alpha=self.alpha)
         
-        params = self.model.params
+        params = self.model.params.to_json()
         
         for samp in tqdm(self.samples):
         
