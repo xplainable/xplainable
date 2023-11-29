@@ -456,10 +456,10 @@ class EvaluateClassifier:
             self.feature_importance_bars.children = group.children
             self.__update_scenario = True
 
-            with self.scenarios:
-                clear_output(wait=True)
-                scenario = ScenarioClassification(self.model, self.ranges)
-                display(scenario.run())
+            # with self.scenarios:
+            #     clear_output(wait=True)
+            #     scenario = ScenarioClassification(self.model, self.ranges)
+            #     display(scenario.run())
             
         action.on_click(on_click)
         
@@ -479,11 +479,11 @@ class EvaluateClassifier:
     def profile(self, X, y):
         
         evaluation = widgets.Output()
-        self.scenarios = widgets.Output(
-            layout = widgets.Layout(min_height='720px'))
+        # self.scenarios = widgets.Output(
+        #     layout = widgets.Layout(min_height='720px'))
         
-        with self.scenarios:
-            print("Generating widgets...")
+        # with self.scenarios:
+        #     print("Generating widgets...")
             
         divider = widgets.HTML(f'<hr class="solid">')
         
@@ -532,9 +532,10 @@ class EvaluateClassifier:
             
             self.ranges[c] = rng
             
-        tabs = widgets.Tab([evaluation, self.scenarios])
+        #tabs = widgets.Tab([evaluation, self.scenarios])
+        tabs = widgets.Tab([evaluation])
         tabs.set_title(0, 'Evaluation')
-        tabs.set_title(1, 'Scenario Analysis')
+        #tabs.set_title(1, 'Scenario Analysis')
         
         close_button = widgets.Button(description='close')
         close_button.style = {
@@ -542,10 +543,10 @@ class EvaluateClassifier:
             "text_color": 'white'
             }
 
-        with self.scenarios:
-            clear_output(wait=True)
-            scenario = ScenarioClassification(self.model, self.ranges)
-            display(scenario.run())
+        # with self.scenarios:
+        #     clear_output(wait=True)
+        #     scenario = ScenarioClassification(self.model, self.ranges)
+        #     display(scenario.run())
         
         screen = widgets.VBox([
             tabs,
@@ -977,10 +978,10 @@ class EvaluateRegressor:
             self.feature_importance_bars.children = group.children
             self.__update_scenario = True
 
-            with self.scenarios:
-                clear_output(wait=True)
-                scenario = ScenarioRegression(self.model, self.ranges)
-                display(scenario.run())
+            # with self.scenarios:
+            #     clear_output(wait=True)
+            #     scenario = ScenarioRegression(self.model, self.ranges)
+            #     display(scenario.run())
             
         action.on_click(on_click)
         
@@ -1001,10 +1002,10 @@ class EvaluateRegressor:
         self.y_val = y
         
         evaluation = widgets.Output()
-        self.scenarios = widgets.Output(
-            layout = widgets.Layout(min_height='720px'))
-        with self.scenarios:
-            print("Generating widgets...")
+        # self.scenarios = widgets.Output(
+        #     layout = widgets.Layout(min_height='720px'))
+        # with self.scenarios:
+        #     print("Generating widgets...")
             
         divider = widgets.HTML(f'<hr class="solid">')
         
@@ -1053,9 +1054,10 @@ class EvaluateRegressor:
             
             self.ranges[c] = rng
             
-        tabs = widgets.Tab([evaluation, self.scenarios])
+        #tabs = widgets.Tab([evaluation, self.scenarios])
+        tabs = widgets.Tab([evaluation])
         tabs.set_title(0, 'Evaluation')
-        tabs.set_title(1, 'Scenario Analysis')
+        #tabs.set_title(1, 'Scenario Analysis')
         
         close_button = widgets.Button(description='close')
         close_button.style = {
