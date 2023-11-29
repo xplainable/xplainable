@@ -371,11 +371,6 @@ class XNumConstructor(XConstructor):
 
             # s = (ld * np.log2(l[0] / samp * 100)) + (rd * np.log2(r[0] / samp * 100))
 
-            # print(s)
-            # s = -(ld * np.log2(ld) + rd * np.log2(rd))
-            # print(s)
-            # print()
-
             if s > bst:
                 bst = s
                 _idx = i

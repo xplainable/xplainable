@@ -197,30 +197,17 @@ class XClassifier(BaseModel):
             target_name,
             map_calibration=self.map_calibration
         )
-        print(f"Fit Check {time() - start}")
-
-        fit_time = const_time = looptime = 0
 
         for i in range(x.shape[1]):
-            loopstart = time()
             f = x[:, i]
 
             # chooses constructor type based on type of input feature
             constructor = XCatConstructor if self.columns[i] in self.categorical_columns else XNumConstructor
 
             xconst = constructor(False, self.default_parameters.__copy__())
-            start = time()
             xconst.fit(f, y, alpha)
-            fit_time += time() - start
-            start = time()
             xconst.construct()
-            const_time += time() - start
             self._constructs.append(xconst)
-            looptime += time() - loopstart
-
-        print(f"Loop: {looptime}")
-        print(f"Fit: {fit_time}")
-        print(f"Construct: {const_time}")
 
         self._build_profile()
 
