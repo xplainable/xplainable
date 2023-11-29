@@ -25,6 +25,12 @@ def force_json_compliant(data, fill_value=None):
             data = fill_value
         elif np.isinf(data):
             data = fill_value
+    elif isinstance(data, np.integer):
+            return int(data)
+    elif isinstance(data, np.floating):
+        return float(data)
+    elif isinstance(data, np.ndarray):
+        return data.tolist()
     return data
 
 def profile_parse(data):
