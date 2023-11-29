@@ -53,41 +53,51 @@ jobs:
         cd docs_repo/website
         python convert_ipynb_to_mdx.py
 
-    - name: Commit and Push Changes to a New Branch
+    - name: Commit and Push Changes Directly to docs Branch
       run: |
         cd docs_repo/website
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git checkout -b update-documentation-${{ github.run_id }}
         git add .
         git commit -m "Update documentation from example Jupyter notebooks"
-        git push origin update-documentation-${{ github.run_id }}
+        git push origin docs
+  
 
-    - name: Verify Git Repository Status
-      run: |
-        git status
-      working-directory: ./docs_repo
+    # - name: Commit and Push Changes to a New Branch
+    #   run: |
+    #     cd docs_repo/website
+    #     git config user.name "github-actions[bot]"
+    #     git config user.email "github-actions[bot]@users.noreply.github.com"
+    #     git checkout -b update-documentation-${{ github.run_id }}
+    #     git add .
+    #     git commit -m "Update documentation from example Jupyter notebooks"
+    #     git push origin update-documentation-${{ github.run_id }}
+
+    # - name: Verify Git Repository Status
+    #   run: |
+    #     git status
+    #   working-directory: ./docs_repo
     
-    - name: Create Pull Request
-      id: cpr
-      uses: peter-evans/create-pull-request@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        commit-message: Update the xplainable documentation
-        committer: GitHub <noreply@github.com>
-        author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
-        branch: update-documentation-${{ github.run_id }}
-        base: docs 
-        delete-branch: false
-        title: "Update Documentation"
-        body: |
-          Automatically generated documentation with [create-pull-request][1]
+    # - name: Create Pull Request
+    #   id: cpr
+    #   uses: peter-evans/create-pull-request@v3
+    #   with:
+    #     token: ${{ secrets.GITHUB_TOKEN }}
+    #     commit-message: Update the xplainable documentation
+    #     committer: GitHub <noreply@github.com>
+    #     author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+    #     branch: update-documentation-${{ github.run_id }}
+    #     base: docs 
+    #     delete-branch: false
+    #     title: "Update Documentation"
+    #     body: |
+    #       Automatically generated documentation with [create-pull-request][1]
 
-          [1]: https://github.com/peter-evans/create-pull-request
-        labels: |
-          documentation
-          automated pr
-        team-reviewers: |
-          owners
-          maintainers
-        draft: false
+    #       [1]: https://github.com/peter-evans/create-pull-request
+    #     labels: |
+    #       documentation
+    #       automated pr
+    #     team-reviewers: |
+    #       owners
+    #       maintainers
+    #     draft: false
