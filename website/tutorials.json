@@ -1,4 +1,12 @@
 {
+    "Tool Failure": {
+        "title": "Tool Failure",
+        "sidebar_label": "Tool Failure",
+        "path": "website/docs/tutorials/Tool Failure",
+        "nb_path": "website/docs/tutorials/Tool_Failure.ipynb",
+        "github": "https://github.com/xplainable/xplainable/tree/main/examples",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
+    },
     "Telco Churn": {
         "title": "Telco Churn",
         "sidebar_label": "Telco Churn",
