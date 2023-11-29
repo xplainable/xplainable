@@ -16,9 +16,9 @@ def plot_network_graphs(graphs, animate=True, index=0):
     try:
         import plotly.graph_objects as go
     except ImportError:
-        raise ImportError("Optional dependencies not found. Please install "
-                          "them with `pip install xplainable[plotting]' to use "
-                          "this feature.") from None
+        raise ImportError("""Optional dependencies not found. Please install "
+                          "them with `pip install "xplainable[plotting]"` to use "
+                          "this feature.""") from None
 
     if len(graphs) == 0:
         return None

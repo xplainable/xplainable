@@ -52,9 +52,9 @@ def _plot_explainer(model, label_rounding=5):
     try:
         import altair as alt
     except ImportError:
-        raise ImportError("Optional dependencies not found. Please install "
-                          "them with `pip install xplainable[plotting]' to use "
-                          "this feature.") from None
+        raise ImportError("""Optional dependencies not found. Please install "
+                          "them with `pip install "xplainable[plotting]"` to use "
+                          "this feature.""") from None
 
     fi = pd.DataFrame(
             {i: {'importance': v} for i, v in model.feature_importances.items()}
@@ -149,9 +149,9 @@ def _plot_feature_importances(model, feature=''):
     try:
         import altair as alt
     except ImportError:
-        raise ImportError("Optional dependencies not found. Please install "
-                          "them with `pip install xplainable[plotting]' to use "
-                          "this feature.") from None
+        raise ImportError("""Optional dependencies not found. Please install "
+                          "them with `pip install "xplainable[plotting]"` to use "
+                          "this feature.""") from None
     
     fi = pd.DataFrame(
             {i: {'importance': v} for i, v in model.feature_importances.items()}
@@ -204,9 +204,9 @@ def _plot_contributions(model, feature='__all__'):
     try:
         import altair as alt
     except ImportError:
-        raise ImportError("Optional dependencies not found. Please install "
-                          "them with `pip install xplainable[plotting]' to use "
-                          "this feature.") from None
+        raise ImportError("""Optional dependencies not found. Please install "
+                          "them with `pip install "xplainable[plotting]"` to use "
+                          "this feature.""") from None
     
     if feature == '__all__':
         features = list(model.columns)
@@ -277,9 +277,9 @@ def _plot_local_explainer(model, df, subsample=100):
     try:
         import plotly.graph_objects as go
     except ImportError:
-        raise ImportError("Optional dependencies not found. Please install "
-                          "them with `pip install xplainable[plotting]' to use "
-                          "this feature.") from None
+        raise ImportError("""Optional dependencies not found. Please install "
+                          "them with `pip install "xplainable[plotting]"` to use "
+                          "this feature.""") from None
     
     buttons = []
     data = []
