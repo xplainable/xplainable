@@ -7,7 +7,7 @@ import time
 import inspect
 import ast
 from ..utils.api import get_response_content
-from ..utils.encoders import NpEncoder
+from ..utils.encoders import NpEncoder, force_json_compliant
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -420,7 +420,7 @@ class Client:
             "deltas": deltas,
             "versions": versions
             }
-
+        
         # Create a new version and fetch id
         url = (
             f'{self.hostname}/v1/{self.__ext}/preprocessors/'
@@ -540,10 +540,11 @@ class Client:
         elif model.__class__.__name__ in independent_models:
             pdata = self._get_partition_data(model, '__dataset__', x, y)
             payload['partitions'].append(pdata)
-
+        
         # Create a new version and fetch id
         url = f'{self.hostname}/v1/{self.__ext}/models/{model_id}/add-version'
-        response = self.__session.post(url=url, json=payload)
+        response = self.__session.post(
+            url=url, json=force_json_compliant(payload))
 
         version_id = get_response_content(response)
 
