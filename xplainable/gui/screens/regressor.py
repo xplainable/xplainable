@@ -23,7 +23,7 @@ import numpy as np
 import copy
 import time
 import ipywidgets as widgets
-from IPython.display import  display
+from IPython.display import  display, clear_output
 from sklearn.metrics import *
 
 def regressor(df):
@@ -57,7 +57,7 @@ def regressor(df):
 
     header.add_widget(part_progress.show())
 
-
+    result_out = widgets.Output()
     
     column_names = df.columns.tolist()
     numeric_columns = df.select_dtypes(include=np.number).columns.tolist()
@@ -322,7 +322,7 @@ def regressor(df):
         vp.on_click(focus_box)(vp.box.children[vp._selected_index].children[1])
         #vp.editor_output.clear_output()
     
-    add_layer_button = widgets.Button(description='Add', icon='fa-plus')
+    add_layer_button = widgets.Button(description='Add', icon='plus')
     add_layer_button.on_click(on_add)
     add_layer_button.layout.width = '75px'
     add_layer_button.layout.margin = '0 0 0 15px'
@@ -374,173 +374,184 @@ def regressor(df):
         screen.close()
     
     def on_train(b):
-
-        header.loader.start()
-        parts = b.partitions
-        p_on = _dropdown_partition_on.value
-        
-        body.close()
-        footer.close()
-        output_screen.layout.display = 'flex'
-        
-        part_progress.set_bounds(min_val=0, max_val=len(b.partitions))
-        part_progress.set_suffix(f'/{len(b.partitions)}')
-        part_progress.set_value('Partitions', 0)
-        part_progress.expand_items(items=['Partitions'])
-        
-        eval_screens = {}
-        
-        for i, (p, model) in enumerate(parts.items(), start=1):
+        try:
+            header.loader.start()
+            parts = b.partitions
+            p_on = _dropdown_partition_on.value
             
-            callback.init()
+            body.close()
+            footer.close()
+            output_screen.layout.display = 'flex'
             
-            kvt.update_data({
-                'status': 'initialising',
-                'partition': p,
-                'layers': f'{len(xnet.future_layers)}'
-            })
+            part_progress.set_bounds(min_val=0, max_val=len(b.partitions))
+            part_progress.set_suffix(f'/{len(b.partitions)}')
+            part_progress.set_value('Partitions', 0)
+            part_progress.expand_items(items=['Partitions'])
             
-            network = copy.deepcopy(xnet)
-            network.model = model
+            eval_screens = {}
             
-            model.max_depth = _slider_max_depth.value
-            model.min_leaf_size = _slider_min_leaf_size.value
-            model.min_info_gain = _slider_min_info_gain.value
-            model.tail_sensitivity = _slider_tail_sensitivity.value
-            model.alpha = _slider_alpha.value
-            
-            drop_cols = [_dropdown_target.value]
-
-            if p != '__dataset__':
-                part = df[df[p_on] == p]
-
-                if len(part) < 100:
-                    continue
+            for i, (p, model) in enumerate(parts.items(), start=1):
                 
-                drop_cols.append(_dropdown_partition_on.value)
-                X = part.drop(columns=drop_cols)
-                y = part[_dropdown_target.value]
-
-                X_train, X_test, y_train, y_test = train_test_split(
-                    X, y, test_size=_slider_validation_size.value,
-                    random_state=1)
+                callback.init()
                 
-            else:
-                
-                if _dropdown_partition_on.value is not None:
-                            drop_cols.append(_dropdown_partition_on.value)
-
-                X, y = df.drop(columns=drop_cols), df[_dropdown_target.value]
-                X_train, X_test, y_train, y_test = train_test_split(
-                    X, y, test_size=_slider_validation_size.value,
-                    random_state=1)
-            
-            id_cols = [
-                i for i in list(_selector_id_columns.value) if i is not None]
-            
-            kvt.update_data({
-                'status': 'fitting model',
-                'partition': p,
-                'layers': f'{len(xnet.future_layers)}'
-            })
-
-            start = time.time()
-            model.fit(X_train, y_train, id_columns=id_cols)
-            
-            model.metadata['optimiser'] = {}
-            
-            if _toggle_optimise_ts.value:
                 kvt.update_data({
-                    'status': 'optimising tail_sensitivity',
-                    'partition': p,
-                    'layers': f'{len(xnet.future_layers)}'
-                })
-
-                start = time.time()
-                model.optimise_tail_sensitivity(X_train, y_train)
-                elapsed = round(time.time()-start, 4)
-
-                model.metadata['optimiser'][
-                    'tail_sensitivity_optimise_time'] = elapsed
-            
-            if len(network.future_layers) > 0:
-                kvt.update_data({
-                    'status': 'optimising model weights',
+                    'status': 'initialising',
                     'partition': p,
                     'layers': f'{len(xnet.future_layers)}'
                 })
                 
-                if _slider_opt_sample.value < 1:
+                network = copy.deepcopy(xnet)
+                network.model = model
 
-                    X_train = X_train.sample(
-                        int(len(X_train) * _slider_opt_sample.value))
+                model.params.update_parameters(
+                        max_depth=_slider_max_depth.value,
+                        min_leaf_size=_slider_min_leaf_size.value,
+                        min_info_gain=_slider_min_info_gain.value,
+                        tail_sensitivity=_slider_tail_sensitivity.value,
+                        ignore_nan=False
+                    )
+
+                drop_cols = [_dropdown_target.value]
+
+                if p != '__dataset__':
+                    part = df[df[p_on] == p]
+
+                    if len(part) < 100:
+                        continue
                     
-                    y_train = y_train.loc[X_train.index]
-                
-                start = time.time()
-                if _dropdown_partition_on.value is not None:
-                    network.fit(
-                        X_train,
-                        y_train)
+                    drop_cols.append(_dropdown_partition_on.value)
+                    X = part.drop(columns=drop_cols)
+                    y = part[_dropdown_target.value]
+
+                    X_train, X_test, y_train, y_test = train_test_split(
+                        X, y, test_size=_slider_validation_size.value,
+                        random_state=1)
+                    
                 else:
-                    network.fit(X_train, y_train)
-                
-                output_screen.children = (output_screen.children[0],) + \
-                    (callback.group.show(),)
-                
-                network.optimise(callback=callback)
-
-                elapsed = round(time.time()-start, 4)
-                model.metadata['optimiser']['optimise_time'] = elapsed
-                model.metadata['optimiser']['layers'] = len(
-                    network.completed_layers)
-
-                with bar_plot_output:
-                    metric_bars.add_bar(p, network.checkpoint_score)
-            
-            partitioned_model.add_partition(model, p)
-            
-            e = EvaluateRegressor(model, X_train, y_train)
                     
-            eval_screens[p] = e.profile(X_test, y_test)
+                    if _dropdown_partition_on.value is not None:
+                                drop_cols.append(_dropdown_partition_on.value)
 
-            eval_items = {
-                'train': evaluate_regression(e.y, e.y_pred),
-                'validation': evaluate_regression(
-                    e.y_val, e.y_val_pred)
-            }
-            model.metadata['evaluation'] = eval_items
-            part_progress.set_value('Partitions', i)
+                    X, y = df.drop(columns=drop_cols), df[_dropdown_target.value]
+                    X_train, X_test, y_train, y_test = train_test_split(
+                        X, y, test_size=_slider_validation_size.value,
+                        random_state=1)
+                
+                id_cols = [
+                    i for i in list(_selector_id_columns.value) if i is not None]
+                
+                kvt.update_data({
+                    'status': 'fitting model',
+                    'partition': p,
+                    'layers': f'{len(xnet.future_layers)}'
+                })
+
+                start = time.time()
+                model.fit(
+                    X_train, y_train, id_columns=id_cols, alpha=_slider_alpha.value)
+                
+                model.metadata['optimiser'] = {}
+                
+                # if _toggle_optimise_ts.value:
+                #     kvt.update_data({
+                #         'status': 'optimising tail_sensitivity',
+                #         'partition': p,
+                #         'layers': f'{len(xnet.future_layers)}'
+                #     })
+
+                #     start = time.time()
+                #     #model.optimise_tail_sensitivity(X_train, y_train)
+                #     elapsed = round(time.time()-start, 4)
+
+                #     model.metadata['optimiser'][
+                #         'tail_sensitivity_optimise_time'] = elapsed
+                
+                if len(network.future_layers) > 0:
+                    kvt.update_data({
+                        'status': 'optimising model weights',
+                        'partition': p,
+                        'layers': f'{len(xnet.future_layers)}'
+                    })
+                    
+                    if _slider_opt_sample.value < 1:
+
+                        X_train = X_train.sample(
+                            int(len(X_train) * _slider_opt_sample.value))
+                        
+                        y_train = y_train.loc[X_train.index]
+                    
+                    start = time.time()
+                    if _dropdown_partition_on.value is not None:
+                        network.fit(
+                            X_train,
+                            y_train)
+                    else:
+                        network.fit(X_train, y_train)
+                    
+                    output_screen.children = (output_screen.children[0],) + \
+                        (callback.group.show(),)
+                    
+                    network.optimise(callback=callback)
+
+                    elapsed = round(time.time()-start, 4)
+                    model.metadata['optimiser']['optimise_time'] = elapsed
+                    model.metadata['optimiser']['layers'] = len(
+                        network.completed_layers)
+
+                    with bar_plot_output:
+                        metric_bars.add_bar(p, network.checkpoint_score)
+                
+                partitioned_model.add_partition(model, p)
+                
+                e = EvaluateRegressor(model, X_train, y_train)
+                        
+                eval_screens[p] = e.profile(X_test, y_test)
+
+                eval_items = {
+                    'train': evaluate_regression(e.y, e.y_pred),
+                    'validation': evaluate_regression(
+                        e.y_val, e.y_val_pred)
+                }
+                model.metadata['evaluation'] = eval_items
+                part_progress.set_value('Partitions', i)
+                
+            part_progress.collapse_items(items=['Partitions'])
+            divider.close()
+            header.title = {'title': 'Profile'}
             
-        part_progress.collapse_items(items=['Partitions'])
-        divider.close()
-        header.title = {'title': 'Profile'}
-        
-        X, y = df.drop(
-            columns=[_dropdown_target.value]), df[_dropdown_target.value]
-        
-        save = ModelPersist(partitioned_model, 'regression', X, y)
-        
-        partition_select = widgets.Dropdown(
-            options = eval_screens.keys()
-        )
+            X, y = df.drop(
+                columns=[_dropdown_target.value]), df[_dropdown_target.value]
+            
+            save = ModelPersist(partitioned_model, 'regression', X, y)
+            
+            partition_select = widgets.Dropdown(
+                options = eval_screens.keys()
+            )
 
-        partition_select.layout = widgets.Layout(margin='10px 0 0 0')
+            partition_select.layout = widgets.Layout(margin='10px 0 0 0')
+            header.add_widget(partition_select)
 
-        header.add_widget(partition_select)
+            def show_evaluation():
 
-        def show_evaluation():
+                def _gen(partition=partition_select):
+                    with result_out:
+                        clear_output(wait=True)
+                        display(eval_screens[partition])
+                        display(save.save())
+                
+                w = widgets.interactive(_gen)
+                w.children = (w.children[-1],)
+                return w
+            
+            output_body.close()
+            
+            display(show_evaluation())
+                
+            header.loader.stop()
 
-            def _gen(partition=partition_select):
-                display(eval_screens[partition])
-            w = widgets.interactive(_gen)
-            w.children = (w.children[-1],)
-            return w
-        
-        output_body.close()
-        display(show_evaluation())
-        display(save.save())
-        header.loader.stop()
+        except Exception as e:
+            print(e)
+            raise ValueError(e)
     
     # BODY
     body = widgets.HBox([_col_selectors, tabs, vpipe])
@@ -592,8 +603,8 @@ def regressor(df):
 
     footer = widgets.VBox(
         [divider, widgets.HBox([_button_train, _button_close])])
-    
-    screen = widgets.VBox([header.show(), body, footer, output_body])
+
+    screen = widgets.VBox([header.show(), body, footer, output_body, result_out])
     
     display(screen)
     

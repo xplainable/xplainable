@@ -2,7 +2,7 @@
 
 from IPython.display import display, clear_output
 import ipywidgets as widgets
-from ...core.models import XClassifier, PartitionedClassifier
+from ...core.models import XClassifier, PartitionedClassifier, ConstructorParams
 from ...core.optimisation.bayesian import XParamOptimiser
 from ...utils import TrainButton
 from ...utils.activation import flex_activation
@@ -26,6 +26,7 @@ from ..._dependencies import _check_critical_versions
 
 import os
 os.environ['KMP_WARNINGS'] = '0'
+
 
 def classifier(df):
     """ Trains an xplainable classifier via a simple GUI.
@@ -610,14 +611,16 @@ def classifier(df):
                 display(opt_display)
 
             for i, (p, model) in enumerate(parts.items()):
-            
-                model.max_depth = max_depth.value
-                model.min_leaf_size = min_leaf_size.value
-                model.min_info_gain = min_info_gain.value
-                model.alpha = alpha.value
-                model.weight = weight.value
-                model.power_degree = power_degree.value
-                model.sigmoid_exponent = sigmoid_exponent.value
+
+                model.params.update_parameters(
+                    max_depth=max_depth.value,
+                    min_leaf_size=min_leaf_size.value,
+                    min_info_gain=min_info_gain.value,
+                    weight=weight.value,
+                    power_degree=power_degree.value,
+                    sigmoid_exponent=sigmoid_exponent.value,
+                    ignore_nan=False
+                )
 
                 try:
                     if optimise.value:
@@ -671,7 +674,7 @@ def classifier(df):
                         params = opt.optimise(X_train, y_train, verbose=False,
                                      callback=callback)
                         
-                        model.set_params(**params)
+                        model.set_params(ConstructorParams(**params))
                         model.metadata["optimised"] = True
                         model.metadata["optimiser"] = opt.metadata
 
@@ -699,8 +702,8 @@ def classifier(df):
                     part_progress.set_value('Partitions', i+1)
                     
                 except Exception as e:
-                    screen.close()
-                    clear_output()
+                    # screen.close()
+                    # clear_output()
                     raise RuntimeError(e)
             
             if optimise.value:

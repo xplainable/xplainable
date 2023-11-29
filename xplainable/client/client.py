@@ -6,20 +6,20 @@ import pyperclip
 import time
 import inspect
 import ast
-from IPython.display import clear_output, display, Markdown
-from .._dependencies import _check_ipywidgets
 from ..utils.api import get_response_content
-from ..utils.encoders import NpEncoder
+from ..utils.encoders import NpEncoder, force_json_compliant
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from ..gui.screens.preprocessor import Preprocessor
+from ..preprocessing.pipeline import XPipeline
 from ..preprocessing import transformers as xtf
 from ..utils.exceptions import AuthenticationError
+from ..utils.dualdict import FeatureMap, TargetMap
+from ..utils.helpers import get_df_delta
+from ..utils.encoders import profile_parse
 from ..quality.scanner import XScan
 from ..metrics.metrics import evaluate_classification, evaluate_regression
-from ..core.models import (XClassifier, XRegressor, PartitionedRegressor,
-                           PartitionedClassifier)
+from ..core.models import (XClassifier, XRegressor, PartitionedRegressor, PartitionedClassifier, ConstructorParams)
 
 from ..config import OUTPUT_TYPE
 
@@ -156,7 +156,7 @@ class Client:
 
     def load_preprocessor(
             self, preprocessor_id: int, version_id: int,
-            response_only: bool = False):
+            gui_object: bool = False, response_only: bool = False):
         """ Loads a preprocessor by preprocessor_id and version_id.
 
         Args:
@@ -165,7 +165,7 @@ class Client:
             response_only (bool, optional): Returns the preprocessor metadata.
 
         Returns:
-            xplainable.preprocessing.Preprocessor: The loaded preprocessor
+            xplainable.preprocessing.pipeline.Pipeline: The loaded pipeline
         """
 
         def build_transformer(stage):
@@ -189,20 +189,28 @@ class Client:
             if response_only:
                 return response
 
-            stages = response['stages']
-            deltas = response['deltas']
-            
         except Exception as e:
             raise ValueError(
             f'Preprocessor with ID {preprocessor_id}:{version_id} does not exist')
-            
-        xp = Preprocessor()
-        xp.pipeline.stages = [{"feature": i["feature"], "name": i["name"], \
-            "transformer": build_transformer(i)} for i in stages]
-        xp.df_delta = deltas
-        xp.state = len(xp.pipeline.stages)
+        
+        stages = response['stages']
+        deltas = response['deltas']
 
-        return xp
+        pipeline = XPipeline()
+        pipeline.stages = [{"feature": i["feature"], "name": i["name"], \
+                "transformer": build_transformer(i)} for i in stages]
+        
+        if not gui_object:
+            return pipeline
+
+        else:
+            from ..gui.screens.preprocessor import Preprocessor
+            pp = Preprocessor()
+            pp.pipeline = pipeline
+            pp.df_delta = deltas
+            pp.state = len(pipeline.stages)
+
+            return pp
     
     def load_classifier(self, model_id: int, version_id: int, model=None):
         """ Loads a binary classification model by model_id
@@ -227,11 +235,12 @@ class Client:
             partitioned_model = model
 
         for p in response['partitions']:
-
             model = XClassifier()
 
             model._profile = np.array([
                 np.array(i) for i in json.loads(p['profile'])], dtype=object)
+            
+            model._profile = profile_parse(model._profile)
             
             model._calibration_map = {
                 int(i): v for i, v in p['calibration_map'].items()}
@@ -240,18 +249,18 @@ class Client:
                 int(i): v for i, v in p['support_map'].items()}
             
             model.base_value = p['base_value']
-            model.target_map = p['target_map']
-            model.feature_map = p['feature_map']
-
-            model.feature_map_inv = {k: {v: k2 for k2, v in v.items()} for \
-                                     k, v in p['feature_map'].items()}
+            model.target_map = TargetMap({int(i): v for i, v in p['target_map'].items()}, True)
+            model.feature_map = {k: FeatureMap(v) for k, v in p['feature_map'].items()}
             
             model.columns = p['columns']
             model.id_columns = p['id_columns']
+
             model.categorical_columns = p['feature_map'].keys()
-            
-            model.numeric_columns = [c for c in model.columns if c not \
-                                     in model.categorical_columns]
+            model.numeric_columns = [c for c in model.columns if c not in model.categorical_columns]
+
+            if 'constructs' in p:
+                model.constructs_from_json(p['constructs'])
+
             model.category_meta = {
                 i: {ii: {int(float(k)): v for k, v in vv.items()} for ii, vv \
                     in v.items()} for i, v in p['category_meta'].items()}
@@ -283,20 +292,21 @@ class Client:
 
         for p in response['partitions']:
             model = XRegressor()
-            model._profile = np.array([
-                np.array(i) for i in json.loads(p['profile'])])
+            model._profile = np.array([np.array(i) for i in json.loads(p['profile'])])
+            model._profile = profile_parse(model._profile)
             model.base_value = p['base_value']
-            model.target_map = p['target_map']
-            model.feature_map = p['feature_map']
+            model.feature_map = {k: FeatureMap(v) for k, v in p['feature_map'].items()}
+            #model.parameters = ConstructorParams(p['parameters'])
 
-            model.feature_map_inv = {k: {v: k2 for k2, v in v.items()} for \
-                                     k, v in p['feature_map'].items()}
-            
             model.columns = p['columns']
             model.id_columns = p['id_columns']
+
             model.categorical_columns = p['feature_map'].keys()
-            model.numeric_columns = [c for c in model.columns if c \
-                                     not in model.categorical_columns]
+            model.numeric_columns = [c for c in model.columns if c not in model.categorical_columns]
+
+            if 'constructs' in p:
+                model.constructs_from_json(p['constructs'])
+
             model.category_meta = {
                 i: {ii: {int(float(k)): v for k, v in vv.items()} for ii, vv \
                     in v.items()} for i, v in p['category_meta'].items()}
@@ -313,9 +323,7 @@ class Client:
             return get_response_content(response)
 
         except Exception as e:
-            raise ValueError(
-            f'Model with ID {model_id}:{version_id} does not exist')
-
+            raise ValueError(f'Model with ID {model_id}:{version_id} does not exist')
 
     def get_user_data(self) -> dict:
         """ Retrieves the user data for the active user.
@@ -364,14 +372,13 @@ class Client:
         return preprocessor_id
     
     def create_preprocessor_version(
-            self, preprocessor_id: str, preprocessor) -> str:
+            self, preprocessor_id: str, pipeline: list, df: pd.DataFrame = None
+            ) -> str:
         """ Creates a new preprocessor version and returns the version id.
 
         Args:
             preprocessor_id (int): The preprocessor id
-            stages (dict): The preprocessor stages
-            deltas (dict): The preprocessor deltas
-            versions (dict): Versions of current environment
+            pipeline (xplainable.preprocessing.pipeline.Pipeline): pipeline
 
         Returns:
             int: The preprocessor version id
@@ -379,7 +386,14 @@ class Client:
 
         # Structure the stages and deltas
         stages = []
-        for stage in preprocessor.pipeline.stages:
+        deltas = []
+        if df is not None:
+            before = df.copy()
+            deltas.append({"start": json.loads(before.head(10).to_json(
+                orient='records'))})
+            delta_gen = pipeline.transform_generator(before)
+
+        for stage in pipeline.stages:
             step = {
                 'feature': stage['feature'],
                 'name': stage['name'],
@@ -388,7 +402,11 @@ class Client:
 
             stages.append(step)
 
-        deltas = preprocessor.df_delta
+            if df is not None:
+                after = delta_gen.__next__()
+                delta = get_df_delta(before.copy(), after.copy())
+                deltas.append(delta)
+                before = after.copy()
 
         # Get current versions
         versions = {
@@ -402,7 +420,7 @@ class Client:
             "deltas": deltas,
             "versions": versions
             }
-
+        
         # Create a new version and fetch id
         url = (
             f'{self.hostname}/v1/{self.__ext}/preprocessors/'
@@ -414,7 +432,7 @@ class Client:
         version_id = get_response_content(response)
 
         return version_id
-    
+        
     def _detect_model_type(self, model):
 
         if 'Partitioned' in model.__class__.__name__:
@@ -522,10 +540,11 @@ class Client:
         elif model.__class__.__name__ in independent_models:
             pdata = self._get_partition_data(model, '__dataset__', x, y)
             payload['partitions'].append(pdata)
-
+        
         # Create a new version and fetch id
         url = f'{self.hostname}/v1/{self.__ext}/models/{model_id}/add-version'
-        response = self.__session.post(url=url,json=payload)
+        response = self.__session.post(
+            url=url, json=force_json_compliant(payload))
 
         version_id = get_response_content(response)
 
@@ -558,26 +577,26 @@ class Client:
                 json.dumps(model.id_columns, cls=NpEncoder)),
             "columns": json.loads(
                 json.dumps(model.columns, cls=NpEncoder)),
-            "target_map": json.loads(
-                json.dumps(model.target_map_inv, cls=NpEncoder)),
-            "parameters": json.loads(
-                json.dumps(model.params, cls=NpEncoder)),
+            "parameters": model.params.to_json(),
             "base_value": json.loads(
                 json.dumps(model.base_value, cls=NpEncoder)),
             "feature_map": json.loads(
-                json.dumps(model.feature_map, cls=NpEncoder)),
+                json.dumps({k: fm.forward for k, fm in model.feature_map.items()}, cls=NpEncoder)),
+            "target_map": json.loads(
+                json.dumps(model.target_map.reverse, cls=NpEncoder)),
             "category_meta": json.loads(
                 json.dumps(model.category_meta, cls=NpEncoder)),
+            # "constructs": model.constructs_to_json(),
             "calibration_map": None,
             "support_map": None
-            }
+        }
 
         if model_type == 'binary_classification':
             data.update({
                 "calibration_map": json.loads(
                     json.dumps(model._calibration_map, cls=NpEncoder)),
                 "support_map": json.loads(
-                json.dumps(model._support_map, cls=NpEncoder))
+                    json.dumps(model._support_map, cls=NpEncoder))
             })
 
             evaluation = model.metadata.get('evaluation', {})
@@ -588,8 +607,8 @@ class Client:
                     y = y.map(model.target_map)
 
                 evaluation = {
-                            'train': evaluate_classification(y, y_prob)
-                        }
+                    'train': evaluate_classification(y, y_prob)
+                }
                 
         elif model_type == 'regression':
             evaluation = model.metadata.get('evaluation', {})

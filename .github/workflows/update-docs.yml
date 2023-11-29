@@ -1,0 +1,103 @@
+name: Update Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'examples/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'examples/**'
+  workflow_dispatch:
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout main branch
+      uses: actions/checkout@v2
+      with:
+        ref: main
+        path: main_repo
+
+    - name: Checkout docs branch
+      uses: actions/checkout@v2
+      with:
+        ref: docs
+        path: docs_repo
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: List contents of the docs_repo/website directory
+      run: |
+        ls -lah docs_repo/website
+
+    - name: Install Dependencies
+      run: |
+        cd docs_repo/website
+        pip install -r requirements.txt
+
+    - name: Copy Examples to website working directory
+      run: |
+        cp -R main_repo/examples/* docs_repo/website/docs/tutorials
+
+    - name: Run Conversion Script
+      run: |
+        cd docs_repo/website
+        python convert_ipynb_to_mdx.py
+
+    - name: Commit and Push Changes Directly to docs Branch
+      run: |
+        cd docs_repo/website
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add .
+        git commit -m "Update documentation from example Jupyter notebooks"
+        git push origin docs
+  
+
+    # - name: Commit and Push Changes to a New Branch
+    #   run: |
+    #     cd docs_repo/website
+    #     git config user.name "github-actions[bot]"
+    #     git config user.email "github-actions[bot]@users.noreply.github.com"
+    #     git checkout -b update-documentation-${{ github.run_id }}
+    #     git add .
+    #     git commit -m "Update documentation from example Jupyter notebooks"
+    #     git push origin update-documentation-${{ github.run_id }}
+
+    # - name: Verify Git Repository Status
+    #   run: |
+    #     git status
+    #   working-directory: ./docs_repo
+    
+    # - name: Create Pull Request
+    #   id: cpr
+    #   uses: peter-evans/create-pull-request@v3
+    #   with:
+    #     token: ${{ secrets.GITHUB_TOKEN }}
+    #     commit-message: Update the xplainable documentation
+    #     committer: GitHub <noreply@github.com>
+    #     author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+    #     branch: update-documentation-${{ github.run_id }}
+    #     base: docs 
+    #     delete-branch: false
+    #     title: "Update Documentation"
+    #     body: |
+    #       Automatically generated documentation with [create-pull-request][1]
+
+    #       [1]: https://github.com/peter-evans/create-pull-request
+    #     labels: |
+    #       documentation
+    #       automated pr
+    #     team-reviewers: |
+    #       owners
+    #       maintainers
+    #     draft: false

@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![Contributors](https://img.shields.io/badge/Contributors-2-orange.svg?style=flat-square)](#contributors-)
+[![Contributors](https://img.shields.io/badge/Contributors-3-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <div align="center">
@@ -10,12 +10,40 @@
     
 [![Python](https://img.shields.io/pypi/pyversions/xplainable)](https://pypi.org/project/xplainable/)
 [![PyPi](https://img.shields.io/pypi/v/xplainable?color=blue)](https://pypi.org/project/xplainable/)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://github.com/xplainable/xplainable/blob/main/LICENSE)
+[![License: Apache-2.0](https://img.shields.io/github/license/saltstack/salt)](https://github.com/xplainable/xplainable/blob/main/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/xplainable)](https://pepy.tech/project/xplainable)
     
 **Xplainable** leverages explainable machine learning for fully transparent predictions and advanced data optimisation in production systems.
 </div>
 
+## Why Was Xplainable Created?
+In machine learning, there has long been a trade-off between accuracy and 
+explainability. This drawback has led to the creation of explainable ML
+libraries such as [Shap](https://github.com/slundberg/shap) and [Lime](https://github.com/marcotcr/lime) which make estimations of model decision processes. These can be incredibly time-expensive and often present steep
+learning curves making them challenging to implement effectively in production
+environments.
+
+To solve this problem, we created ``xplainable``. **xplainable** presents a
+suite of novel machine learning algorithms specifically designed to match the
+performance of popular black box models like [XGBoost](https://github.com/dmlc/xgboost) and [LightGBM](https://github.com/microsoft/LightGBM) while
+providing complete transparency, all in real-time.
+
+## Simple Interface
+You can interface with xplainable either through a typical Pythonic API, or
+using a notebook-embedded GUI in your Jupyter Notebook.
+
+## Models
+Xplainable has each of the fundamental tabular models used in data science
+teams. They are fast, accurate, and easy to use.
+
+<div align="center">
+
+| Model | Python API| Jupyter GUI |
+|:-----:|:---------:|:-----------:|
+| Regression | ✅ | ✅ |
+| Binary Classification | ✅ | ✅ |
+| Multi-Class Classification | ✅ | 🔜 |
+</div>
 
 ## Installation
 
@@ -51,34 +79,6 @@ train, test = train_test_split(data, test_size=0.2)
 model = xp.classifier(train)
 ```
 
-## Why Was Xplainable Created?
-In machine learning, there has long been a trade-off between accuracy and 
-explainability. This drawback has led to the creation of explainable ML
-libraries such as [Shap](https://github.com/slundberg/shap) and [Lime](https://github.com/marcotcr/lime) which make estimations of model decision processes. These can be incredibly time-expensive and often present steep
-learning curves making them challenging to implement effectively in production
-environments.
-
-To solve this problem, we created ``xplainable``. **xplainable** presents a
-suite of novel machine learning algorithms specifically designed to match the
-performance of popular black box models like [XGBoost](https://github.com/dmlc/xgboost) and [LightGBM](https://github.com/microsoft/LightGBM) while
-providing complete transparency, all in real-time.
-
-## Simple Interface
-You can interface with xplainable either through a typical Pythonic API, or
-using a notebook-embedded GUI in your Jupyter Notebook.
-
-## Models
-Xplainable has each of the fundamental tabular models used in data science
-teams. They are fast, accurate, and easy to use.
-
-<div align="center">
-
-| Model | Python API| Jupyter GUI |
-|:-----:|:---------:|:-----------:|
-| Regression | ✅ | ✅ |
-| Binary Classification | ✅ | ✅ |
-| Multi-Class Classification | ✅ | 🔜 |
-</div>
 
 ## Features
 Xplainable helps to streamline development processes by making model tuning
@@ -97,19 +97,6 @@ reproducible data preprocessing.
 | Preprocessing Pipelines | ✅ | ✅ |
 | Pipeline Persistance | ✅ | ✅ |
 </div>
-
-#### Using the GUI
-
-```python
-pp = xp.Preprocessor()
-
-pp.preprocess(train)
-```
-<div align="center">
-
-<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/preprocessing.gif">
-
-</div><br>
 
 #### Using the API
 ```python
@@ -139,6 +126,21 @@ test_transformed = pipeline.transform(test)
 ```
 
 
+#### Using the GUI
+
+```python
+pp = xp.Preprocessor()
+
+pp.preprocess(train)
+```
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/preprocessing.gif">
+
+</div><br>
+
+
+
 ### Modelling
 
 Xplainable models can be developed, optimised, and re-optimised using Pythonic
@@ -156,15 +158,6 @@ APIs or the embedded GUI.
 | Model Persistance | ✅ | ✅ |
 
 </div>
-
-#### Using the GUI
-
-```python
-model = xp.classifier(train)
-```
-<div align="center">
-<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/gui_classifier.gif">
-</div><br>
 
 #### Using the API
 ```python
@@ -192,13 +185,17 @@ y_pred = model.predict(x_test)
 
 #### Using the GUI
 
+```python
+model = xp.classifier(train)
+```
+<div align="center">
+<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/gui_classifier.gif">
+</div><br>
+
+
 ### Rapid Refitting
 Fine tune your models by refitting model parameters on the fly, even on
 individual features.
-
-<div align="center">
-<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/recalibrate.gif">
-</div><br>
 
 #### Using the API
 ```python
@@ -216,6 +213,12 @@ new_params = {
 
 model.update_feature_params(**new_params)
 ```
+
+#### Using the GUI
+
+<div align="center">
+<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/recalibrate.gif">
+</div><br>
 
 ### Explainability
 Models are explainable and real-time, right out of the box, without having to fit

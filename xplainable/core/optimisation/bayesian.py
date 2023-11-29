@@ -8,6 +8,7 @@ from sklearn.model_selection import StratifiedKFold
 import numpy as np
 import pandas as pd
 from ..ml.classification import XClassifier
+from ...utils.dualdict import TargetMap
 import numpy as np
 import time
 
@@ -48,6 +49,7 @@ class XParamOptimiser:
             max_depth_space (list, optional): Sets the max_depth search space.
             min_leaf_size_space (list, optional): Sets the min_leaf_size search space.
             min_info_gain_space (list, optional): Sets the min_info_gain search space.
+            ignore_nan_space (list, optional): Sets the ignore_nan search space.
             weight_space (list, optional): Sets the weight search space.
             power_degree_space (list, optional): Sets the power_degree search space.
             sigmoid_exponent_space (list, optional): Sets the sigmoid_exponent search space.
@@ -64,12 +66,13 @@ class XParamOptimiser:
         shuffle=False,
         subsample=1,
         alpha=0.01,
-        max_depth_space = [4, 10, 2],
-        min_leaf_size_space = [0.005, 0.05, 0.005],
-        min_info_gain_space = [0.005, 0.05, 0.005],
-        weight_space = [0, 1.2, 0.05],
-        power_degree_space = [1, 3, 2],
-        sigmoid_exponent_space = [0.5, 1, 0.1],
+        max_depth_space=[4, 10, 2],
+        min_leaf_size_space=[0.005, 0.05, 0.005],
+        min_info_gain_space=[0.005, 0.05, 0.005],
+        ignore_nan_space=[False, True],
+        weight_space=[0, 1.2, 0.05],
+        power_degree_space=[1, 3, 2],
+        sigmoid_exponent_space=[0.5, 1, 0.1],
         verbose=True,
         random_state=1
         ):
@@ -90,6 +93,8 @@ class XParamOptimiser:
         self.max_depth_space = max_depth_space
         self.min_leaf_size_space = min_leaf_size_space
         self.min_info_gain_space = min_info_gain_space
+        self.ignore_nan_space = ignore_nan_space
+
         self.weight_space = weight_space
         self.power_degree_space = power_degree_space
         self.sigmoid_exponent_space = sigmoid_exponent_space
@@ -103,8 +108,7 @@ class XParamOptimiser:
         self.x = None
         self.y = None
         self.id_columns = []
-        self.models = {i: XClassifier(
-            map_calibration=False) for i in range(n_folds)}
+        self.models = {i: XClassifier(map_calibration=False) for i in range(n_folds)}
         self.folds = {}
         self.results = []
 
@@ -129,7 +133,6 @@ class XParamOptimiser:
         start = time.time()
         # Run iteration over n_folds
         for i, model in self.models.items():
-            
             # Instantiate and fit model
             model.update_feature_params(model.columns, **params)
 
@@ -253,8 +256,8 @@ class XParamOptimiser:
         # Instantiate start timer for param set
         start = timer()
 
-        # Set the alpha (this is never optimised)
-        params['alpha'] = self.alpha
+        # # Set the alpha (this is never optimised)
+        # params['alpha'] = self.alpha
 
         # Callback is used for jupyter gui
         if self.callback:
@@ -339,16 +342,11 @@ class XParamOptimiser:
             # Cast as category
             target_ = self.y.astype('category')
 
-            # Get the inverse label map
-            target_map_inv = dict(enumerate(target_.cat.categories))
-
             # Get the label map
-            target_map = {
-                value: key for key, value in target_map_inv.items()}
+            target_map = TargetMap(dict(enumerate(target_.cat.categories)), True)
 
             # Encode the labels
             self.y = self.y.map(target_map)
-        
 
         # updates data types for cython handling
         n_cols = self.x.select_dtypes(include=np.number).columns.tolist()
@@ -374,6 +372,7 @@ class XParamOptimiser:
             'max_depth': self.max_depth_space,
             'min_leaf_size': self.min_leaf_size_space,
             'min_info_gain': self.min_info_gain_space,
+            'ignore_nan': self.ignore_nan_space,
             'weight': self.weight_space,
             'power_degree': self.power_degree_space,
             'sigmoid_exponent': self.sigmoid_exponent_space
@@ -386,7 +385,7 @@ class XParamOptimiser:
                 space[n] = hp.choice(n, np.arange(*p))
             
             else:
-                for i, model in self.models.items():            
+                for i, model in self.models.items():
                     # Instantiate and fit model
                     model.update_feature_params(model.columns, **{n: p})
                 
@@ -396,15 +395,16 @@ class XParamOptimiser:
         trials = Trials()
 
         # Run hyperopt parameter search
-        fmin(fn=self._objective,
-             space=space,
-             algo=tpe.suggest,
-             max_evals=self.n_trials,
-             trials=trials,
-             verbose=verbose,
-             early_stop_fn=no_progress_loss(self.early_stopping),
-             rstate=np.random.default_rng(self.random_state)
-             )
+        fmin(
+            fn=self._objective,
+            space=space,
+            algo=tpe.suggest,
+            max_evals=self.n_trials,
+            trials=trials,
+            verbose=verbose,
+            early_stop_fn=no_progress_loss(self.early_stopping),
+            rstate=np.random.default_rng(self.random_state)
+         )
 
         # Find maximum metric value across the trials
         idx = np.argmin(trials.losses())

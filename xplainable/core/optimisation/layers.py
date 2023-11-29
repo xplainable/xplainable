@@ -7,6 +7,7 @@ from numba import njit, prange
 from ...utils.numba_funcs import *
 from .genetic import XEvolutionaryNetwork
 import warnings
+from tqdm.auto import tqdm
 
 
 class BaseLayer:
@@ -388,13 +389,12 @@ class Evolve(BaseLayer):
 
         for l, v in zip(self.xnetwork.leaves, chromosome):
             f, _id = l.split("_")
-            self.xnetwork.model._profile[int(f)][int(_id)][2] = v
-            self.xnetwork.model._constructs[int(f)]._nodes[int(_id)][2] = v
+            self.xnetwork.model._profile[int(f)][int(_id)][-4] = v
+            self.xnetwork.model._constructs[int(f)]._nodes[int(_id)][-4] = v
 
         return self.xnetwork.model._profile
 
-    def transform(
-            self, xnetwork: XEvolutionaryNetwork, x: np.ndarray,
+    def transform(self, xnetwork: XEvolutionaryNetwork, x: np.ndarray,
             y: np.array, callback=None):
         """ Optimises an XRegressor profile given the set of parameters.
 
@@ -439,8 +439,13 @@ class Evolve(BaseLayer):
 
         # iterations since best
         isb = 0
-        
-        for i in range(1, self.generations+1):
+        # pbar = tqdm(["a", "b", "c", "d"])
+        # for char in pbar:
+        #     time.sleep(0.25)
+        #     pbar.set_description("Processing %s" % char)
+        generation_range = tqdm(range(1, self.generations+1))
+        generation_range.set_description(f"Layer {len(self.xnetwork.completed_layers) + 1} (Evolve)")
+        for i in generation_range:
             # Handle Early stopping
             if (self.early_stopping) is not None and (isb >= self.early_stopping):
                 if callback:
@@ -631,7 +636,7 @@ class Tighten(BaseLayer):
 
         # Update profile
         f, _id = self.xnetwork.leaves[bstloc].split("_")
-        self.xnetwork.model._profile[int(f)][int(_id)][2] += change
+        self.xnetwork.model._profile[int(f)][int(_id)][-4] += change
 
         return x
 
@@ -668,8 +673,9 @@ class Tighten(BaseLayer):
         isb = 0
         
         # start optimisation process
-        for i in range(1, self.iterations+1):
-
+        generation_range = tqdm(range(1, self.iterations + 1))
+        generation_range.set_description(f"Layer {len(self.xnetwork.completed_layers) + 1} (Tighten)")
+        for i in generation_range:
             # stop early if early stopping threshold reached
             if (self.early_stopping) is not None and (isb >= self.early_stopping):
                 if callback:
