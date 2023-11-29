@@ -23,7 +23,7 @@ import numpy as np
 import copy
 import time
 import ipywidgets as widgets
-from IPython.display import  display
+from IPython.display import  display, clear_output
 from sklearn.metrics import *
 
 def regressor(df):
@@ -57,7 +57,7 @@ def regressor(df):
 
     header.add_widget(part_progress.show())
 
-
+    result_out = widgets.Output()
     
     column_names = df.columns.tolist()
     numeric_columns = df.select_dtypes(include=np.number).columns.tolist()
@@ -322,7 +322,7 @@ def regressor(df):
         vp.on_click(focus_box)(vp.box.children[vp._selected_index].children[1])
         #vp.editor_output.clear_output()
     
-    add_layer_button = widgets.Button(description='Add', icon='fa-plus')
+    add_layer_button = widgets.Button(description='Add', icon='plus')
     add_layer_button.on_click(on_add)
     add_layer_button.layout.width = '75px'
     add_layer_button.layout.margin = '0 0 0 15px'
@@ -529,22 +529,24 @@ def regressor(df):
             )
 
             partition_select.layout = widgets.Layout(margin='10px 0 0 0')
-
             header.add_widget(partition_select)
 
             def show_evaluation():
 
                 def _gen(partition=partition_select):
-                    
-                    display(eval_screens[partition])
+                    with result_out:
+                        clear_output(wait=True)
+                        display(eval_screens[partition])
+                        display(save.save())
                 
                 w = widgets.interactive(_gen)
                 w.children = (w.children[-1],)
                 return w
             
             output_body.close()
+            
             display(show_evaluation())
-            display(save.save())
+                
             header.loader.stop()
 
         except Exception as e:
@@ -601,8 +603,8 @@ def regressor(df):
 
     footer = widgets.VBox(
         [divider, widgets.HBox([_button_train, _button_close])])
-    
-    screen = widgets.VBox([header.show(), body, footer, output_body])
+
+    screen = widgets.VBox([header.show(), body, footer, output_body, result_out])
     
     display(screen)
     
