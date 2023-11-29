@@ -7,7 +7,7 @@ from numba import njit, prange
 from ...utils.numba_funcs import *
 from .genetic import XEvolutionaryNetwork
 import warnings
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 
 class BaseLayer:
