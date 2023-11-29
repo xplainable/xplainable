@@ -6,10 +6,9 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import pandas as pd
 from ._base_model import BaseModel, BasePartition
-from ._constructor import XConstructor
+from ._constructor import XCatConstructor, XNumConstructor, ConstructorParams
 from sklearn.metrics import *
-import copy
-import time
+from time import time
 from typing import Union
 
 
@@ -64,106 +63,33 @@ class XClassifier(BaseModel):
 
     def __init__(
         self,
-        max_depth: int = 8,
-        min_info_gain: float = -1,
-        min_leaf_size: float = -1,
-        alpha: float = 0.1,
-        weight: float = 0.05,
-        power_degree: float = 1,
-        sigmoid_exponent: float = 1,
+        max_depth=8,
+        min_info_gain=0.0001,
+        min_leaf_size=0.0001,
+        ignore_nan=False,
+        weight=1,
+        power_degree=1,
+        sigmoid_exponent=0,
+        tail_sensitivity: float = 1.0,
         map_calibration: bool = True
-        ):
+    ):
+        super().__init__(
+            ConstructorParams(
+                max_depth,
+                min_info_gain,
+                min_leaf_size,
+                ignore_nan,
+                weight,
+                power_degree,
+                sigmoid_exponent,
+                tail_sensitivity
+            )
+        )
 
-        super().__init__(max_depth, min_leaf_size, min_info_gain, alpha)
-
-        self._constructs = []
         self._calibration_map = {}
         self._support_map = {}
-        self._profile = []
-
-        self.weight = weight
-        self.power_degree = power_degree
-        self.sigmoid_exponent = sigmoid_exponent
 
         self.map_calibration = map_calibration
-        self.feature_params = {}
-        
-    def _get_params(self) -> dict:
-        """ Returns the parameters of the model.
-
-        Returns:
-            dict: The model parameters.
-        """
-
-        params =  {
-            'max_depth': self.max_depth,
-            'min_leaf_size': self.min_leaf_size,
-            'alpha': self.alpha,
-            'min_info_gain': self.min_info_gain,
-            'weight': self.weight,
-            'power_degree': self.power_degree,
-            'sigmoid_exponent': self.sigmoid_exponent
-            }
-
-        return params
-    
-    @property
-    def params(self) -> dict:
-        """ Returns the parameters of the model.
-
-        Returns:
-            dict: The model parameters.
-        """
-
-        return self._get_params()
-
-    def set_params(
-            self, max_depth: int, min_leaf_size: float, min_info_gain: float,
-            alpha: float, weight: float, power_degree: float,
-            sigmoid_exponent: float, *args, **kwargs) -> None:
-        """ Sets the parameters of the model. Generally used for model tuning.
-
-        Args:
-            max_depth (int): The maximum depth of each decision tree.
-            min_leaf_size (float): The minimum number of samples required to make a split.
-            min_info_gain (float): The minimum information gain required to make a split.
-            alpha (float): Sets the number of possible splits with respect to unique values.
-            weight (float): Activation function weight.
-            power_degree (float): Activation function power degree.
-            sigmoid_exponent (float): Activation function sigmoid exponent.
-
-        Returns:
-            None
-        """
-
-        self.max_depth = max_depth
-        self.min_leaf_size = min_leaf_size
-        self.min_info_gain = min_info_gain
-        self.alpha = alpha
-        self.weight = weight
-        self.power_degree = power_degree
-        self.sigmoid_exponent = sigmoid_exponent
-
-    def _check_param_bounds(self):
-
-        assert self.max_depth >= 0, \
-            'max_depth must be greater than or equal to 0'
-        
-        assert -1 <= self.min_leaf_size < 1, \
-            'min_leaf_size must be between -1 and 1'
-        
-        assert -1 <= self.min_info_gain < 1, \
-            'min_info_gain must be between -1 and 1'
-        
-        assert 0 <= self.alpha <= 1, 'alpha must be between 0 and 1'
-
-        assert 0 <= self.weight <= 3, 'weight must be between 0 and 3'
-
-        assert self.power_degree in [1, 3, 5], 'power_degree must be 1, 3, or 5'
-
-        assert 0 <= self.sigmoid_exponent <= 1, \
-            'sigmoid_exponent must be between 0 and 1'
-
 
     def _map_calibration(self, y, y_prob, smooth=15):
         """ Maps the associated probability for each possible feature score.
@@ -242,61 +168,12 @@ class XClassifier(BaseModel):
 
         # Store results dict to class variable
         return dict(wp)
-    
-    def _normalise_score(self, score, _sum_min, _sum_max):
-        """ Normalise the scores to fit between 0 - 1 relative to base value.
-
-        Args:
-            score (float): The score to normalise.
-
-        Returns:
-            float: The normalised score.
-        """
-
-        # Return 0 scores as float
-        if score == 0:
-            return 0
-
-        # Negative scores normalise relative to worst case scenario
-        elif score < 0:
-            return abs(score) / _sum_min * self.base_value
-
-        # Positive scores normalise relative to best case scenario
-        else:
-            return score / _sum_max * (1 - self.base_value)
-    
-    def _build_profile(self):
-        """ Builds the profile from each feature construct.
-        """
-        self._profile = []
-        _min_scores = np.empty(0)
-        _max_scores = np.empty(0)
-
-        for i in range(len(self._constructs)):
-            xconst = self._constructs[i]
-            _max_scores = np.append(_max_scores, xconst._max_score)
-            _min_scores = np.append(_min_scores, xconst._min_score)
-
-            # don't update the original leaf nodes
-            self._profile.append(np.array([list(x) for x in xconst._nodes]))
-
-        _sum_min = np.sum(_min_scores)
-        _sum_max = np.sum(_max_scores)
-
-        for idx in range(len(self._profile)):
-            v = self._profile[idx]
-            for i, node in enumerate(v):
-                self._profile[idx][i][2] = self._normalise_score(
-                    node[5], _sum_min, _sum_max)
-        
-        self._profile = np.array(self._profile, dtype=object)
-
-        return self
 
     def fit(
-            self, x: Union[pd.DataFrame, np.ndarray],
-            y: Union[pd.Series, np.array], id_columns: list = [],
-            column_names: list = None, target_name: str = 'target') -> 'XClassifier':
+        self, x: Union[pd.DataFrame, np.ndarray],
+        y: Union[pd.Series, np.array], id_columns: list = [],
+        column_names: list = None, target_name: str = 'target', alpha=0.1
+    ) -> 'XClassifier':
         """ Fits the model to the data.
 
         Args:
@@ -305,70 +182,33 @@ class XClassifier(BaseModel):
             id_columns (list, optional): id_columns to ignore from training.
             column_names (list, optional): column_names to use for training if using a np.ndarray
             target_name (str, optional): The name of the target column if using a np.array
+            alpha (float): Controlls the number of possible splits with respect to unique values.
 
         Returns:
             XClassifier: The fitted model.
         """
 
-        start = time.time()
+        start = time()
+        x, y, x_cal, y_cal = super()._fit_check(
+            x,
+            y,
+            id_columns,
+            column_names,
+            target_name,
+            map_calibration=self.map_calibration
+        )
 
-        # Ensure parameters are valid
-        self._check_param_bounds()
-
-        x = x.copy()
-        y = y.copy()
-
-        # casts ndarray to pandas
-        x, y = self._cast_to_pandas(x, y, target_name, column_names)
-        
-        if self.map_calibration:
-            x_cal = x.copy()
-            y_cal = y.copy()
-
-        # Store meta data
-        self.id_columns = id_columns
-
-        if type(x) == np.ndarray:
-            x = pd.DataFrame(x)
-
-        x = x.drop(columns=id_columns)
-
-        # Preprocess data
-        x, y = self._coerce_dtypes(x, y)
-        self._fetch_meta(x, y)
-        self._learn_encodings(x, y)
-        x, y = self._encode(x, y)
-        self._calculate_category_meta(x, y)
-        x, y = self._preprocess(x, y)
-
-        x = x.values
-        y = y.values
-        self.base_value = np.mean(y)
-
-        # Dynamic min_leaf_size
-        if self.min_leaf_size == -1:
-            self.min_leaf_size = self.base_value / 10
-
-        # Dynamic min_info_gain
-        if self.min_info_gain == -1:
-            self.min_info_gain = self.base_value / 10
-        
         for i in range(x.shape[1]):
             f = x[:, i]
-            xconst = XConstructor(
-                regressor=False, # classifier
-                max_depth=self.max_depth,
-                min_info_gain=self.min_info_gain,
-                min_leaf_size=self.min_leaf_size,
-                alpha=self.alpha,
-                weight=self.weight,
-                power_degree=self.power_degree,
-                sigmoid_exponent=self.sigmoid_exponent,
-                )
 
-            xconst.fit(f, y)
+            # chooses constructor type based on type of input feature
+            constructor = XCatConstructor if self.columns[i] in self.categorical_columns else XNumConstructor
+
+            xconst = constructor(False, self.default_parameters.__copy__())
+            xconst.fit(f, y, alpha)
+            xconst.construct()
             self._constructs.append(xconst)
-            
+
         self._build_profile()
 
         # Calibration map
@@ -377,36 +217,35 @@ class XClassifier(BaseModel):
                 y_cal = y_cal.map(self.target_map)
             y_prob = self.predict_score(x_cal)
             self._calibration_map = self._map_calibration(y_cal, y_prob, 15)
-
-        params = self.params
-        self.feature_params = {c: copy.copy(params) for c in self.columns}
         
         # record metadata
-        self.metadata['fit_time'] = time.time() - start
+        self.metadata['fit_time'] = time() - start
         self.metadata['observations'] = x.shape[0]
         self.metadata['features'] = x.shape[1]
 
         return self
 
     def update_feature_params(
-            self,
-            features: list,
-            max_depth: int = None,
-            min_info_gain: float = None,
-            min_leaf_size: float = None,
-            weight: float = None,
-            power_degree: float = None,
-            sigmoid_exponent: float = None,
-            x: Union[pd.DataFrame, np.ndarray] = None,
-            y: Union[pd.Series, np.array] = None, *args, **kwargs
-            ) -> 'XClassifier':
+        self,
+        features: list,
+        max_depth=None,
+        min_info_gain=None,
+        min_leaf_size=None,
+        ignore_nan=None,
+        weight=None,
+        power_degree=None,
+        sigmoid_exponent=None,
+        tail_sensitivity=None,
+        x: Union[pd.DataFrame, np.ndarray] = None,
+        y: Union[pd.Series, np.array] = None, *args, **kwargs
+    ) -> 'XClassifier':
         """ Updates the parameters for a subset of features.
 
         XClassifier allows you to update the parameters for a subset of features
         for a more granular approach to model tuning. This is useful when you
         identify under or overfitting on some features, but not all.
 
-        This also refered to as 'refitting' the model to a new set of params.
+        This also referred to as 'refitting' the model to a new set of params.
         Refitting parameters to an xplainable model is extremely fast as it has
         already pre-computed the complex metadata required for training.
         This can yeild huge performance gains compared to refitting
@@ -419,9 +258,11 @@ class XClassifier(BaseModel):
             max_depth (int): The maximum depth of each decision tree in the subset.
             min_info_gain (float): The minimum information gain required to make a split in the subset.
             min_leaf_size (float): The minimum number of samples required to make a split in the subset.
+            ignore_nan (bool): Whether to ignore nan/null/empty values
             weight (float): Activation function weight.
             power_degree (float): Activation function power degree.
             sigmoid_exponent (float): Activation function sigmoid exponent.
+            tail_sensitivity (float): Adds weight to divisive leaf nodes in the subset.
             x (pd.DataFrame | np.ndarray, optional): The x variables used for training. Use if map_calibration is True.
             y (pd.Series | np.array, optional): The target values. Use if map_calibration is True.
 
@@ -429,46 +270,18 @@ class XClassifier(BaseModel):
             XClassifier: The refitted model.
         """
 
-        max_depth = max_depth if max_depth is not None else self.max_depth
-        
-        min_info_gain = min_info_gain if min_info_gain is not None \
-            else self.min_info_gain
-        
-        min_leaf_size = min_leaf_size if min_leaf_size is not None \
-            else self.min_leaf_size
-        
-        weight = weight if weight is not None else self.weight
-
-        power_degree = power_degree if power_degree is not None \
-            else self.power_degree
-        
-        sigmoid_exponent = sigmoid_exponent if sigmoid_exponent is not None \
-            else self.sigmoid_exponent
-        
-        for feature in features:
-            idx = self.columns.index(feature)
-
-            self._constructs[idx].reconstruct(
-                max_depth = max_depth,
-                min_info_gain = min_info_gain,
-                min_leaf_size = min_leaf_size,
-                alpha = self.alpha,
-                weight = weight,
-                power_degree = power_degree,
-                sigmoid_exponent = sigmoid_exponent
-            )
-
-            self.feature_params[feature].update({
-                'max_depth': max_depth,
-                'min_info_gain': min_info_gain,
-                'min_leaf_size': min_leaf_size,
-                'alpha': self.alpha,
-                'weight': weight,
-                'power_degree': power_degree,
-                'sigmoid_exponent': sigmoid_exponent
-            })
-
-        self._build_profile()
+        super().update_feature_params(
+            features,
+            max_depth=max_depth,
+            min_info_gain=min_info_gain,
+            min_leaf_size=min_leaf_size,
+            ignore_nan=ignore_nan,
+            weight=weight,
+            power_degree=power_degree,
+            sigmoid_exponent=sigmoid_exponent,
+            tail_sensitivity=tail_sensitivity,
+            *args, **kwargs
+        )
 
         if self.map_calibration and x is not None and y is not None:
             y_prob = self.predict_score(x)
@@ -507,8 +320,10 @@ class XClassifier(BaseModel):
         return scores
 
     def predict(
-            self, x: Union[pd.DataFrame, np.ndarray], use_prob: bool=False,
-            threshold: float=0.5, remap: bool=True) -> np.array:
+            self, x: Union[pd.DataFrame, np.ndarray],
+            use_prob: bool=False, threshold: float = 0.5,
+            remap: bool = True
+    ) -> np.array:
         """ Predicts the target for each row in the data.
 
         Args:
@@ -523,15 +338,32 @@ class XClassifier(BaseModel):
         scores = self.predict_proba(x) if use_prob else self.predict_score(x)
         pred = (scores > threshold).astype(int)
 
-        if len(self.target_map_inv) > 0 and remap:
-            pred = np.vectorize(self.target_map_inv.get)(pred)
+        if len(self.target_map) > 0 and remap:
+            pred = np.vectorize(self.target_map.reverse.get)(pred)
 
         return pred
 
+    def predict_explain(self, x):
+        """ Predictions with explanations.
+
+        Args:
+            x (array-like): data to predict
+
+        Returns:
+            pd.DataFrame: prediction and explanation
+        """
+
+        t = super().predict_explain(x)
+        t['proba'] = (t['score'] * 100).astype(int).map(self._calibration_map)
+        t['support'] = (t['score'] * 100).astype(int).map(self._support_map)
+
+        return t
+
     def evaluate(
-            self, x: Union[pd.DataFrame, np.ndarray],
-            y: Union[pd.Series, np.array], use_prob: bool=False,
-            threshold: float=0.5):
+        self, x: Union[pd.DataFrame, np.ndarray],
+        y: Union[pd.Series, np.array], use_prob: bool = False,
+        threshold: float = 0.5
+    ):
         """ Evaluates the model performance.
 
         Args:
@@ -546,7 +378,7 @@ class XClassifier(BaseModel):
 
         # Make predictions
         y_prob = self.predict_proba(x) if use_prob else self.predict_score(x)
-        y_prob = np.clip(y_prob, 0, 1) # because of rounding errors
+        y_prob = np.clip(y_prob, 0, 1)  # because of rounding errors
         y_pred = (y_prob > threshold).astype(int)
 
         if (len(self.target_map) > 0) and (y.dtype == 'object'):
@@ -636,7 +468,7 @@ class PartitionedClassifier(BasePartition):
         self.partition_on = partition_on
 
     def predict_score(
-            self, x: Union[pd.DataFrame, np.ndarray], proba: bool=False):
+            self, x: Union[pd.DataFrame, np.ndarray], proba: bool = False):
         """ Predicts the score for each row in the data across all partitions.
 
         The partition_on columns will be used to determine which model to use
@@ -675,7 +507,7 @@ class PartitionedClassifier(BasePartition):
                 idx = part.index
 
                 # Use partition model first
-                part_trans = self._transform(part, partition)
+                part_trans = self.partitions[partition]._transform(part)
                 _base_value = self.partitions[partition].base_value
 
                 scores = pd.Series(part_trans.sum(axis=1) + _base_value)
@@ -723,7 +555,7 @@ class PartitionedClassifier(BasePartition):
 
         return scores
 
-    def predict(self, x, use_prob=False, threshold=0.5):
+    def predict(self, x, use_prob = False, threshold = 0.5):
         """ Predicts the target for each row in the data across all partitions.
 
         The partition_on columns will be used to determine which model to use
@@ -743,7 +575,7 @@ class PartitionedClassifier(BasePartition):
         # Return 1 if feature value > threshold else 0
         pred = pd.Series(y_pred).map(lambda x: 1 if x >= threshold else 0)
 
-        map_inv  = self.partitions['__dataset__'].target_map_inv
+        map_inv = self.partitions['__dataset__'].target_map.reverse
 
         if map_inv:
             return np.array(pred.map(map_inv))

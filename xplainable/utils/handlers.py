@@ -19,8 +19,6 @@ def _check_inf(df):
     return not inf_columns.any()
 
 def check_df(df):
-    assert _check_nans(df), \
-        'Dataframe contains NaNs. Please remove them before proceeding.'
     assert _check_inf(df), \
         'Dataframe contains infinite values. Please remove them before proceeding.'
         

@@ -16,6 +16,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from ...core.optimisation.genetic import XEvolutionaryNetwork
 from ...core.optimisation.layers import Tighten, Evolve
 from ...callbacks.optimisation import RegressionCallback
+from ...visualisation.explain import _generate_explain_plot_data as gen_x_plot_data
 
 
 class EvaluateClassifier:
@@ -70,7 +71,7 @@ class EvaluateClassifier:
 
         # Encode y if required
         if len(self.model.target_map) and self.y.dtype == 'O':
-            self.y = self.y.map(self.model.target_map)
+            self.y = self.y.map(self.model.target_map.forward)
         
         def on_smoother_change(_):
             self.model._calibration_map = self.model._map_calibration(
@@ -86,66 +87,23 @@ class EvaluateClassifier:
             if f is None:
                 return
             
-            params = self.model.feature_params[f]
+            #params = self.model.feature_params[f]
+            params = self.model._constructs[self.model.columns.index(f)].params
             
-            self.calibration_box.children[1].value = params['max_depth']
-            self.calibration_box.children[2].value = params['min_info_gain']
-            self.calibration_box.children[3].value = params['min_leaf_size']
-            self.calibration_box.children[4].value = params['weight']
-            self.calibration_box.children[5].value = params['power_degree']
-            self.calibration_box.children[6].value = params['sigmoid_exponent']
+            self.calibration_box.children[1].value = params.max_depth
+            self.calibration_box.children[2].value = params.min_info_gain
+            self.calibration_box.children[3].value = params.min_leaf_size
+            self.calibration_box.children[4].value = params.weight
+            self.calibration_box.children[5].value = params.power_degree
+            self.calibration_box.children[6].value = params.sigmoid_exponent
         
         self.feature_selector.observe(on_feature_change)
 
         self.y_prob = self.model.predict_score(self.X)
-                
+
     def _generate_explain_plot_data(self):
+        return gen_x_plot_data(self.model, 3)
 
-        def get_plot_data(f):
-            """ 
-            Args:
-                f (str): Feature
-                p (str): Partition
-            """
-            _profile = self.model.profile
-            if f in _profile['numeric']:
-                prof = pd.DataFrame(_profile['numeric'][f])
-
-                if prof.empty:
-                    return
-
-                prof['value'] = prof['lower'].round(3).astype(str) + " - " + \
-                    prof['upper'].round(3).astype(str)
-
-                prof = prof[['value', 'score', 'mean', 'freq']]
-
-            elif f in _profile['categorical']:
-                prof = pd.DataFrame(_profile['categorical'][f])
-
-                if prof.empty:
-                    return
-
-                prof['mean'] = prof['means']
-                prof['freq'] = prof['frequencies']
-                prof = prof[['categories', 'score', 'mean', 'freq']]
-                prof = prof.rename(columns={'categories': 'value'})
-                prof = prof.explode(['value', 'mean', 'freq'])
-
-            else:
-                return
-
-            prof['feature'] = f
-            prof['score_label'] = prof['score'].apply(
-                lambda x: str(round(x*100, 1)))
-
-            return prof.reset_index()
-        
-        plot_data = [get_plot_data(i) for i in self.model.columns]
-        prof = pd.concat(
-            [i for i in plot_data if i is not None]).reset_index(drop=True)
-        
-        return prof
-    
     def _generate_feature_importance(self):
         def explore(b):
             self.feature_selector.value = b.id
@@ -308,7 +266,7 @@ class EvaluateClassifier:
         cf2 = lambda x: '#0080ea'
         
         
-        plot_selector = widgets.ToggleButtons(options=['score', 'mean', 'freq'])
+        plot_selector = widgets.ToggleButtons(options=['contribution', 'mean', 'frequency'])
         plot_selector.style.button_width = '102px'
         plot_selector.layout = widgets.Layout(margin='10px 0 0 90px')
         
@@ -325,7 +283,7 @@ class EvaluateClassifier:
                 print('')
                 return
             
-            cf = cf1 if plot == 'score' else cf2
+            cf = cf1 if plot == 'contribution' else cf2
             cp = [cf(value) for value in plot_data[plot]]
             
             fig, ax = plt.subplots(figsize=(5.7,5.3))
@@ -395,38 +353,38 @@ class EvaluateClassifier:
                 
         recal_max_depth = widgets.IntSlider(
             description='max_depth',
-            min=0, max=30, step=1, value=self.model.max_depth,
+            min=0, max=30, step=1, value=self.model.params.max_depth,
             style = {'description_width': 'initial'}
         )
         
         recal_min_info_gain = widgets.FloatSlider(
             description='min_info_gain',
             min=0.0001, max=0.2, step=0.0001,
-            value=self.model.min_info_gain, readout_format='.4f',
+            value=self.model.params.min_info_gain, readout_format='.4f',
             style = {'description_width': 'initial'}
         )
         
         recal_min_leaf_size = widgets.FloatSlider(
             description='min_leaf_size',
             min=0.0001, max=0.2, step=0.0001,
-            value=self.model.min_leaf_size, readout_format='.4f',
+            value=self.model.params.min_leaf_size, readout_format='.4f',
             style = {'description_width': 'initial'}
         )
         
         recal_weight = widgets.FloatSlider(
             description='weight',
             style={'description_width': 'initial'},
-            value=1, min=0.001, max=10, step=0.01)
+            value=self.model.params.weight, min=0.001, max=10, step=0.01)
         
         recal_power_degree = widgets.IntSlider(
             description='power_degree',
             style={'description_width': 'initial'},
-            value=1, min=1, max=7, step=2)
+            value=self.model.params.power_degree, min=1, max=7, step=2)
         
         recal_sigmoid_exponent = widgets.FloatSlider(
             description='sigmoid_exponent',
             style={'description_width': 'initial'},
-            value=0, min=0, max=6, step=0.25)
+            value=self.model.params.sigmoid_exponent, min=0, max=6, step=0.25)
         
         divider = widgets.HTML(f'<hr class="solid">')
         
@@ -472,13 +430,11 @@ class EvaluateClassifier:
         ])
         
         def on_click(_):
-  
             self.model.update_feature_params(
                 features=[self.feature_selector.value],
                 max_depth=recal_max_depth.value,
                 min_info_gain=recal_min_info_gain.value,
                 min_leaf_size=recal_min_leaf_size.value,
-                alpha=self.model.alpha,
                 weight=recal_weight.value,
                 power_degree=recal_power_degree.value,
                 sigmoid_exponent=recal_sigmoid_exponent.value
@@ -500,10 +456,10 @@ class EvaluateClassifier:
             self.feature_importance_bars.children = group.children
             self.__update_scenario = True
 
-            with self.scenarios:
-                clear_output(wait=True)
-                scenario = ScenarioClassification(self.model, self.ranges)
-                display(scenario.run())
+            # with self.scenarios:
+            #     clear_output(wait=True)
+            #     scenario = ScenarioClassification(self.model, self.ranges)
+            #     display(scenario.run())
             
         action.on_click(on_click)
         
@@ -523,11 +479,11 @@ class EvaluateClassifier:
     def profile(self, X, y):
         
         evaluation = widgets.Output()
-        self.scenarios = widgets.Output(
-            layout = widgets.Layout(min_height='720px'))
+        # self.scenarios = widgets.Output(
+        #     layout = widgets.Layout(min_height='720px'))
         
-        with self.scenarios:
-            print("Generating widgets...")
+        # with self.scenarios:
+        #     print("Generating widgets...")
             
         divider = widgets.HTML(f'<hr class="solid">')
         
@@ -576,9 +532,10 @@ class EvaluateClassifier:
             
             self.ranges[c] = rng
             
-        tabs = widgets.Tab([evaluation, self.scenarios])
+        #tabs = widgets.Tab([evaluation, self.scenarios])
+        tabs = widgets.Tab([evaluation])
         tabs.set_title(0, 'Evaluation')
-        tabs.set_title(1, 'Scenario Analysis')
+        #tabs.set_title(1, 'Scenario Analysis')
         
         close_button = widgets.Button(description='close')
         close_button.style = {
@@ -586,10 +543,10 @@ class EvaluateClassifier:
             "text_color": 'white'
             }
 
-        with self.scenarios:
-            clear_output(wait=True)
-            scenario = ScenarioClassification(self.model, self.ranges)
-            display(scenario.run())
+        # with self.scenarios:
+        #     clear_output(wait=True)
+        #     scenario = ScenarioClassification(self.model, self.ranges)
+        #     display(scenario.run())
         
         screen = widgets.VBox([
             tabs,
@@ -656,63 +613,20 @@ class EvaluateRegressor:
             if f is None:
                 return
             
-            params = self.model.feature_params[f]
+            params = self.model._constructs[self.model.columns.index(f)].params
             
-            self.calibration_box.children[1].value = params['max_depth']
-            self.calibration_box.children[2].value = params['min_info_gain']
-            self.calibration_box.children[3].value = params['min_leaf_size']
-            self.calibration_box.children[4].value = params['tail_sensitivity']
+            self.calibration_box.children[1].value = params.max_depth
+            self.calibration_box.children[2].value = params.min_info_gain
+            self.calibration_box.children[3].value = params.min_leaf_size
+            self.calibration_box.children[4].value = params.tail_sensitivity
             
         self.feature_selector.observe(on_feature_change)
 
         self.y_pred = self.model.predict(self.X)
                 
     def _generate_explain_plot_data(self):
-
-        def get_plot_data(f):
-            """ 
-            Args:
-                f (str): Feature
-                p (str): Partition
-            """
-            _profile = self.model.profile
-            if f in _profile['numeric']:
-                prof = pd.DataFrame(_profile['numeric'][f])
-
-                if prof.empty:
-                    return
-
-                prof['value'] = prof['lower'].round(3).astype(str) + " - " + \
-                    prof['upper'].round(3).astype(str)
-
-                prof = prof[['value', 'score', 'mean', 'freq']]
-
-            elif f in _profile['categorical']:
-                prof = pd.DataFrame(_profile['categorical'][f])
-
-                if prof.empty:
-                    return
-
-                prof = prof[['categories', 'score', 'mean', 'freq']]
-                prof['categories'] = prof['categories'].apply(lambda x: list(x))
-                prof = prof.rename(columns={'categories': 'value'})
-                prof = prof.explode('value')
-
-            else:
-                return
-
-            prof['feature'] = f
-            prof['score_label'] = prof['score'].apply(
-                lambda x: str(round(x, 1)))
-
-            return prof.reset_index()
+        return gen_x_plot_data(self.model, 3)
         
-        plot_data = [get_plot_data(i) for i in self.model.columns]
-        prof = pd.concat(
-            [i for i in plot_data if i is not None]).reset_index(drop=True)
-        
-        return prof
-    
     def _generate_feature_importance(self):
         def explore(b):
             self.feature_selector.value = b.id
@@ -877,7 +791,7 @@ class EvaluateRegressor:
         cf2 = lambda x: '#0080ea'
         
         
-        plot_selector = widgets.ToggleButtons(options=['score', 'mean', 'freq'])
+        plot_selector = widgets.ToggleButtons(options=['contribution', 'mean', 'frequency'])
         plot_selector.style.button_width = '102px'
         plot_selector.layout = widgets.Layout(margin='10px 0 0 90px')
         
@@ -899,7 +813,7 @@ class EvaluateRegressor:
                 print('')
                 return
             
-            cf = cf1 if plot == 'score' else cf2
+            cf = cf1 if plot == 'contribution' else cf2
             cp = [cf(value) for value in plot_data[plot]]
             
             fig, ax = plt.subplots(figsize=(5.7,5.3))
@@ -998,28 +912,28 @@ class EvaluateRegressor:
             
         recal_max_depth = widgets.IntSlider(
             description='max_depth',
-            min=0, max=30, step=1, value=self.model.max_depth,
+            min=0, max=30, step=1, value=self.model.params.max_depth,
             style = {'description_width': 'initial'}
         )
         
         recal_min_info_gain = widgets.FloatSlider(
             description='min_info_gain',
             min=0.0001, max=0.2, step=0.0001,
-            value=self.model.min_info_gain, readout_format='.4f',
+            value=self.model.params.min_info_gain, readout_format='.4f',
             style = {'description_width': 'initial'}
         )
         
         recal_min_leaf_size = widgets.FloatSlider(
             description='min_leaf_size',
             min=0.0001, max=0.2, step=0.0001,
-            value=self.model.min_leaf_size, readout_format='.4f',
+            value=self.model.params.min_leaf_size, readout_format='.4f',
             style = {'description_width': 'initial'}
         )
         
         recal_tail_sensitivity = widgets.FloatSlider(
             description='tail_sensitivity',
             style={'description_width': 'initial'},
-            value=1, min=1, max=2, step=0.01)
+            value=self.model.params.tail_sensitivity, min=1, max=2, step=0.01)
         
         divider = widgets.HTML(f'<hr class="solid">')
         
@@ -1042,7 +956,6 @@ class EvaluateRegressor:
                 max_depth=recal_max_depth.value,
                 min_info_gain=recal_min_info_gain.value,
                 min_leaf_size=recal_min_leaf_size.value,
-                alpha=self.model.alpha,
                 weight=None,
                 power_degree=None,
                 sigmoid_exponent=None,
@@ -1065,10 +978,10 @@ class EvaluateRegressor:
             self.feature_importance_bars.children = group.children
             self.__update_scenario = True
 
-            with self.scenarios:
-                clear_output(wait=True)
-                scenario = ScenarioRegression(self.model, self.ranges)
-                display(scenario.run())
+            # with self.scenarios:
+            #     clear_output(wait=True)
+            #     scenario = ScenarioRegression(self.model, self.ranges)
+            #     display(scenario.run())
             
         action.on_click(on_click)
         
@@ -1089,10 +1002,10 @@ class EvaluateRegressor:
         self.y_val = y
         
         evaluation = widgets.Output()
-        self.scenarios = widgets.Output(
-            layout = widgets.Layout(min_height='720px'))
-        with self.scenarios:
-            print("Generating widgets...")
+        # self.scenarios = widgets.Output(
+        #     layout = widgets.Layout(min_height='720px'))
+        # with self.scenarios:
+        #     print("Generating widgets...")
             
         divider = widgets.HTML(f'<hr class="solid">')
         
@@ -1141,9 +1054,10 @@ class EvaluateRegressor:
             
             self.ranges[c] = rng
             
-        tabs = widgets.Tab([evaluation, self.scenarios])
+        #tabs = widgets.Tab([evaluation, self.scenarios])
+        tabs = widgets.Tab([evaluation])
         tabs.set_title(0, 'Evaluation')
-        tabs.set_title(1, 'Scenario Analysis')
+        #tabs.set_title(1, 'Scenario Analysis')
         
         close_button = widgets.Button(description='close')
         close_button.style = {
@@ -1151,10 +1065,10 @@ class EvaluateRegressor:
             "text_color": 'white'
             }
 
-        with self.scenarios:
-            clear_output(wait=True)
-            scenario = ScenarioRegression(self.model, self.ranges)
-            display(scenario.run())
+        # with self.scenarios:
+        #     clear_output(wait=True)
+        #     scenario = ScenarioRegression(self.model, self.ranges)
+        #     display(scenario.run())
         
         screen = widgets.VBox([
             tabs,

@@ -66,7 +66,7 @@ class ScenarioClassification:
         
         cats = []
         for node in feature:
-            cats += node['categories']
+            cats += node['category']
             
         w = widgets.Dropdown(options=cats, value=cats[0])
         w.layout = widgets.Layout(max_width='150px', display='flex')
@@ -236,7 +236,6 @@ class ScenarioClassification:
         
         return proba, score, multi
 
-    
     def get_prediction_breakdown(self):
        
         profile = self.model.profile
@@ -261,7 +260,7 @@ class ScenarioClassification:
                 
             val = self.widgets[f].value
             
-            leaf = [l for l in nodes if val in l['categories']][0]
+            leaf = [l for l in nodes if val == l['category']][0]
             
             score += leaf['score']
             breakdown[f] = leaf['score']
@@ -420,7 +419,7 @@ class ScenarioRegression:
         
         cats = []
         for node in feature:
-            cats += node['categories']
+            cats += node['category']
             
         w = widgets.Dropdown(options=cats, value=cats[0])
         w.layout = widgets.Layout(max_width='150px', display='flex')
@@ -568,7 +567,7 @@ class ScenarioRegression:
                 
             val = self.widgets[f].value
             
-            leaf = [l for l in nodes if val in l['categories']][0]
+            leaf = [l for l in nodes if val == l['category']][0]
             
             score += leaf['score']
             breakdown[f] = leaf['score']

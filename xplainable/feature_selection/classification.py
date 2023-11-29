@@ -8,6 +8,7 @@ import sklearn.metrics as skm
 from tqdm.auto import tqdm
 from sklearn.model_selection import train_test_split
 from ..core.models import XClassifier
+from ..utils.dualdict import TargetMap
 
 
 class XClfFeatureSelector:
@@ -48,7 +49,7 @@ class XClfFeatureSelector:
         self.id_columns = []
         self.columns = []
         self.results = []
-        self.model = XClassifier(alpha=alpha)
+        self.model = XClassifier()
         self.samples = []
 
         self.feature_scores = {}
@@ -117,12 +118,8 @@ class XClfFeatureSelector:
             # Cast as category
             target_ = y.astype('category')
 
-            # Get the inverse label map
-            target_map_inv = dict(enumerate(target_.cat.categories))
-
             # Get the label map
-            target_map = {
-                value: key for key, value in target_map_inv.items()}
+            target_map = TargetMap(dict(enumerate(target_.cat.categories)), True)
 
             # Encode the labels
             y = y.map(target_map)
@@ -141,9 +138,10 @@ class XClfFeatureSelector:
                 
         self.samples = self._get_even_samples(self.columns, self.n_samples)
         
-        self.model.fit(self.X_train, self.y_train, id_columns=self.id_columns)
+        self.model.fit(self.X_train, self.y_train, id_columns=self.id_columns,
+            alpha=self.alpha)
         
-        params = self.model.params
+        params = self.model.params.to_json()
         
         for samp in tqdm(self.samples):
         

@@ -1,6 +1,7 @@
 """ Copyright Xplainable Pty Ltd, 2023"""
 
 from ...utils.collections import stopwords
+from ...utils.dualdict import TargetMap
 from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import CountVectorizer
 import re
@@ -51,7 +52,6 @@ class NLPExtractor:
         self.word_map = {}
         self.ngram_map = {}
         self.target_map = {}
-        self.target_map_inv = {}
 
     def _count_uppercase_words(self, s):
         return len(re.findall(r'\b[A-Z]+\b', s))
@@ -530,11 +530,7 @@ class NLPExtractor:
             target_ = y.astype('category')
 
             # Get the inverse label map
-            self.target_map_inv = dict(enumerate(target_.cat.categories))
-
-            # Get the label map
-            self.target_map = {
-                value: key for key, value in self.target_map_inv.items()}
+            self.target_map = TargetMap(dict(enumerate(target_.cat.categories)), True)
 
             # Encode the labels
             y = y.map(self.target_map)
