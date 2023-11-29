@@ -400,17 +400,18 @@ class BaseModel:
 
         # Function to calculate Gini Impurity
         def gini_impurity(freqs):
-            return 1 - sum(f ** 2 for f in freqs)
+            return min(max(1 - sum(f ** 2 for f in freqs), 0), 1)
         
         # Calculate Gini gain for categorical features
-        for feature, categories in list(self.profile["categorical"].items()) \
-            + list(self.profile["numeric"].items()):
+        for feature, categories in list(self.profile["categorical"].items()) + list(self.profile["numeric"].items()):
 
             impurity = gini_impurity(
-                [category["freq"] for category in categories])
+                [category["freq"] for category in categories]
+            )
 
-            weighted_impurity = impurity * sum(
-                abs(category["score"]) for category in categories)
+            weighted_impurity = impurity * abs(sum(
+                abs(category["score"]) for category in categories
+            ))
             
             gini_gains[feature] = weighted_impurity
 
@@ -424,7 +425,8 @@ class BaseModel:
         """
 
         importances = self._calculate_gini_gain()
-
+        sum_importances = sum(importances.values())
+        importances ={k: v/sum_importances for k, v in importances.items()}
         # order by importance
         importances = dict(sorted(
             importances.items(), key=lambda item: item[1], reverse=False

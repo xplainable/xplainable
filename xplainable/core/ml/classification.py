@@ -189,7 +189,6 @@ class XClassifier(BaseModel):
         """
 
         start = time()
-
         x, y, x_cal, y_cal = super()._fit_check(
             x,
             y,
