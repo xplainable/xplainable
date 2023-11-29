@@ -287,7 +287,9 @@ class XNumConstructor(XConstructor):
         for i in prange(len(base_partition)):
             _split = base_partition[i]
             new_X = np.repeat(X[np.newaxis, :], 2, 0)
-            div_mask = np.where(new_X < _split, 1, 0) * np.array([[1], [-1]]) + np.array([[0], [1]])
+            div_mask = np.where(new_X < _split, 1, 0) * np.array([[1], [-1]]) \
+                + np.array([[0], [1]])
+            
             pos = np.sum(div_mask * y, axis=1)
             cnt = np.sum(div_mask, axis=1)
             mean = pos / cnt
@@ -462,5 +464,7 @@ class XNumConstructor(XConstructor):
     def fit(self, X, y, alpha=0.1):
         """ Fits feature data to target """
         super().fit(X, y, alpha)
-        self.abs_min_leaf_size = np.max([1, int(self.params.min_leaf_size * self.fitted_samples)])
+        self.abs_min_leaf_size = np.max(
+            [1, int(self.params.min_leaf_size * self.fitted_samples)])
+        
         return self

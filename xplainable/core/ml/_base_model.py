@@ -259,7 +259,8 @@ class BaseModel:
         target_ = y.astype('category')
 
         # Get the label map
-        self.target_map = TargetMap({value: key for key, value in dict(enumerate(target_.cat.categories)).items()})
+        self.target_map = TargetMap({value: key for key, value in dict(
+            enumerate(target_.cat.categories)).items()})
 
         return
 
@@ -281,8 +282,11 @@ class BaseModel:
                 'target': y
             })
             
-            self.category_meta[col]["means"] = dict(group.groupby(col)['target'].mean())
-            self.category_meta[col]["freqs"] = dict(x[col].value_counts() / len(y))
+            self.category_meta[col]["means"] = dict(
+                group.groupby(col)['target'].mean())
+            
+            self.category_meta[col]["freqs"] = dict(
+                x[col].value_counts() / len(y))
 
     def _preprocess(self, x, y=None):
         """Removes unknown categories and puts them into the self.columns order"""
@@ -399,11 +403,14 @@ class BaseModel:
             return 1 - sum(f ** 2 for f in freqs)
         
         # Calculate Gini gain for categorical features
-        for feature, categories in list(self.profile["categorical"].items()) + list(self.profile["numeric"].items()):
+        for feature, categories in list(self.profile["categorical"].items()) \
+            + list(self.profile["numeric"].items()):
 
-            impurity = gini_impurity([category["freq"] for category in categories])
+            impurity = gini_impurity(
+                [category["freq"] for category in categories])
 
-            weighted_impurity = impurity * sum(abs(category["score"]) for category in categories)
+            weighted_impurity = impurity * sum(
+                abs(category["score"]) for category in categories)
             
             gini_gains[feature] = weighted_impurity
 
@@ -416,7 +423,14 @@ class BaseModel:
             dict: The feature importances.
         """
 
-        return self._calculate_gini_gain()
+        importances = self._calculate_gini_gain()
+
+        # order by importance
+        importances = dict(sorted(
+            importances.items(), key=lambda item: item[1], reverse=False
+        ))
+
+        return importances
 
     def explain(self, label_rounding=5):
         try:
@@ -440,7 +454,8 @@ class BaseModel:
     def _fit_check(
         self, x: Union[pd.DataFrame, np.ndarray],
         y: Union[pd.Series, np.ndarray], id_columns: list = [],
-        column_names: list = None, target_name: str = 'target', map_calibration=False
+        column_names: list = None, target_name: str = 'target',
+        map_calibration=False
     ):
 
         x = x.copy()
