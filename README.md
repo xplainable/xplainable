@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![Contributors](https://img.shields.io/badge/Contributors-2-orange.svg?style=flat-square)](#contributors-)
+[![Contributors](https://img.shields.io/badge/Contributors-3-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <div align="center">
@@ -10,7 +10,7 @@
     
 [![Python](https://img.shields.io/pypi/pyversions/xplainable)](https://pypi.org/project/xplainable/)
 [![PyPi](https://img.shields.io/pypi/v/xplainable?color=blue)](https://pypi.org/project/xplainable/)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://github.com/xplainable/xplainable/blob/main/LICENSE)
+[![License: Apache-2.0](https://img.shields.io/github/license/saltstack/salt)](https://github.com/xplainable/xplainable/blob/main/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/xplainable)](https://pepy.tech/project/xplainable)
     
 **Xplainable** leverages explainable machine learning for fully transparent predictions and advanced data optimisation in production systems.
