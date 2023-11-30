@@ -404,7 +404,7 @@ class XClassifier(BaseModel):
             cohen_kappa = np.nan
         
         try:
-            log_loss_score = log_loss(y, y_pred)
+            log_loss_score = log_loss(y, y_prob)
         except Exception:
             log_loss_score = np.nan
 
