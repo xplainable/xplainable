@@ -1,0 +1,389 @@
+---
+title: Tool Failure
+sidebar_label: Tool Failure
+path: website/docs/tutorials
+nb_path: website/docs/tutorials/Tool_Failure.ipynb
+github: https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb
+colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials
+---
+import CellOutput from "../../src/components/CellOutput.jsx";
+import LinkButtons from "../../src/components/LinkButtons.jsx";
+
+<LinkButtons
+  githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb"
+  colabUrl="https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
+/>
+
+## Package Imports
+
+
+```python
+import pandas as pd
+import xplainable as xp
+from xplainable.core.models import XClassifier
+from xplainable.core.optimisation.bayesian import XParamOptimiser
+from xplainable.preprocessing.pipeline import XPipeline
+from xplainable.preprocessing import transformers as xtf
+from sklearn.model_selection import train_test_split
+import requests
+```
+
+## Read in the csv dataset
+
+
+```python
+df = pd.read_csv("data/asset_failure.csv")
+```
+
+```python
+df.head()
+```
+
+
+|    |   UDI | Product ID   | Type   |   Air temperature [K] |   Process temperature [K] |   Rotational speed [rpm] |   Torque [Nm] |   Tool wear [min] |   Machine failure |   TWF |   HDF |   PWF |   OSF |   RNF |
+|---:|------:|:-------------|:-------|----------------------:|--------------------------:|-------------------------:|--------------:|------------------:|------------------:|------:|------:|------:|------:|------:|
+|  0 |     1 | M14860       | M      |                 298.1 |                     308.6 |                     1551 |          42.8 |                 0 |                 0 |     0 |     0 |     0 |     0 |     0 |
+|  1 |     2 | L47181       | L      |                 298.2 |                     308.7 |                     1408 |          46.3 |                 3 |                 0 |     0 |     0 |     0 |     0 |     0 |
+|  2 |     3 | L47182       | L      |                 298.1 |                     308.5 |                     1498 |          49.4 |                 5 |                 0 |     0 |     0 |     0 |     0 |     0 |
+|  3 |     4 | L47183       | L      |                 298.2 |                     308.6 |                     1433 |          39.5 |                 7 |                 0 |     0 |     0 |     0 |     0 |     0 |
+|  4 |     5 | L47184       | L      |                 298.2 |                     308.7 |                     1408 |          40   |                 9 |                 0 |     0 |     0 |     0 |     0 |     0 |
+
+## Dataset Overview: Machine Failure Prediction
+
+This dataset is designed for predictive maintenance, focusing on machine failure
+prediction. Below is an overview of its structure and the data it contains:
+
+1. **UDI (Unique Identifier):** A column for unique identification numbers for each
+   record.
+
+1. **Product ID:** Identifier for the product being produced or involved in the process.
+
+1. **Type:** Indicates the type or category of the product or process, with different
+   types represented by different letters (e.g., 'M', 'L').
+
+1. **Air temperature \[K\] (Kelvin):** The temperature of the air in the environment
+   where the machine operates, measured in Kelvin.
+
+1. **Process temperature \[K\] (Kelvin):** The operational temperature of the process or
+   machine, also measured in Kelvin.
+
+1. **Rotational speed \[rpm\] (Revolutions per Minute):** This column shows the speed at
+   which a component of the machine is rotating.
+
+1. **Torque \[Nm\] (Newton Meters):** The torque being applied in the process, measured
+   in Newton meters.
+
+1. **Tool wear \[min\]:** Indicates the amount of wear on the tools used in the machine,
+   measured in minutes of operation.
+
+1. **Machine failure:** A binary indicator (0 or 1) showing whether a machine failure
+   occurred.
+
+1. **TWF (Tool Wear Failure):** Specific indicator of failure due to tool wear.
+
+1. **HDF (Heat Dissipation Failure):** Indicates failure due to ineffective heat
+   dissipation.
+
+1. **PWF (Power Failure):** Shows whether a failure was due to power issues.
+
+1. **OSF (Overstrain Failure):** Indicates if the failure was due to overstraining of
+   the machine components.
+
+1. **RNF (Random Failure):** A column for failures that don't fit into the other
+   specified categories and are considered random.
+
+Each row of the dataset represents a unique instance or record of the production
+process, with the corresponding measurements and failure indicators. This data can be
+used to train machine learning models to predict machine failures based on these
+parameters.
+
+
+```python
+df = df.drop(columns=["Product ID", "UDI", "TWF", "HDF", "PWF", "OSF", "RNF"])
+df
+```
+
+
+|      | Type   | Air temperature [K]   | Process temperature [K]   | Rotational speed [rpm]   | Torque [Nm]   | Tool wear [min]   | Machine failure   |
+|:-----|:-------|:----------------------|:--------------------------|:-------------------------|:--------------|:------------------|:------------------|
+| 0    | M      | 298.1                 | 308.6                     | 1551                     | 42.8          | 0                 | 0                 |
+| 1    | L      | 298.2                 | 308.7                     | 1408                     | 46.3          | 3                 | 0                 |
+| 2    | L      | 298.1                 | 308.5                     | 1498                     | 49.4          | 5                 | 0                 |
+| 3    | L      | 298.2                 | 308.6                     | 1433                     | 39.5          | 7                 | 0                 |
+| 4    | L      | 298.2                 | 308.7                     | 1408                     | 40.0          | 9                 | 0                 |
+| ...  | ...    | ...                   | ...                       | ...                      | ...           | ...               | ...               |
+| 9995 | M      | 298.8                 | 308.4                     | 1604                     | 29.5          | 14                | 0                 |
+| 9996 | H      | 298.9                 | 308.4                     | 1632                     | 31.8          | 17                | 0                 |
+| 9997 | M      | 299.0                 | 308.6                     | 1645                     | 33.4          | 22                | 0                 |
+| 9998 | H      | 299.0                 | 308.7                     | 1408                     | 48.5          | 25                | 0                 |
+| 9999 | M      | 299.0                 | 308.7                     | 1500                     | 40.2          | 30                | 0                 |
+
+```python
+df["Machine failure"].value_counts()
+```
+
+<CellOutput>
+{`0    9661
+1     339
+Name: Machine failure, dtype: int64`}
+</CellOutput>
+
+```python
+X, y = df.drop(columns=['Machine failure']), df['Machine failure']
+
+X_train, X_test, y_train, y_test = train_test_split(
+     X, y, test_size=0.33, random_state=42)
+```
+
+## 2. Model Optimisation
+
+The `XParamOptimiser` is utilised to fine-tune the hyperparameters of our model. This
+process searches for the optimal parameters that will yield the best model performance,
+balancing accuracy and computational efficiency.
+
+
+```python
+opt = XParamOptimiser()
+params = opt.optimise(X_train, y_train)
+```
+
+<CellOutput>
+{`100%|████████| 30/30 [00:01<00:00, 18.15trial/s, best loss: -0.9373227959701327]`}
+</CellOutput>
+
+## 3. Model Training
+
+With the optimised parameters obtained, the `XClassifier` is trained on the dataset.
+This classifier undergoes a fitting process with the training data, ensuring that it
+learns the underlying patterns and can make accurate predictions.
+
+
+```python
+model = XClassifier(**params)
+model.fit(X_train, y_train)
+```
+
+<CellOutput>
+{`<xplainable.core.ml.classification.XClassifier at 0x11def8700>`}
+</CellOutput>
+
+## 4. Model Interpretability and Explainability
+
+Following training, the `model.explain()` method is called to generate insights into the
+model's decision-making process. This step is crucial for understanding the factors that
+influence the model's predictions and ensuring that the model's behaviour is transparent
+and explainable.
+
+
+```python
+model.explain()
+```
+
+<iframe src='./assets/plot_data/AltairPlot_484d0554-25aa-48be-baa8-a16b797471e2.html' width='100%' height='400'></iframe>
+
+```python
+params = {
+    "max_depth": 7,
+    "min_info_gain": 0.03,
+}
+
+model.update_feature_params(features=['Tool wear [min]', 'Air temperature [K]', 'Process temperature [K]','Torque [Nm]'], **params)
+```
+
+<CellOutput>
+{`<xplainable.core.ml.classification.XClassifier at 0x11def8700>`}
+</CellOutput>
+
+```python
+model.explain()
+```
+
+<iframe src='./assets/plot_data/AltairPlot_2640663e-c3fd-4ca3-8cdb-1b92b3240695.html' width='100%' height='400'></iframe>
+
+In this snapshot, we demonstrate the impact of hyperparameter tuning on model
+interpretability. By adjusting max_depth and min_info_gain, we refine the feature wise
+explainability and information criterion, respectively, which in turn recalibrates
+feature score contributions. These scores, essential in understanding feature
+contributions to model predictions, are visualized before and after parameter
+adjustment, illustrating the model's internal logic shifts. This process is critical for
+enhancing transparency and aids in pinpointing influential features, fostering the
+development of interpretable and trustworthy machine learning models.
+
+
+# Persisting to Xplainable Cloud
+
+
+## Instantiate Xplainable Cloud
+
+Initialise the xplainable cloud using an API key from: https://beta.xplainable.io/
+
+This allows you to save and collaborate on models, create deployments, create shareable
+reports.
+
+
+```python
+xp.initialise(
+    api_key="", #<-- Add you API key here
+)
+```
+
+<CellOutput>
+{`{'xplainable version': '1.0.18',
+ 'python version': '3.10.13',
+ 'user': 'tuppackj',
+ 'organisation': 'Testing Organisation',
+ 'team': 'Sandbox'}`}
+</CellOutput>
+
+## 5. Model Persisting
+
+In this step, we first create a unique identifier for our churn prediction model using
+`xp.client.create_model_id`. This identifier, shown as `model_id`, represents the newly
+instantiated model which predicts the likelihood of customers leaving within the next
+month. Following this, we generate a specific version of the model with
+`xp.client.create_model_version`, passing in our training data. The output `version_id`
+represents this particular iteration of our model, allowing us to track and manage
+different versions systematically.
+
+
+```python
+model_id = xp.client.create_model_id(
+    model,
+    model_name="Asset Failure Prediction",
+    model_description="Using machine metadata to predict asset failures"
+)
+model_id
+```
+
+<CellOutput>
+{`'ikAJOqfN35NouU8S'`}
+</CellOutput>
+
+```python
+version_id = xp.client.create_model_version(
+    model,
+    model_id,
+    X_train,
+    y_train
+)
+version_id
+```
+
+<CellOutput>
+{`  0%|          | 0/6 [00:00<?, ?it/s]
+'Z2eG6hSRakAlJRxx'`}
+</CellOutput>
+
+## 6. Model Deployment
+
+
+The code block illustrates the deployment of our churn prediction model using the
+`xp.client.deploy` function. The deployment process involves specifying the `hostname`
+of the server where the model will be hosted, as well as the unique `model_id` and
+`version_id` that we obtained in the previous steps. This step effectively activates the
+model's endpoint, allowing it to receive and process prediction requests. The output
+confirms the deployment with a `deployment_id`, indicating the model's current `status`
+as 'inactive', its `location`, and the `endpoint` URL where it can be accessed for
+xplainable deployments.
+
+
+```python
+deployment = xp.client.deploy(
+    hostname="https://inference.xplainable.io", 
+    model_id=model_id, #<- Use model id produced above
+    version_id=version_id #<- Use version id produced above
+)
+```
+
+### Testing the Deployment programatically
+
+This section demonstrates the steps taken to programmatically test a deployed model.
+These steps are essential for validating that the model's deployment is functional and
+ready to process incoming prediction requests.
+
+
+1. **Activating the Deployment:** The model deployment is activated using
+   `xp.client.activate_deployment`, which changes the deployment status to active,
+   allowing it to accept prediction requests.
+
+
+```python
+xp.client.activate_deployment(deployment['deployment_id'])
+```
+
+<CellOutput>
+{`{'message': 'activated deployment'}`}
+</CellOutput>
+
+2. **Creating a Deployment Key:** A deployment key is generated with
+   `xp.client.generate_deploy_key`. This key is required to authenticate and make secure
+   requests to the deployed model.
+
+
+```python
+deploy_key = xp.client.generate_deploy_key('for testing', deployment['deployment_id'], 7, clipboard=False)
+```
+
+3. **Generating Example Payload:** An example payload for a deployment request is
+   generated by `xp.client.generate_example_deployment_payload`. This payload mimics the
+   input data structure the model expects when making predictions.
+
+
+```python
+#Set the option to highlight multiple ways of creating data
+option = 1
+```
+
+```python
+if option == 1:
+    body = xp.client.generate_example_deployment_payload(deployment['deployment_id'])
+else:
+    body = json.loads(df_transformed.drop(columns=["Machine failure"]).sample(1).to_json(orient="records"))
+```
+
+```python
+body
+```
+
+<CellOutput>
+{`[{'Type': 'L',
+  'Air temperature [K]': 302.85,
+  'Process temperature [K]': None,
+  'Rotational speed [rpm]': 1516.0,
+  'Torque [Nm]': 36.95,
+  'Tool wear [min]': 221.5}]`}
+</CellOutput>
+
+4. **Making a Prediction Request:** A POST request is made to the model's prediction
+   endpoint with the example payload. The model processes the input data and returns a
+   prediction response, which includes the predicted class (e.g., 0 for no failure) and
+   the prediction probabilities for each class.
+
+
+```python
+response = requests.post(
+    url="https://inference.xplainable.io/v1/predict",
+    headers={'api_key': deploy_key['deploy_key']},
+    json=body
+)
+
+value = response.json()
+value
+```
+
+<CellOutput>
+{`[{'index': 0,
+  'id': None,
+  'partition': '__dataset__',
+  'score': 0.16746322358939475,
+  'proba': 0.037779424684117505,
+  'pred': '0',
+  'support': 428,
+  'breakdown': {'base_value': 0.035522388059701496,
+   'Type': 0.002941960364459947,
+   'Air temperature [K]': 0.0047721098391504055,
+   'Process temperature [K]': 0.0,
+   'Rotational speed [rpm]': -0.0038165458202539227,
+   'Torque [Nm]': -0.006513953773025318,
+   'Tool wear [min]': 0.13455726491936212}}]`}
+</CellOutput>

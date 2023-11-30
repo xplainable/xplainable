@@ -1,0 +1,532 @@
+---
+title: Telco Churn
+sidebar_label: Telco Churn
+path: website/docs/tutorials
+nb_path: website/docs/tutorials/Telco_Churn.ipynb
+github: https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb
+colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials
+---
+import CellOutput from "../../src/components/CellOutput.jsx";
+import LinkButtons from "../../src/components/LinkButtons.jsx";
+
+<LinkButtons
+  githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb"
+  colabUrl="https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
+/>
+
+## Package Imports
+
+
+```python
+import pandas as pd
+import xplainable as xp
+from xplainable.core.models import XClassifier
+from xplainable.core.optimisation.bayesian import XParamOptimiser
+from xplainable.preprocessing.pipeline import XPipeline
+from xplainable.preprocessing import transformers as xtf
+from sklearn.model_selection import train_test_split
+import requests
+```
+
+## Instantiate Xplainable Cloud
+
+Initialise the xplainable cloud using an API key from: https://beta.xplainable.io/
+
+This allows you to save and collaborate on models, create deployments, create shareable
+reports.
+
+
+```python
+xp.initialise(
+    api_key="", #<- Add your own token here
+)
+```
+
+<CellOutput>
+{`VBox(children=(VBox(children=(HBox(children=(HBox(children=(Output(), HTML(value='\n        <span style="font-…`}
+</CellOutput>
+
+## Read IBM Telco Churn Dataset
+
+
+```python
+df = pd.read_excel('./data/Telco_customer_churn.xlsx')
+```
+
+### Sample of the IBM Telco Churn Dataset
+
+
+```python
+df.head()
+```
+
+
+|    | CustomerID   |   Count | Country       | State      | City        |   Zip Code | Lat Long               |   Latitude |   Longitude | Gender   | ...   | Contract       | Paperless Billing   | Payment Method            |   Monthly Charges |   Total Charges | Churn Label   |   Churn Value |   Churn Score |   CLTV | Churn Reason                  |
+|---:|:-------------|--------:|:--------------|:-----------|:------------|-----------:|:-----------------------|-----------:|------------:|:---------|:------|:---------------|:--------------------|:--------------------------|------------------:|----------------:|:--------------|--------------:|--------------:|-------:|:------------------------------|
+|  0 | 3668-QPYBK   |       1 | United States | California | Los Angeles |      90003 | 33.964131, -118.272783 |    33.9641 |    -118.273 | Male     | ...   | Month-to-month | Yes                 | Mailed check              |             53.85 |          108.15 | Yes           |             1 |            86 |   3239 | Competitor made better offer  |
+|  1 | 9237-HQITU   |       1 | United States | California | Los Angeles |      90005 | 34.059281, -118.30742  |    34.0593 |    -118.307 | Female   | ...   | Month-to-month | Yes                 | Electronic check          |             70.7  |          151.65 | Yes           |             1 |            67 |   2701 | Moved                         |
+|  2 | 9305-CDSKC   |       1 | United States | California | Los Angeles |      90006 | 34.048013, -118.293953 |    34.048  |    -118.294 | Female   | ...   | Month-to-month | Yes                 | Electronic check          |             99.65 |          820.5  | Yes           |             1 |            86 |   5372 | Moved                         |
+|  3 | 7892-POOKP   |       1 | United States | California | Los Angeles |      90010 | 34.062125, -118.315709 |    34.0621 |    -118.316 | Female   | ...   | Month-to-month | Yes                 | Electronic check          |            104.8  |         3046.05 | Yes           |             1 |            84 |   5003 | Moved                         |
+|  4 | 0280-XJGEX   |       1 | United States | California | Los Angeles |      90015 | 34.039224, -118.266293 |    34.0392 |    -118.266 | Male     | ...   | Month-to-month | Yes                 | Bank transfer (automatic) |            103.7  |         5036.3  | Yes           |             1 |            89 |   5340 | Competitor had better devices |
+
+## 1. Data Preprocessing
+
+
+```python
+#Instantiate a Pipeline
+pipeline = XPipeline()
+
+# Add stages for specific features
+pipeline.add_stages([
+    {"transformer": xtf.DropCols(
+        columns=['CustomerID', #-> Highly Cardinal, 
+                 "Total Charges", #-> Reduce Multicollinearity between Tenure and Monthly Costs
+                 'Count', #-> Only one value
+                 "Country", #-> Only one value
+                 "State", #-> Only one value,
+                 "Zip Code", #-> Highly Cardinal and Data Leakage if you keep City
+                 "Lat Long", #-> Highly Cardinal
+                 "Latitude", #-> Highly Cardinal
+                 "Longitude", #-> Highly Cardinal
+                 "Churn Value", #-> Data Leakage
+                 "Churn Score", #-> Data Leakage
+                 "CLTV", #-> Data Leakage
+                 "Churn Reason", #-> Data Leakage
+                ]
+    )},
+    {"feature":"City","transformer": xtf.Condense(pct=0.25)}, #-> Automatically condense extremely long tail values, to check if latent information
+    {"feature":"Monthly Charges", "transformer": xtf.SetDType(to_type="float")}, #-> Turn values into float
+    {"transformer": xtf.ChangeCases(
+        columns=['City', 'Gender', 'Senior Citizen', 'Partner', 'Dependents',
+       'Phone Service', 'Multiple Lines', 'Internet Service',
+       'Online Security', 'Online Backup', 'Device Protection', 'Tech Support',
+       'Streaming TV', 'Streaming Movies', 'Contract', 'Paperless Billing',
+       'Payment Method', 'Churn Label'], case="lower")},
+])
+```
+
+<CellOutput>
+{`<xplainable.preprocessing.pipeline.XPipeline at 0x29d2aa880>`}
+</CellOutput>
+
+### Preprocessed data
+
+
+```python
+df_transformed = pipeline.fit_transform(df)
+df_transformed.head()
+```
+
+
+|    | City        | Gender   | Senior Citizen   | Partner   | Dependents   |   Tenure Months | Phone Service   | Multiple Lines   | Internet Service   | Online Security   | Online Backup   | Device Protection   | Tech Support   | Streaming TV   | Streaming Movies   | Contract       | Paperless Billing   | Payment Method            |   Monthly Charges | Churn Label   |
+|---:|:------------|:---------|:-----------------|:----------|:-------------|----------------:|:----------------|:-----------------|:-------------------|:------------------|:----------------|:--------------------|:---------------|:---------------|:-------------------|:---------------|:--------------------|:--------------------------|------------------:|:--------------|
+|  0 | los angeles | male     | no               | no        | no           |               2 | yes             | no               | dsl                | yes               | yes             | no                  | no             | no             | no                 | month-to-month | yes                 | mailed check              |             53.85 | yes           |
+|  1 | los angeles | female   | no               | no        | yes          |               2 | yes             | no               | fiber optic        | no                | no              | no                  | no             | no             | no                 | month-to-month | yes                 | electronic check          |             70.7  | yes           |
+|  2 | los angeles | female   | no               | no        | yes          |               8 | yes             | yes              | fiber optic        | no                | no              | yes                 | no             | yes            | yes                | month-to-month | yes                 | electronic check          |             99.65 | yes           |
+|  3 | los angeles | female   | no               | yes       | yes          |              28 | yes             | yes              | fiber optic        | no                | no              | yes                 | yes            | yes            | yes                | month-to-month | yes                 | electronic check          |            104.8  | yes           |
+|  4 | los angeles | male     | no               | no        | yes          |              49 | yes             | yes              | fiber optic        | no                | yes             | yes                 | no             | yes            | yes                | month-to-month | yes                 | bank transfer (automatic) |            103.7  | yes           |
+
+### Create preprocessor ID to persist to Xplainable Cloud
+
+
+```python
+preprocessor_id = xp.client.create_preprocessor_id(
+    preprocessor_name="Telco Churn Preprocessing 3",
+    preprocessor_description="Handling all preprocessing steps in the IBM Telco Churn Dataset",
+)
+preprocessor_id
+```
+
+<CellOutput>
+{`'IgPxuc36O05CFIYL'`}
+</CellOutput>
+
+### Link a preprocessor version to the ID
+
+
+**Note:** Turn the Pipeline object into a preprocessor object. We're building out the
+functionality to persist the pipeline object directly. It's also possible to run the
+following code to view the GUI which is currently in Beta:
+
+```python
+pp.preprocessor(df)
+```
+
+
+**Note:** Turn the Pipeline object into a preprocessor object. We're building out the
+functionality to persist the pipeline object directly. It's also possible to run the
+following code to view the GUI which is currently in Beta:
+
+```python
+pp.preprocessor(df)
+```
+
+
+```python
+preprocessor_version = xp.client.create_preprocessor_version(
+    preprocessor_id, #preprocessor_id,
+    pipeline, # <-- Pass the pipeline
+    df # <-- Pass the raw dataframe
+)
+
+preprocessor_version
+```
+
+<CellOutput>
+{`{'version_id': 'OCLdoHK5cdMTocZV'}`}
+</CellOutput>
+
+### Loading the Preprocessor steps
+
+Use the api to load pre-existing preprocessor steps from the xplainable cloud and
+transform data inplace.
+
+
+```python
+pp_cloud = xp.client.load_preprocessor(
+    preprocessor_id,
+    preprocessor_version["version_id"],
+    gui_object=False # Set to true to load the GUI object, keep as False for pipeline
+    )
+```
+
+```python
+pp_cloud.stages
+```
+
+<CellOutput>
+{`[{'feature': '__dataset__',
+  'name': 'DropCols',
+  'transformer': <xplainable.preprocessing.transformers.dataset.DropCols at 0x29d29a280>},
+ {'feature': 'City',
+  'name': 'Condense',
+  'transformer': <xplainable.preprocessing.transformers.categorical.Condense at 0x29d281be0>},
+ {'feature': 'Monthly Charges',
+  'name': 'SetDType',
+  'transformer': <xplainable.preprocessing.transformers.mixed.SetDType at 0x29d281a60>},
+ {'feature': '__dataset__',
+  'name': 'ChangeCases',
+  'transformer': <xplainable.preprocessing.transformers.dataset.ChangeCases at 0x29d281a00>}]`}
+</CellOutput>
+
+```python
+df_transformed_cloud = pp_cloud.transform(df)
+```
+
+### Create Train/Test split for model training validation
+
+
+```python
+X, y = df_transformed_cloud.drop(columns=['Churn Label']), df['Churn Label']
+
+X_train, X_test, y_train, y_test = train_test_split(
+     X, y, test_size=0.33, random_state=42)
+```
+
+## 2. Model Optimisation
+
+The `XParamOptimiser` is utilised to fine-tune the hyperparameters of our model. This
+process searches for the optimal parameters that will yield the best model performance,
+balancing accuracy and computational efficiency.
+
+
+```python
+opt = XParamOptimiser()
+params = opt.optimise(X_train, y_train)
+```
+
+<CellOutput>
+{`100%|████████| 30/30 [00:02<00:00, 10.74trial/s, best loss: -0.8264179696618322]`}
+</CellOutput>
+
+## 3. Model Training
+
+With the optimised parameters obtained, the `XClassifier` is trained on the dataset.
+This classifier undergoes a fitting process with the training data, ensuring that it
+learns the underlying patterns and can make accurate predictions.
+
+
+```python
+model = XClassifier(**params)
+model.fit(X_train, y_train)
+```
+
+<CellOutput>
+{`<xplainable.core.ml.classification.XClassifier at 0x2a4f4d370>`}
+</CellOutput>
+
+## 4. Model Interpretability and Explainability
+
+Following training, the `model.explain()` method is called to generate insights into the
+model's decision-making process. This step is crucial for understanding the factors that
+influence the model's predictions and ensuring that the model's behaviour is transparent
+and explainable.
+
+
+```python
+model.explain()
+```
+
+<iframe src='./assets/plot_data/AltairPlot_fca42ef6-9d6d-4836-92fd-66358cdc28f4.html' width='100%' height='400'></iframe>
+
+The image displays two graphs related to a churn prediction model.
+
+On the left is the 'Feature Importances' bar chart, which ranks the features by their
+ability to predict customer churn. 'Tenure Months' has the highest importance,
+confirming that the length of customer engagement is the most significant indicator of
+churn likelihood. 'Monthly Charges' and 'Contract' follow, suggesting that financial and
+contractual commitments are also influential in churn prediction.
+
+The right graph is a 'Contributions' histogram, which quantifies the impact of a
+specific feature's values on the prediction outcome. The red bars indicate that higher
+values within the selected feature correspond to a decrease in the likelihood of churn,
+whereas the green bars show that lower values increase this likelihood.
+
+The placement of 'Gender' at the bottom of the 'Feature Importances' chart conclusively
+indicates that the model does not consider gender a determinant in predicting churn,
+thereby ensuring the model's impartiality regarding gender.
+
+
+### SaaS Explainer View
+
+
+![Model Image](assets/img/model_explainer.png)
+
+
+## 5. Model Persisting
+
+In this step, we first create a unique identifier for our churn prediction model using
+`xp.client.create_model_id`. This identifier, shown as `model_id`, represents the newly
+instantiated model which predicts the likelihood of customers leaving within the next
+month. Following this, we generate a specific version of the model with
+`xp.client.create_model_version`, passing in our training data. The output `version_id`
+represents this particular iteration of our model, allowing us to track and manage
+different versions systematically.
+
+
+```python
+model_id = xp.client.create_model_id(
+    model,
+    model_name="Telco Customer Churn",
+    model_description='Predicting customers who are likely to leave the business within the next month.'
+)
+model_id
+```
+
+<CellOutput>
+{`'BRDO7YXhRfRhRT9b'`}
+</CellOutput>
+
+```python
+version_id = xp.client.create_model_version(
+    model,
+    model_id,
+    X_train,
+    y_train
+)
+version_id
+```
+
+<CellOutput>
+{`  0%|          | 0/19 [00:00<?, ?it/s]
+'N86eLEojIk7nspUs'`}
+</CellOutput>
+
+### SaaS Models View
+
+
+![Model Image](assets/img/models.png)
+
+
+## 6. Model Deployment
+
+
+The code block illustrates the deployment of our churn prediction model using the
+`xp.client.deploy` function. The deployment process involves specifying the `hostname`
+of the server where the model will be hosted, as well as the unique `model_id` and
+`version_id` that we obtained in the previous steps. This step effectively activates the
+model's endpoint, allowing it to receive and process prediction requests. The output
+confirms the deployment with a `deployment_id`, indicating the model's current `status`
+as 'inactive', its `location`, and the `endpoint` URL where it can be accessed for
+xplainable deployments.
+
+
+```python
+deployment = xp.client.deploy(
+    hostname="https://inference.xplainable.io", #<- Can set up deployments to be hosted on-prem
+    model_id=model_id, #<- Use model id produced above
+    version_id=version_id #<- Use version id produced above
+)
+```
+
+### SaaS Deployment View
+
+
+![Model Image](assets/img/deployments.png)
+
+
+### Testing the Deployment programatically
+
+This section demonstrates the steps taken to programmatically test a deployed model.
+These steps are essential for validating that the model's deployment is functional and
+ready to process incoming prediction requests.
+
+
+1. **Activating the Deployment:** The model deployment is activated using
+   `xp.client.activate_deployment`, which changes the deployment status to active,
+   allowing it to accept prediction requests.
+
+
+```python
+xp.client.activate_deployment(deployment['deployment_id'])
+```
+
+<CellOutput>
+{`{'message': 'activated deployment'}`}
+</CellOutput>
+
+2. **Creating a Deployment Key:** A deployment key is generated with
+   `xp.client.generate_deploy_key`. This key is required to authenticate and make secure
+   requests to the deployed model.
+
+
+```python
+deploy_key = xp.client.generate_deploy_key('for testing', deployment['deployment_id'], 7, clipboard=False)
+```
+
+3. **Generating Example Payload:** An example payload for a deployment request is
+   generated by `xp.client.generate_example_deployment_payload`. This payload mimics the
+   input data structure the model expects when making predictions.
+
+
+```python
+#Set the option to highlight multiple ways of creating data
+option = 1
+```
+
+```python
+if option == 1:
+    body = xp.client.generate_example_deployment_payload(deployment['deployment_id'])
+else:
+    body = json.loads(df_transformed.drop(columns=["Churn Label"]).sample(1).to_json(orient="records"))
+    body[0]["Gender"] = None #<- Won't require this line the next release of xplainable
+```
+
+```python
+body
+```
+
+<CellOutput>
+{`[{'City': 'van nuys',
+  'Gender': None,
+  'Senior Citizen': 'no',
+  'Partner': 'no',
+  'Dependents': 'no',
+  'Tenure Months': 6.0,
+  'Phone Service': 'yes',
+  'Multiple Lines': 'no phone service',
+  'Internet Service': 'dsl',
+  'Online Security': 'no internet service',
+  'Online Backup': 'no internet service',
+  'Device Protection': 'no internet service',
+  'Tech Support': 'yes',
+  'Streaming TV': 'no internet service',
+  'Streaming Movies': 'no',
+  'Contract': 'one year',
+  'Paperless Billing': 'no',
+  'Payment Method': 'credit card (automatic)',
+  'Monthly Charges': 27.25}]`}
+</CellOutput>
+
+4. **Making a Prediction Request:** A POST request is made to the model's prediction
+   endpoint with the example payload. The model processes the input data and returns a
+   prediction response, which includes the predicted class (e.g., 'No' for no churn) and
+   the prediction probabilities for each class.
+
+
+```python
+response = requests.post(
+    url="https://inference.xplainable.io/v1/predict",
+    headers={'api_key': deploy_key['deploy_key']},
+    json=body
+)
+
+value = response.json()
+value
+```
+
+<CellOutput>
+{`[{'index': 0,
+  'id': None,
+  'partition': '__dataset__',
+  'score': 0.23010921149032754,
+  'proba': 0.07132102914522721,
+  'pred': 'No',
+  'support': 196.0,
+  'breakdown': {'base_value': 0.2602797795676134,
+   'City': -0.006041171042108156,
+   'Gender': 0.0,
+   'Senior Citizen': -0.0026080159693067954,
+   'Partner': 0.022048175597151033,
+   'Dependents': 0.01970744974268728,
+   'Tenure Months': 0.05286150126113816,
+   'Phone Service': 0.0014370429103826225,
+   'Multiple Lines': -0.003852500894766593,
+   'Internet Service': -0.007119017427188745,
+   'Online Security': -0.017758018326270678,
+   'Online Backup': -0.017758018326270678,
+   'Device Protection': -0.017758018326270678,
+   'Tech Support': -0.009809726878391703,
+   'Streaming TV': -0.017758018326270678,
+   'Streaming Movies': 0.024761634985203788,
+   'Contract': -0.014019970898912701,
+   'Paperless Billing': -0.010021702189485473,
+   'Payment Method': -0.011452356219407845,
+   'Monthly Charges': -0.015029837749198005}}]`}
+</CellOutput>
+
+## SaaS Deployment Info
+
+The SaaS application interface displayed above mirrors the operations performed
+programmatically in the earlier steps. It displays a dashboard for managing the 'Telco
+Customer Churn' model, facilitating a range of actions from deployment to testing, all
+within a user-friendly web interface. This makes it accessible even to non-technical
+users who prefer to manage model deployments and monitor performance through a graphical
+interface rather than code. Features like the deployment checklist, example payload, and
+prediction response are all integrated into the application, ensuring that users have
+full control and visibility over the deployment lifecycle and model interactions.
+
+
+![Model Image](assets/img/deployment_info.png)
+
+
+## 7. Batch Optimisation (Beta)
+
+The concept of Batch Optimization within the Xplainable platform represents a
+significant leap forward from traditional machine learning approaches. Moving away from
+the prediction -> monitor model approach, this feature offers a dynamic and
+cost-effective utilisation of model insights.
+
+This optimisation approach allows for the association of monetary costs with various
+predictive scores. It provides a detailed understanding of the financial impact of
+different predictive outcomes. For example, within our Telco model, the choice to
+provide tech support carries a different cost implication than opting against it,
+influencing the decision-making process.
+
+Features may be fixed or adjustable to align with business requirements. Certain
+attributes like 'Senior Citizen', 'Tenure', and 'Monthly Charges' may be set due to
+regulatory standards or business limitations, ensuring that optimisation adheres to
+these rules.
+
+Conversely, features such as 'Streaming Movies' or 'Device Protection' are modifiable,
+enabling the exploration of various combinations to discover the most cost-effective
+approach. The model could assess if altering the contract type for specific customer
+segments improves retention without markedly raising costs.
+
+Employing the Xplainable model's output in this manner allows organisations to extend
+past simple predictions to genuine cost optimisation, facilitating strategic
+decision-making that evaluates each recommended action not only for its impact on
+outcomes like churn but also for cost-efficiency. Thus, Xplainable's strategy provides
+businesses the capability to optimise their resources with foresight rarely seen in
+traditional machine learning.
+
