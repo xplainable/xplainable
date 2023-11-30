@@ -222,7 +222,7 @@ class XCatConstructor(XConstructor):
 
             diff = _mean - self.base_value
             if self.regressor:
-                score = diff  # (abs(diff) ** self.params.tail_sensitivity) * np.sign(diff)
+                score = (abs(diff) ** self.params.tail_sensitivity) * np.sign(diff)
             else:
                 score = self._activation(_freq*100) * diff
 
@@ -244,7 +244,7 @@ class XCatConstructor(XConstructor):
             score = 0
         else:
             if self.regressor:
-                score = diff  # (abs(diff) ** self.params.tail_sensitivity) * np.sign(diff)
+                score = (abs(diff) ** self.params.tail_sensitivity) * np.sign(diff)
             else:
                 score = self._activation(_freq*100) * diff
 
@@ -414,7 +414,7 @@ class XNumConstructor(XConstructor):
                 _freq = _count / self.fitted_samples
 
                 if self.regressor:
-                    score = diff  # (abs(diff) ** self.params.tail_sensitivity) * np.sign(diff)
+                    score = (abs(diff) ** self.params.tail_sensitivity) * np.sign(diff)
                 else:
                     score = self._activation(_freq*100) * diff
 
@@ -500,7 +500,7 @@ class XNumConstructor(XConstructor):
         else:
             diff = _mean - self.base_value
             if self.regressor:
-                score = diff  # (abs(diff) ** self.params.tail_sensitivity) * np.sign(diff)
+                score = (abs(diff) ** self.params.tail_sensitivity) * np.sign(diff)
             else:
                 score = self._activation(_freq * 100) * diff
 
