@@ -1,18 +1,18 @@
 {
-    "Tool Failure": {
+    "Tool_Failure": {
         "title": "Tool Failure",
         "sidebar_label": "Tool Failure",
-        "path": "website/docs/tutorials/Tool Failure",
+        "path": "website/docs/tutorials",
         "nb_path": "website/docs/tutorials/Tool_Failure.ipynb",
-        "github": "https://github.com/xplainable/xplainable/tree/main/examples",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
     },
-    "Telco Churn": {
+    "Telco_Churn": {
         "title": "Telco Churn",
         "sidebar_label": "Telco Churn",
-        "path": "website/docs/tutorials/Telco Churn",
-        "nb_path": "website/docs/tutorials/Telco Churn.ipynb",
-        "github": "https://github.com/xplainable/xplainable/tree/main/examples",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Telco_Churn.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
     }
 }

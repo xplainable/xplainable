@@ -170,9 +170,9 @@ def transform_code_cell(
 
     mdx_output = ""
     jsx_output = ""
-    link_btn = "../../../src/components/LinkButtons.jsx"
-    cell_out = "../../../src/components/CellOutput.jsx"
-    plot_out = "../../../src/components/Plotting.jsx"
+    link_btn = "../../src/components/LinkButtons.jsx"
+    cell_out = "../../src/components/CellOutput.jsx"
+    plot_out = "../../src/components/Plotting.jsx"
     components_output = f'import LinkButtons from "{link_btn}";\n'
     components_output += f'import CellOutput from "{cell_out}";\n'
 
@@ -436,6 +436,8 @@ def transform_code_cell(
             #         )
             #         altair_flag = True
 
+            # Clear out old plot files before creating a new one
+            # clear_plot_data_files(plot_data_folder, extension=".html")
 
             #TODO: Get the ouput for altair plots working - currently trying to Iframe html plot in
             if cell_output_type == "execute_result":
@@ -447,10 +449,7 @@ def transform_code_cell(
             #     #         f"<div dangerouslySetInnerHTML={{{{ __html: `{html_content}` }}}}></div>\n\n"
             #     #     )
             #     #     altair_flag = True
-
                 if "text/html" in data and "alt.HConcatChart" in data.get("text/plain", ""):
-                    # Clear out old plot files before creating a new one
-                    clear_plot_data_files(plot_data_folder, extension=".html")
 
                     html_content = data["text/html"]
                     file_name = f"AltairPlot_{uuid.uuid4()}.html"
@@ -533,8 +532,8 @@ def transform_notebook(path: Union[str, PathLike]) -> Tuple[str, str]:
 
     # Create the assets folder for the given tutorial.
     tutorial_folder_name = path.stem
-    filename = "".join([token.title() for token in tutorial_folder_name.split("_")])
-    tutorial_folder = TUTORIALS_DIR.joinpath(tutorial_folder_name)
+    filename = " ".join([token.title() for token in tutorial_folder_name.split("_")])
+    tutorial_folder = TUTORIALS_DIR
     assets_folder = tutorial_folder.joinpath("assets")
     img_folder = assets_folder.joinpath("img")
     plot_data_folder = assets_folder.joinpath("plot_data")
@@ -547,6 +546,7 @@ def transform_notebook(path: Union[str, PathLike]) -> Tuple[str, str]:
 
     # Load the notebook.
     nb = load_notebook(path)
+    print("The tutorial folder name is", tutorial_folder_name)
 
     # Begin to build the mdx string.
     mdx = ""
@@ -618,6 +618,7 @@ def transform_notebook(path: Union[str, PathLike]) -> Tuple[str, str]:
     # Add the react components needed to display links to GitHub and Colab.
     idx = frontmatter_line + len(components) + 1
     #TODO: Get this working
+
     glk = nb_metadata[tutorial_folder_name]["github"]
     clk = nb_metadata[tutorial_folder_name]["colab"]
     mdx[idx:idx] = (
@@ -626,12 +627,12 @@ def transform_notebook(path: Union[str, PathLike]) -> Tuple[str, str]:
     mdx = "\n".join(mdx)
 
     # Write the mdx file to disk.
-    mdx_filename = str(tutorial_folder.joinpath(f"{filename}.mdx"))
+    mdx_filename = str(TUTORIALS_DIR.joinpath(f"{filename}.mdx"))
     with open(mdx_filename, "w") as f:
         f.write(mdx)
 
     # Write the jsx file to disk.
-    jsx_filename = str(tutorial_folder.joinpath(f"{filename}.jsx"))
+    jsx_filename = str(TUTORIALS_DIR.joinpath(f"{filename}.jsx"))
     with open(jsx_filename, "w") as f:
         f.write(jsx)
 
@@ -642,24 +643,22 @@ def extract_title(notebook_path):
     # Extract the title from the notebook filename or file content
     return notebook_path.stem.replace('_', ' ').title()
 
-def generate_tutorials_json(examples_dir, tutorials_metadata):
+def generate_tutorials_json(examples_dir):
     tutorials_json = {}
     for nb_file in os.listdir(examples_dir):
         if nb_file.endswith(".ipynb"):
             # Generate a dictionary entry for each notebook
             title = extract_title(Path(nb_file))
             nb_path = f"website/docs/tutorials/{nb_file}"
-            tutorials_json[title] = {
+            tutorials_json[title.replace(' ', '_')] = {
                 "title": title,
                 "sidebar_label": title,
-                "path": f"website/docs/tutorials/{title}",
+                "path": f"website/docs/tutorials",
                 "nb_path": nb_path,
-                "github": "https://github.com/xplainable/xplainable/tree/main/examples",
+                "github": f"https://github.com/xplainable/xplainable/blob/main/examples/{title.replace(' ', '_')}.ipynb",
                 "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
             }
 
-    # Merge with existing metadata
-    tutorials_json.update(tutorials_metadata)
     return tutorials_json
 
 def clear_plot_data_files(plot_data_folder: Path, extension: str = ".html"):
@@ -669,9 +668,6 @@ def clear_plot_data_files(plot_data_folder: Path, extension: str = ".html"):
 
 if __name__ == "__main__":
 
-    #Load the tutorials metadata
-    tutorials_metadata = load_nbs_to_convert()
-
     print("--------------------------------------------")
     print("Creating the tutorials.json file output     ")
     print("--------------------------------------------")
@@ -679,12 +675,15 @@ if __name__ == "__main__":
     # examples_dir = LIB_DIR.joinpath('website/docs/tutorials')  # Adjust the path as needed
     examples_dir = TUTORIALS_DIR
     print(examples_dir)
-    tutorials_json = generate_tutorials_json(examples_dir, tutorials_metadata)
+    tutorials_json = generate_tutorials_json(examples_dir)
 
     # Write tutorials.json to disk
     tutorials_json_path = WEBSITE_DIR.joinpath("tutorials.json")  # Adjust the path as needed
     with open(tutorials_json_path, 'w') as f:
         json.dump(tutorials_json, f, indent=4)
+
+    #Load the tutorials metadata
+    tutorials_metadata = load_nbs_to_convert()
 
     print("--------------------------------------------")
     print("Converting tutorial notebooks into mdx files")
