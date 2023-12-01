@@ -380,95 +380,31 @@ def transform_code_cell(
                     )
                     display_data_outputs.append(cell_output_data)
 
-            # Handle Altair plot outputs.
-            # if cell_output_type == "execute_result":
-            #     data = cell_output.get("data", {})
-            #     if "text/html" in data and "alt.HConcatChart" in data.get("text/plain", ""):
-            #         html_content = data["text/html"]
-            #         # Extract the div id from the HTML content
-            #         div_id_search = re.search(r'id="([^"]+)"', html_content)
-            #         if div_id_search:
-            #             div_id = div_id_search.group(1)
-            #             # Save the HTML content to a file
-            #             file_name = f"AltairPlot_{div_id}.html"
-            #             file_path = plot_data_folder.joinpath(file_name)
-            #             with open(file_path, "w") as f:
-            #                 f.write(html_content)
-
-            #             # Create a placeholder for the Altair plot in the MDX output
-            #             path_to_html = f"./assets/plot_data/{file_name}"
-            #             mdx_output += (
-            #                 f"<div dangerouslySetInnerHTML={{{{ __html: require('{path_to_html}').default }}}}></div>\n\n"
-            #             )
-            #             altair_flag = True
-
-            # if cell_output_type == "execute_result":
-            #     data = cell_output.get("data", {})
-            #     if "text/html" in data and "alt.HConcatChart" in data.get("text/plain", ""):
-            #         components_output += f'import {{AltairChart}} from "{plot_out}";\n'
-            #         altair_spec = data["text/html"]
-            #         spec_file_name = f"altair-spec-{uuid.uuid4()}.json"
-            #         spec_file_path = plot_data_folder / spec_file_name
-            #         with open(spec_file_path, 'w') as f:
-            #             json.dump(altair_spec, f, indent=2)
-
-            #         path_to_spec = f"./assets/plot_data/{spec_file_name}"
-            #         mdx_output += (
-            #             f'<AltairChart spec={{require("{path_to_spec}").default}} />\n\n'
-            #         )
-            #         altair_flag = True
-
-
-            # if cell_output_type == "execute_result":
-            #     data = cell_output.get("data", {})
-            #     if "text/html" in data and "alt.HConcatChart" in data.get("text/plain", ""):
-            #         print(data)
-            #         components_output += f'import {{AltairChart}} from "{plot_out}";\n'
-            #         altair_spec = data["application/vnd.vegalite.v4+json"]
-            #         spec_file_name = f"altair-spec-{uuid.uuid4()}.json"
-            #         spec_file_path = plot_data_folder / spec_file_name
-            #         with open(spec_file_path, 'w') as f:
-            #             json.dump(altair_spec, f, indent=2)
-
-            #         path_to_spec = f"./assets/plot_data/{spec_file_name}"
-            #         mdx_output += (
-            #             f'<AltairChart spec={{require("{path_to_spec}").default}} />\n\n'
-            #         )
-            #         altair_flag = True
-
-            # Clear out old plot files before creating a new one
-            # clear_plot_data_files(plot_data_folder, extension=".html")
-
-            #TODO: Get the ouput for altair plots working - currently trying to Iframe html plot in
             if cell_output_type == "execute_result":
                 data = cell_output.get("data", {})
-            #     # if "text/html" in data and "alt.HConcatChart" in data.get("text/plain", ""):
-            #     #     html_content = data["text/html"]
-            #     #     # Directly embed the HTML content in the MDX output
-            #     #     mdx_output += (
-            #     #         f"<div dangerouslySetInnerHTML={{{{ __html: `{html_content}` }}}}></div>\n\n"
-            #     #     )
-            #     #     altair_flag = True
                 if "text/html" in data and "alt.HConcatChart" in data.get("text/plain", ""):
-
                     html_content = data["text/html"]
                     file_name = f"AltairPlot_{uuid.uuid4()}.html"
-                    file_path = plot_data_folder.joinpath(file_name)
+
+                    # Assuming 'static' directory is at the root of your Docusaurus project
+                    file_path = WEBSITE_DIR.joinpath("static").joinpath("plot_data").joinpath(file_name)
+                    
+                    # Ensure the plot_data directory exists
+                    file_path.parent.mkdir(parents=True, exist_ok=True)
+                    
                     with open(file_path, "w") as f:
                         f.write(html_content)
 
-                    path_to_html = f"./assets/plot_data/{file_name}"
+                    # The path where the file is served, relative to your site's base URL
+                    path_to_html = f"/plot_data/{file_name}"
                     mdx_output += (
-                        f"<iframe src='{path_to_html}' width='100%' height='400'></iframe>\n\n"
+                        f"<iframe src='{path_to_html}' width='100%' height='520'></iframe>\n\n"
                     )
                     altair_flag = True
 
         if display_data_outputs:
             cell_output_data = "\n".join(display_data_outputs)
             mdx_output += f"<CellOutput>\n{{`{cell_output_data}`}}\n</CellOutput>\n\n"
-
-        # if altair_flag:
-        #     components_output += f'import AltairChart from "./website/src/components/AltairChart.jsx";\n'
 
     return {
         "mdx": mdx_output,
@@ -661,12 +597,27 @@ def generate_tutorials_json(examples_dir):
 
     return tutorials_json
 
+
 def clear_plot_data_files(plot_data_folder: Path, extension: str = ".html"):
     """Remove all files with the given extension in the specified directory."""
     for file in plot_data_folder.glob(f'*{extension}'):
         file.unlink()
 
 if __name__ == "__main__":
+
+    print("--------------------------------------------")
+    print("Delete current html files served in static")
+    print("--------------------------------------------")
+
+    # Define the path to your 'plot_data' directory
+    plot_data_dir = WEBSITE_DIR.joinpath("static").joinpath("plot_data")
+
+    # Ensure the plot_data directory exists
+    plot_data_dir.mkdir(parents=True, exist_ok=True)
+
+    # Clear all existing HTML files in the plot_data directory
+    for html_file in plot_data_dir.glob("*.html"):
+        html_file.unlink()
 
     print("--------------------------------------------")
     print("Creating the tutorials.json file output     ")
