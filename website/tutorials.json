@@ -7,6 +7,14 @@
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
     },
+    "Dozer_Price_Prediction": {
+        "title": "Dozer Price Prediction",
+        "sidebar_label": "Dozer Price Prediction",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Dozer_Price_Prediction.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Dozer_Price_Prediction.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
+    },
     "Telco_Churn": {
         "title": "Telco Churn",
         "sidebar_label": "Telco Churn",
