@@ -332,7 +332,7 @@ class BaseModel:
         x = self._cast_to_pandas(x, column_names=self.columns)
         x = self._coerce_dtypes(x)
         x = self._encode(x)
-        x = self._preprocess(x).values
+        x = self._preprocess(x).to_numpy()
 
         for i in range(x.shape[1]):
             nodes = np.array(self._profile[i])
@@ -380,7 +380,7 @@ class BaseModel:
         x = x.copy()
         
         x = self._encode(x)
-        x = self._preprocess(x).values
+        x = self._preprocess(x).to_numpy()
 
         id_map = self._build_leaf_id_map()
 
@@ -482,8 +482,8 @@ class BaseModel:
         self._calculate_category_meta(x, y)
         x, y = self._preprocess(x, y)
 
-        x = x.values
-        y = y.values
+        x = x.to_numpy()
+        y = y.to_numpy()
         self.base_value = np.mean(y)
 
         # Dynamic min_leaf_size
@@ -591,7 +591,7 @@ class BasePartition:
         partition = str(partition)
 
         x = self._encode(x, None, partition)
-        x = self._preprocess(x).values
+        x = self._preprocess(x).to_numpy()
 
         profile = self.partitions[partition]._profile
 

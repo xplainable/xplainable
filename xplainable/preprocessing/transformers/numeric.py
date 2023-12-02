@@ -63,7 +63,7 @@ class LogTransform(XBaseTransformer):
         Returns:
             pd.Series: The transformed series.
         """
-        return np.log(ser, where=(ser.values != 0))
+        return np.log(ser, where=(ser.to_numpy() != 0))
 
     def inverse_transform(self, ser: pd.Series) -> pd.Series:
         """ 
