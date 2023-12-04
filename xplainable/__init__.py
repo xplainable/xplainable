@@ -1,6 +1,7 @@
 from .client.client import Client
 from .gui import *
 from .client.init import initialise
+from .client.datasets import load_dataset, list_datasets
 from . import config
 import warnings
 from ._dependencies import _try_optional_dependencies_gui

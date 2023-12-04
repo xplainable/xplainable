@@ -13,7 +13,7 @@
 [![License: Apache-2.0](https://img.shields.io/github/license/saltstack/salt)](https://github.com/xplainable/xplainable/blob/main/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/xplainable)](https://pepy.tech/project/xplainable)
     
-**Xplainable** leverages explainable machine learning for fully transparent predictions and advanced data optimisation in production systems.
+**Xplainable** makes tabular machine learning transparent, fair, and actionable.
 </div>
 
 ## Why Was Xplainable Created?
@@ -68,15 +68,24 @@ support.
 
 ```python
 import xplainable as xp
+from xplainable.core.models import XClassifier
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
 # Load data
-data = pd.read_csv('data.csv')
-train, test = train_test_split(data, test_size=0.2)
+data = xp.load_dataset('titanic')
+
+X, y = data.drop(columns=['Survived']), data['Survived']
+
+X_train, X_test, y_train, y_test = train_test_split(
+     X, y, test_size=0.25, random_state=42)
 
 # Train a model
-model = xp.classifier(train)
+model = XClassifier()
+model.fit(X_train, y_train)
+
+# Explain the model
+model.explain()
 ```
 
 
@@ -161,15 +170,19 @@ APIs or the embedded GUI.
 
 #### Using the API
 ```python
+import xplainable as xp
 from xplainable.core.models import XClassifier
 from xplainable.core.optimisation.bayesian import XParamOptimiser
 from sklearn.model_selection import train_test_split
 import pandas as pd
 
 # Load your data
-data = pd.read_csv('data.csv')
-x, y = data.drop('target', axis=1), data['target']
-X_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+data = xp.load_dataset('titanic')
+
+# note: the data requires preprocessing, so results may be poor
+X, y = data.drop('Survived', axis=1), data['Survived']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
 # Optimise params
 opt = XParamOptimiser(metric='roc-auc')
@@ -180,7 +193,10 @@ model = XClassifier(**params)
 model.fit(X_train, y_train)
 
 # Predict on the test set
-y_pred = model.predict(x_test)
+y_pred = model.predict(X_test)
+
+# Explain the model
+model.explain()
 ```
 
 #### Using the GUI
