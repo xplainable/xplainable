@@ -170,6 +170,7 @@ APIs or the embedded GUI.
 
 #### Using the API
 ```python
+import xplainable as xp
 from xplainable.core.models import XClassifier
 from xplainable.core.optimisation.bayesian import XParamOptimiser
 from sklearn.model_selection import train_test_split
