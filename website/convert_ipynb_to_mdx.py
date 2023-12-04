@@ -346,15 +346,27 @@ def transform_code_cell(
                             # NOTE: The return is a list of dataframes and we only care
                             #       about the first one.
                             md_df = df[0]
+
+                            # Check and handle MultiIndex in DataFrame columns
+                            if isinstance(md_df.columns, pd.MultiIndex):
+                                md_df.columns = ['_'.join(col).strip() for col in md_df.columns.values]
+
+                            # Iterate over columns to rename 'Unnamed' columns
                             for column in md_df.columns:
-                                if column.startswith("Unnamed"):
-                                    md_df.rename(columns={column: ""}, inplace=True)
-                            # Remove the index if it is just a range, and output to
-                            # markdown.
+                                if isinstance(column, tuple):
+                                    # Handle tuple case (if still present after flattening)
+                                    if column[0].startswith("Unnamed"):
+                                        md_df.rename(columns={column: ""}, inplace=True)
+                                else:
+                                    # Normal case where column is a string
+                                    if column.startswith("Unnamed"):
+                                        md_df.rename(columns={column: ""}, inplace=True)
+
+                            # Remove the index if it is just a range, and output to markdown.
                             md = ""
                             if isinstance(md_df.index, pd.RangeIndex):
                                 md = md_df.to_markdown(showindex=False)
-                            elif not isinstance(md_df.index, pd.RangeIndex):
+                            else:
                                 md = md_df.to_markdown()
                             mdx_output += f"\n{md}\n\n"
 
