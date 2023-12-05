@@ -317,7 +317,16 @@ class BaseModel:
             self._encode_feature(x[f], y)
         return
 
+    def get_construct_from_column_name(self, column_name: str):
+        if column_name not in self.columns:
+            return None
+        else:
+            return self._constructs[self.columns.index(column_name)]
+
     def _encode(self, x, y=None):
+        x = x.copy()
+        if y is not None:
+            y = y.copy()
         for f, m in self.feature_map.items():
             x.loc[:, f] = x.loc[:, f].map(m)
         if y is not None:
