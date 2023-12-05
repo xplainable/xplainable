@@ -210,7 +210,7 @@ class EvaluateClassifier:
 
                 ax2 = ax.twinx()
                 bar_data = pd.DataFrame({
-                    'proba': self.y_val_prob*100, 'true': y.values})
+                    'proba': self.y_val_prob*100, 'true': y.to_numpy()})
 
                 palette=["#e14067", "#0080ea"]
                 axx = sns.histplot(

@@ -103,7 +103,7 @@ class XClassifier(BaseModel):
         x = pd.DataFrame(
             {
                 'y_prob': y_prob,
-                'target': y.copy().values
+                'target': y.copy().to_numpy()
             })
 
         # Record prediction bins
@@ -144,7 +144,7 @@ class XClassifier(BaseModel):
 
         # Get weighted probability and arrange
         wp = df['wp']
-        wp = pd.DataFrame(np.repeat(wp.values, 5, axis=0))
+        wp = pd.DataFrame(np.repeat(wp.to_numpy(), 5, axis=0))
         wp = pd.concat([wp, wp.iloc[99]], ignore_index=True)
 
         # Forward fill nan values
@@ -156,7 +156,7 @@ class XClassifier(BaseModel):
 
         # Calculate support at each bin
         s = df['tc']
-        s = pd.DataFrame(np.repeat(s.values, 5, axis=0))
+        s = pd.DataFrame(np.repeat(s.to_numpy(), 5, axis=0))
         s = pd.concat([s, s.iloc[99]], ignore_index=True)
         s = s.fillna(method='ffill')
         s = s.fillna(0)
