@@ -140,7 +140,10 @@ class XConstructor:
     def _get_null_meta(self, X, y):
         """ Instantiates metadata for nan values"""
         x_nans = np.isnan(X)
-        return [np.sum(x_nans), np.sum(y*x_nans)]
+        cnt = np.sum(x_nans)
+        pos = np.sum(y*x_nans)
+        mean = 0 if cnt == 0 else pos/cnt
+        return [cnt, mean]
 
     def construct(self):
         self._nodes = self._construct()
