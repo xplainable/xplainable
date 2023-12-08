@@ -28,23 +28,6 @@ To use xplainable's advanced plotting functions, you will need to install
 Environment
 -------------------------------
 
-Working in Jupyter
-~~~~~~~~~~~~~~~~~~~~~
-The ``xplainable`` GUI relies heavily on ``ipywidgets``.
-Unfortunately, this requires a strict environment to ensure that it renders as
-expected. Ensuring that you have correctly installed the required dependencies
-before using the xplainable GUI is essential.
-
-For now, **we recommend using Python 3.8** when working with the GUI. This
-environment will yield the best visible results until we can stabilise
-``ipywidgets`` for later versions of Python.
-
-Known Tornado Issue with the xplainable GUI
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Versions of ``tornado`` greater than 6.1 are known to cause issues with the 
-jupyter kernel and ``ipywidgets``. We recommend using ``tornado==6.1`` for now.
-
 Reproducible Installs
 ~~~~~~~~~~~~~~~~~~~~~
 
