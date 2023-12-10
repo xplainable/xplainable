@@ -1,0 +1,17 @@
+name: Read the Docs Build
+
+on: 
+  push:
+    branches:
+      - main
+
+jobs:
+  trigger-rtds-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger RTDs build
+        uses: dfm/rtds-action@v1
+        with:
+          webhook_url: ${{ secrets.RTD_WEBHOOK_URL }}
+          webhook_token: ${{ secrets.RTD_SECRET }}
+          commit_ref: ${{ github.ref }}
