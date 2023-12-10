@@ -6,12 +6,12 @@ on:
       - main
 
 jobs:
-  trigger-rtds-build:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger RTDs build
-        uses: dfm/rtds-action@v1
-        with:
-          webhook_url: ${{ secrets.RTD_WEBHOOK_URL }}
-          webhook_token: ${{ secrets.RTD_SECRET }}
-          commit_ref: ${{ github.ref }}
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Trigger ReadTheDocs Build
+      run: |
+        curl -X POST -d "branches=main" -d "token=${{ secrets.RTD_SECRET }}" ${{ secrets.RTD_WEBHOOK_URL }}
