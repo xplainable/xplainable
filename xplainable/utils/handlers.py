@@ -11,7 +11,7 @@ def add_thousands_separator(var):
         return var
     
 def _check_nans(df):
-    return not df.isnull().values.any()
+    return not df.isnull().to_numpy().any()
 
 def _check_inf(df):
     numeric_df = df.select_dtypes(include=[np.number])

@@ -304,7 +304,7 @@ class NLPExtractor:
         df = pd.DataFrame(x_vals.toarray(), columns=feature_list)
 
         # Assign the target to the new dataframe
-        df['target'] = y.values
+        df['target'] = y.to_numpy()
 
         # Calculate the pct of positive class for each feature/word
         feature_vals = [df.loc[(df[col] > 0), 'target'].mean() for col in

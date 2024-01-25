@@ -125,6 +125,8 @@ ENV/
 env.bak/
 venv.bak/
 
+testing.ipynb
+
 # Spyder project settings
 .spyderproject
 .spyproject

@@ -64,8 +64,18 @@ Example – PartitionedClassifier()
       data = pd.read_csv('data.csv')
       train, test = train_test_split(data, test_size=0.2)
 
-      # Train your model (this will open an embedded gui)
+      # Instantiate the partitioned model
       partitioned_model = PartitionedClassifier(partition_on='partition_column')
+
+      # Train the base model
+      base_model = XClassifier()
+      base_model.fit(
+            train.drop(columns=['target', 'partition_column']),
+            train['target']
+            )
+
+      # Add the base model to the partitioned model (call this '__dataset__')
+      partitioned_model.add_partition(base_model, '__dataset__')
 
       # Iterate over the unique values in the partition column
       for partition in train['partition_column'].unique():

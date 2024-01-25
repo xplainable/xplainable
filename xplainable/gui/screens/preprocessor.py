@@ -609,7 +609,8 @@ class Preprocessor:
                 {i: {feature: v} for i, v in self.scan[feature].items()}).T
 
             # Categorical Features
-            if table.loc['type'].values[0] == 'categorical':
+            table_type = table.loc['type'].to_numpy()[0]
+            if table_type == 'categorical':
                 metrics = [
                     'missing_pct', 'cardinality', 'mixed_case', 'mixed_type']
 
@@ -627,7 +628,7 @@ class Preprocessor:
                         components[i].layout.display = 'none'
 
             # Numeric features
-            elif table.loc['type'].values[0] == 'numeric':
+            elif table_type == 'numeric':
 
                 metrics = ['missing_pct', 'skewness', 'kurtosis']
                 for i in summary_metrics:
@@ -660,7 +661,7 @@ class Preprocessor:
                         components[i].layout.display = 'none'
 
             # NLP Feature
-            elif table.loc['type'].values[0] == 'nlp':
+            elif table_type == 'nlp':
                 metrics = [
                     'missing_pct', 'mixed_case', 'mixed_type']
 
@@ -676,7 +677,7 @@ class Preprocessor:
                         components[i].layout.display = 'none'
 
             # NLP Feature
-            elif table.loc['type'].values[0] == 'id':
+            elif table_type == 'id':
                 metrics = ['missing_pct']
 
                 for i in summary_metrics:
