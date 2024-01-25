@@ -6,8 +6,8 @@ nb_path: website/docs/tutorials/Telco_Churn.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials
 ---
-import LinkButtons from "../../src/components/LinkButtons.jsx";
 import CellOutput from "../../src/components/CellOutput.jsx";
+import LinkButtons from "../../src/components/LinkButtons.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb"
@@ -72,12 +72,27 @@ df.head()
 ## 1. Data Preprocessing
 
 
+### Turn Label into Binary input
+
+
+```python
+df["Churn Label"] = df["Churn Label"].map({"Yes":1,"No":0})
+```
+
 ```python
 #Instantiate a Pipeline
 pipeline = XPipeline()
 
 # Add stages for specific features
 pipeline.add_stages([
+    {"transformer": xtf.ChangeCases(
+        columns=['City', 'Gender', 'Senior Citizen', 'Partner', 'Dependents',
+       'Phone Service', 'Multiple Lines', 'Internet Service',
+       'Online Security', 'Online Backup', 'Device Protection', 'Tech Support',
+       'Streaming TV', 'Streaming Movies', 'Contract', 'Paperless Billing',
+       'Payment Method'], case="lower")},
+    {"feature":"City","transformer": xtf.Condense(pct=0.25)}, #-> Automatically condense extremely long tail values, to check if latent information
+    {"feature":"Monthly Charges", "transformer": xtf.SetDType(to_type="float")}, #-> Turn values into float
     {"transformer": xtf.DropCols(
         columns=['CustomerID', #-> Highly Cardinal, 
                  "Total Charges", #-> Reduce Multicollinearity between Tenure and Monthly Costs
@@ -94,19 +109,11 @@ pipeline.add_stages([
                  "Churn Reason", #-> Data Leakage
                 ]
     )},
-    {"feature":"City","transformer": xtf.Condense(pct=0.25)}, #-> Automatically condense extremely long tail values, to check if latent information
-    {"feature":"Monthly Charges", "transformer": xtf.SetDType(to_type="float")}, #-> Turn values into float
-    {"transformer": xtf.ChangeCases(
-        columns=['City', 'Gender', 'Senior Citizen', 'Partner', 'Dependents',
-       'Phone Service', 'Multiple Lines', 'Internet Service',
-       'Online Security', 'Online Backup', 'Device Protection', 'Tech Support',
-       'Streaming TV', 'Streaming Movies', 'Contract', 'Paperless Billing',
-       'Payment Method', 'Churn Label'], case="lower")},
 ])
 ```
 
 <CellOutput>
-{`<xplainable.preprocessing.pipeline.XPipeline at 0x29d2aa880>`}
+{`<xplainable.preprocessing.pipeline.XPipeline at 0x1065660d0>`}
 </CellOutput>
 
 ### Preprocessed data
@@ -118,27 +125,27 @@ df_transformed.head()
 ```
 
 
-|    | City        | Gender   | Senior Citizen   | Partner   | Dependents   |   Tenure Months | Phone Service   | Multiple Lines   | Internet Service   | Online Security   | Online Backup   | Device Protection   | Tech Support   | Streaming TV   | Streaming Movies   | Contract       | Paperless Billing   | Payment Method            |   Monthly Charges | Churn Label   |
-|---:|:------------|:---------|:-----------------|:----------|:-------------|----------------:|:----------------|:-----------------|:-------------------|:------------------|:----------------|:--------------------|:---------------|:---------------|:-------------------|:---------------|:--------------------|:--------------------------|------------------:|:--------------|
-|  0 | los angeles | male     | no               | no        | no           |               2 | yes             | no               | dsl                | yes               | yes             | no                  | no             | no             | no                 | month-to-month | yes                 | mailed check              |             53.85 | yes           |
-|  1 | los angeles | female   | no               | no        | yes          |               2 | yes             | no               | fiber optic        | no                | no              | no                  | no             | no             | no                 | month-to-month | yes                 | electronic check          |             70.7  | yes           |
-|  2 | los angeles | female   | no               | no        | yes          |               8 | yes             | yes              | fiber optic        | no                | no              | yes                 | no             | yes            | yes                | month-to-month | yes                 | electronic check          |             99.65 | yes           |
-|  3 | los angeles | female   | no               | yes       | yes          |              28 | yes             | yes              | fiber optic        | no                | no              | yes                 | yes            | yes            | yes                | month-to-month | yes                 | electronic check          |            104.8  | yes           |
-|  4 | los angeles | male     | no               | no        | yes          |              49 | yes             | yes              | fiber optic        | no                | yes             | yes                 | no             | yes            | yes                | month-to-month | yes                 | bank transfer (automatic) |            103.7  | yes           |
+|    | City        | Gender   | Senior Citizen   | Partner   | Dependents   |   Tenure Months | Phone Service   | Multiple Lines   | Internet Service   | Online Security   | Online Backup   | Device Protection   | Tech Support   | Streaming TV   | Streaming Movies   | Contract       | Paperless Billing   | Payment Method            |   Monthly Charges |   Churn Label |
+|---:|:------------|:---------|:-----------------|:----------|:-------------|----------------:|:----------------|:-----------------|:-------------------|:------------------|:----------------|:--------------------|:---------------|:---------------|:-------------------|:---------------|:--------------------|:--------------------------|------------------:|--------------:|
+|  0 | los angeles | male     | no               | no        | no           |               2 | yes             | no               | dsl                | yes               | yes             | no                  | no             | no             | no                 | month-to-month | yes                 | mailed check              |             53.85 |             1 |
+|  1 | los angeles | female   | no               | no        | yes          |               2 | yes             | no               | fiber optic        | no                | no              | no                  | no             | no             | no                 | month-to-month | yes                 | electronic check          |             70.7  |             1 |
+|  2 | los angeles | female   | no               | no        | yes          |               8 | yes             | yes              | fiber optic        | no                | no              | yes                 | no             | yes            | yes                | month-to-month | yes                 | electronic check          |             99.65 |             1 |
+|  3 | los angeles | female   | no               | yes       | yes          |              28 | yes             | yes              | fiber optic        | no                | no              | yes                 | yes            | yes            | yes                | month-to-month | yes                 | electronic check          |            104.8  |             1 |
+|  4 | los angeles | male     | no               | no        | yes          |              49 | yes             | yes              | fiber optic        | no                | yes             | yes                 | no             | yes            | yes                | month-to-month | yes                 | bank transfer (automatic) |            103.7  |             1 |
 
 ### Create preprocessor ID to persist to Xplainable Cloud
 
 
 ```python
 preprocessor_id = xp.client.create_preprocessor_id(
-    preprocessor_name="Telco Churn Preprocessing 3",
+    preprocessor_name="Telco Churn Preprocessing",
     preprocessor_description="Handling all preprocessing steps in the IBM Telco Churn Dataset",
 )
 preprocessor_id
 ```
 
 <CellOutput>
-{`'IgPxuc36O05CFIYL'`}
+{`'HyfDRWw1ZK2e0WJN'`}
 </CellOutput>
 
 ### Link a preprocessor version to the ID
@@ -173,7 +180,7 @@ preprocessor_version
 ```
 
 <CellOutput>
-{`{'version_id': 'OCLdoHK5cdMTocZV'}`}
+{`{'version_id': 'aMdNQFwofZGZHP9n'}`}
 </CellOutput>
 
 ### Loading the Preprocessor steps
@@ -196,17 +203,17 @@ pp_cloud.stages
 
 <CellOutput>
 {`[{'feature': '__dataset__',
-  'name': 'DropCols',
-  'transformer': <xplainable.preprocessing.transformers.dataset.DropCols at 0x29d29a280>},
+  'name': 'ChangeCases',
+  'transformer': <xplainable.preprocessing.transformers.dataset.ChangeCases at 0x102a89bb0>},
  {'feature': 'City',
   'name': 'Condense',
-  'transformer': <xplainable.preprocessing.transformers.categorical.Condense at 0x29d281be0>},
+  'transformer': <xplainable.preprocessing.transformers.categorical.Condense at 0x2a6ec7c70>},
  {'feature': 'Monthly Charges',
   'name': 'SetDType',
-  'transformer': <xplainable.preprocessing.transformers.mixed.SetDType at 0x29d281a60>},
+  'transformer': <xplainable.preprocessing.transformers.mixed.SetDType at 0x2a6ec7b50>},
  {'feature': '__dataset__',
-  'name': 'ChangeCases',
-  'transformer': <xplainable.preprocessing.transformers.dataset.ChangeCases at 0x29d281a00>}]`}
+  'name': 'DropCols',
+  'transformer': <xplainable.preprocessing.transformers.dataset.DropCols at 0x2a6ec7520>}]`}
 </CellOutput>
 
 ```python
@@ -236,7 +243,7 @@ params = opt.optimise(X_train, y_train)
 ```
 
 <CellOutput>
-{`100%|████████| 30/30 [00:02<00:00, 10.74trial/s, best loss: -0.8264179696618322]`}
+{`100%|████████| 30/30 [00:03<00:00,  9.44trial/s, best loss: -0.8268936134101414]`}
 </CellOutput>
 
 ## 3. Model Training
@@ -252,7 +259,7 @@ model.fit(X_train, y_train)
 ```
 
 <CellOutput>
-{`<xplainable.core.ml.classification.XClassifier at 0x2a4f4d370>`}
+{`<xplainable.core.ml.classification.XClassifier at 0x2abcac100>`}
 </CellOutput>
 
 ## 4. Model Interpretability and Explainability
@@ -267,7 +274,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_51394262-5873-4384-92c5-afa907293e51.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_64333788-ee5f-47a1-b07a-ed719e9cff30.html' width='100%' height='520'></iframe>
 
 The image displays two graphs related to a churn prediction model.
 
@@ -285,12 +292,6 @@ whereas the green bars show that lower values increase this likelihood.
 The placement of 'Gender' at the bottom of the 'Feature Importances' chart conclusively
 indicates that the model does not consider gender a determinant in predicting churn,
 thereby ensuring the model's impartiality regarding gender.
-
-
-### SaaS Explainer View
-
-
-![Model Image](assets/img/model_explainer.png)
 
 
 ## 5. Model Persisting
@@ -314,7 +315,7 @@ model_id
 ```
 
 <CellOutput>
-{`'BRDO7YXhRfRhRT9b'`}
+{`'CxdKyfllkLMKQYT9'`}
 </CellOutput>
 
 ```python
@@ -329,13 +330,19 @@ version_id
 
 <CellOutput>
 {`  0%|          | 0/19 [00:00<?, ?it/s]
-'N86eLEojIk7nspUs'`}
+'3RmCOzUFTtBi5uVX'`}
 </CellOutput>
 
 ### SaaS Models View
 
 
 ![Model Image](assets/img/models.png)
+
+
+### SaaS Explainer View
+
+
+![Model Image](assets/img/model_explainer.png)
 
 
 ## 6. Model Deployment
@@ -417,25 +424,25 @@ body
 ```
 
 <CellOutput>
-{`[{'City': 'van nuys',
-  'Gender': None,
-  'Senior Citizen': 'no',
+{`[{'City': 'other',
+  'Gender': 'male',
+  'Senior Citizen': 'yes',
   'Partner': 'no',
-  'Dependents': 'no',
-  'Tenure Months': 6.0,
-  'Phone Service': 'yes',
-  'Multiple Lines': 'no phone service',
+  'Dependents': 'yes',
+  'Tenure Months': 71.5,
+  'Phone Service': 'no',
+  'Multiple Lines': 'no',
   'Internet Service': 'dsl',
   'Online Security': 'no internet service',
-  'Online Backup': 'no internet service',
-  'Device Protection': 'no internet service',
+  'Online Backup': 'yes',
+  'Device Protection': 'no',
   'Tech Support': 'yes',
-  'Streaming TV': 'no internet service',
+  'Streaming TV': 'yes',
   'Streaming Movies': 'no',
-  'Contract': 'one year',
-  'Paperless Billing': 'no',
-  'Payment Method': 'credit card (automatic)',
-  'Monthly Charges': 27.25}]`}
+  'Contract': 'month-to-month',
+  'Paperless Billing': 'yes',
+  'Payment Method': 'bank transfer (automatic)',
+  'Monthly Charges': None}]`}
 </CellOutput>
 
 4. **Making a Prediction Request:** A POST request is made to the model's prediction
@@ -459,30 +466,30 @@ value
 {`[{'index': 0,
   'id': None,
   'partition': '__dataset__',
-  'score': 0.23010921149032754,
-  'proba': 0.07132102914522721,
-  'pred': 'No',
-  'support': 196.0,
+  'score': 0.3928926246322737,
+  'proba': 0.11276893943031227,
+  'pred': '0',
+  'support': 303,
   'breakdown': {'base_value': 0.2602797795676134,
-   'City': -0.006041171042108156,
-   'Gender': 0.0,
-   'Senior Citizen': -0.0026080159693067954,
-   'Partner': 0.022048175597151033,
-   'Dependents': 0.01970744974268728,
-   'Tenure Months': 0.05286150126113816,
-   'Phone Service': 0.0014370429103826225,
-   'Multiple Lines': -0.003852500894766593,
-   'Internet Service': -0.007119017427188745,
-   'Online Security': -0.017758018326270678,
-   'Online Backup': -0.017758018326270678,
-   'Device Protection': -0.017758018326270678,
-   'Tech Support': -0.009809726878391703,
-   'Streaming TV': -0.017758018326270678,
-   'Streaming Movies': 0.024761634985203788,
-   'Contract': -0.014019970898912701,
-   'Paperless Billing': -0.010021702189485473,
-   'Payment Method': -0.011452356219407845,
-   'Monthly Charges': -0.015029837749198005}}]`}
+   'City': -0.0004814338695100573,
+   'Gender': -7.276610831867163e-05,
+   'Senior Citizen': 0.045826964522160306,
+   'Partner': 0.022065879046674532,
+   'Dependents': -0.01868614293728342,
+   'Tenure Months': -0.019222955135197697,
+   'Phone Service': -0.003697016407864983,
+   'Multiple Lines': -0.0014877658362602538,
+   'Internet Service': -0.007278086066799008,
+   'Online Security': -0.017775137133722977,
+   'Online Backup': -0.0046493037837984,
+   'Device Protection': 0.0422769557287958,
+   'Tech Support': -0.009955151311174023,
+   'Streaming TV': 0.011069611702865327,
+   'Streaming Movies': 0.024447731368512055,
+   'Contract': 0.05457342511379243,
+   'Paperless Billing': 0.024703763630477254,
+   'Payment Method': -0.009045727458687864,
+   'Monthly Charges': 0.0}}]`}
 </CellOutput>
 
 ## SaaS Deployment Info
