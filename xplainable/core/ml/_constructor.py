@@ -285,8 +285,7 @@ class XNumConstructor(XConstructor):
         psplits = (unq[:-1] + unq[1:]) / 2
 
         # Get possible splits
-        psplits = psplits[:: int(nunq / num_bins)]
-
+        psplits = psplits[:: int(nunq / max(num_bins, 1))]
         return psplits
 
     @staticmethod
