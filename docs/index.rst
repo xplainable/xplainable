@@ -20,15 +20,6 @@ Welcome to xplainable's documentation!
    api/preprocessing
    api/nlp
 
-.. toctree::
-   :maxdepth: 2
-   :caption: ADVANCED CONCEPTS
-
-   advanced_concepts/partitioned_models
-   advanced_concepts/evolutionary_networks
-   advanced_concepts/rapid_refitting
-   advanced_concepts/custom_transformers
-
 Indices and tables
 ==================
 

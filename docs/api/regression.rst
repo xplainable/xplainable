@@ -64,8 +64,8 @@ Examples
 **PartitionedRegressor**
 ::
       
-      from xplainable.core.models import PartitionedClassifier
-      from xpainable.core.models import XClassifier
+      from xplainable.core.models import PartitionedRegressor
+      from xpainable.core.models import XRegressor
       import pandas as pd
       from sklearn.model_selection import train_test_split
       
@@ -73,8 +73,24 @@ Examples
       data = pd.read_csv('data.csv')
       train, test = train_test_split(data, test_size=0.2)
 
-      # Train your model (this will open an embedded gui)
-      partitioned_model = PartitionedClassifier(partition_on='partition_column')
+      # Instantiate the partitioned model
+      partitioned_model = PartitionedRegressor(partition_on='partition_column')
+
+      # Train the base model
+      base_model = XRegressor()
+      base_model.fit(
+            train.drop(columns=['target', 'partition_column']),
+            train['target']
+            )
+
+      # Optimise the model
+      base_model.optimise_tail_sensitivity(
+            train.drop('target', axis=1), train['target'])
+
+      # <-- Add XEvolutionaryNetwork here -->
+
+      # Add the base model to the partitioned model (call this '__dataset__')
+      partitioned_model.add_partition(base_model, '__dataset__')
 
       # Iterate over the unique values in the partition column
       for partition in train['partition_column'].unique():
@@ -83,8 +99,8 @@ Examples
             x_train, y_train = part.drop('target', axis=1), part['target']
             
             # Fit the embedded model
-            model = XClassifier()
-            model.fit(x, y)
+            model = XRegressor()
+            model.fit(x_train, y_train)
 
             # Optimise the model
             model.optimise_tail_sensitivity(x_train, y_train)

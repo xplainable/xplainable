@@ -1,0 +1,17 @@
+name: Read the Docs Build
+
+on: 
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Trigger ReadTheDocs Build
+      run: |
+        curl -X POST -d "branches=main" -d "token=${{ secrets.RTD_SECRET }}" ${{ secrets.RTD_WEBHOOK_URL }}

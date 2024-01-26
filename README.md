@@ -59,8 +59,8 @@ to use the ``xplainable`` gui in a jupyter notebook, install with:
 pip install xplainable[gui]
 ```
 
-Vist our [Documentation](https://xplainable.readthedocs.io) for additional
-support.
+- Visit our [General Documentation](https://docs.xplainable.io) to learn how to get the best out of xplainable
+- Vist our [API Documentation](https://xplainable.readthedocs.io) for additional support with using our API
 
 ## Getting Started
 
