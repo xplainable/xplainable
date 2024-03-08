@@ -4,8 +4,6 @@ from pandas.api.types import (is_string_dtype, is_datetime64_dtype,
                               is_numeric_dtype, is_bool_dtype)
 import pandas as pd
 import numpy as np
-from IPython.display import display
-from .._dependencies import _check_ipywidgets
 from tqdm.auto import tqdm
 
 class XScan:
@@ -27,8 +25,12 @@ class XScan:
             float: The cardinality score
         """
 
-        # drop na for cardinality calculation
+        # Drop NA for cardinality calculation
         ser = ser.dropna()
+
+        # If the series is empty after dropping NA, return 0 or an appropriate value
+        if len(ser) == 0:
+            return 0.0
 
         return round(ser.nunique() / len(ser), 4)
 
