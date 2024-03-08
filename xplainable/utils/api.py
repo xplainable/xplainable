@@ -3,6 +3,7 @@ import xplainable
 from urllib3.exceptions import HTTPError
 import json
 
+#TODO: No longer need this file because we migrated to xplainable-client
 def get_response_content(response):
     if response.status_code == 200:
         return json.loads(response.content)
