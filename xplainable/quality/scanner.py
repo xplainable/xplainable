@@ -324,7 +324,7 @@ class XScan:
             'type': ser_type,
             'missing_pct': self._is_missing(ser),
             'nunique': self._unique_values(ser),
-            'mode': ser.mode().values[0],
+            'mode': ser.mode().values[0] if not ser.mode().empty else np.nan,
             'cardinality': self._cardinality(ser),
             'mixed_case': self._is_mixed_case(ser),
             'mixed_type': self._mixed_char_num(ser),
@@ -369,12 +369,16 @@ class XScan:
         return sub_profile
 
     def scan(self, df, target=None):
-
         if target:
             if target not in df.columns:
                 raise ValueError(f"{target} not in df")
-
             df = df.drop(columns=[target])
 
+        # Iterate over each column and check for non-NaN existence before scanning
         for col in tqdm(list(df.columns)):
+            if df[col].isna().all():
+                print(f"Skipping column {col} because it is completely NaN.")
+                continue  # Skip this column as it's entirely NaN
+
+            # Proceed with scanning non-NaN columns
             self.profile[col] = self._scan_feature(df[col])
