@@ -6,15 +6,37 @@ import pandas as pd
 import numpy as np
 from tqdm.auto import tqdm
 
-class XScan:
-    """ Data quality scanner
+
+#Decorator to catch zero division errors
+def catch_zero_division(return_value=0):
     """
+    A decorator that catches division by zero errors in methods and returns a predefined value.
+
+    Args:
+        return_value: The value to return if a ZeroDivisionError is caught. Defaults to np.nan.
+
+    Returns:
+        The wrapped function's return value, or `return_value` if a ZeroDivisionError is caught.
+    """
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except ZeroDivisionError:
+                return return_value
+        return wrapper
+    return decorator
+
+
+class XScan:
+    """ Scans a dataframe and returns a profile of each feature."""
 
     def __init__(self):
         self.profile = {}
         self.target = None
 
     @staticmethod
+    @catch_zero_division(return_value=0)
     def _cardinality(ser):
         """ Measures the cardinality of a feature.
 
@@ -35,6 +57,7 @@ class XScan:
         return round(ser.nunique() / len(ser), 4)
 
     @staticmethod
+    @catch_zero_division(return_value=0)
     def _is_mixed_case(ser):
         """ Percentage of a text feature that contains mixed cases.
 
@@ -66,6 +89,7 @@ class XScan:
         return ser.apply(_is_mixed).mean()
 
     @staticmethod
+    @catch_zero_division(return_value=0)
     def _mixed_char_num(ser):
         """ Percentage of a text feature that contains numbers and letters.
 
@@ -96,6 +120,7 @@ class XScan:
         return ser.apply(_is_mixed).mean()
 
     @staticmethod
+    @catch_zero_division(return_value=0)
     def _skewness_score(ser):
         """ Calculates a numeric feature's skewness.
 
@@ -109,6 +134,7 @@ class XScan:
         return ser.skew()
 
     @staticmethod
+    @catch_zero_division(return_value=0)
     def _variance_score(ser):
         """ Calculates a numeric feature's variance.
 
@@ -122,6 +148,7 @@ class XScan:
         return ser.var()
 
     @staticmethod
+    @catch_zero_division(return_value=0)
     def _kurtosis_score(ser):
         """ Calculates a numeric feature's kurtosis.
 
@@ -135,6 +162,7 @@ class XScan:
         return ser.kurtosis()
 
     @staticmethod
+    @catch_zero_division(return_value=0)
     def _unique_values(ser):
         """ Counts unique values of feature.
 
@@ -148,6 +176,7 @@ class XScan:
         return ser.nunique()
 
     @staticmethod
+    @catch_zero_division(return_value=0)
     def _is_missing(ser):
         """ Calculates the pct of missing values
 
@@ -160,6 +189,7 @@ class XScan:
         return ser.isna().sum() / len(ser)
 
     @staticmethod
+    @catch_zero_division(return_value=0)
     def _category_imbalance(ser):
         """ Scores a categorical feature's category imbalance.
 
@@ -294,7 +324,7 @@ class XScan:
             'type': ser_type,
             'missing_pct': self._is_missing(ser),
             'nunique': self._unique_values(ser),
-            'mode': ser.mode().values[0],
+            'mode': ser.mode().values[0] if not ser.mode().empty else np.nan,
             'cardinality': self._cardinality(ser),
             'mixed_case': self._is_mixed_case(ser),
             'mixed_type': self._mixed_char_num(ser),
@@ -339,12 +369,16 @@ class XScan:
         return sub_profile
 
     def scan(self, df, target=None):
-
         if target:
             if target not in df.columns:
                 raise ValueError(f"{target} not in df")
-
             df = df.drop(columns=[target])
 
+        # Iterate over each column and check for non-NaN existence before scanning
         for col in tqdm(list(df.columns)):
+            if df[col].isna().all():
+                print(f"Skipping column {col} because it is completely NaN.")
+                continue  # Skip this column as it's entirely NaN
+
+            # Proceed with scanning non-NaN columns
             self.profile[col] = self._scan_feature(df[col])
