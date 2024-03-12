@@ -391,7 +391,7 @@ class Client:
             raise e
 
         return model_id, version_id
-    
+
     def delete_model(self, model_id):
         response = self.__session.delete(
             url=f'{self.hostname}/v1/{self.__ext}/models/{model_id}'
@@ -410,10 +410,6 @@ class Client:
         Returns:
             int: The model id
         """
-        raise DeprecationWarning(
-            "This function is deprecated, please use "
-            "create_model(model_name: str, model_description: str, model, x: pd.DataFrame, y: pd.Series) instead."
-        )
 
         model_type, target = self._detect_model_type(model)
 
