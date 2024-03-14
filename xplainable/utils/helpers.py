@@ -2,6 +2,7 @@ import json
 import pandas as pd
 from ..utils.encoders import NpEncoder
 
+#TODO: Remove this as it's been shifted to xplainable-client
 def get_df_delta(df1, df2):
     """ Gets the delta between two dataframs"""
     changed_features = [c for c in df1.columns.intersection(
