@@ -11,8 +11,8 @@ class BarGroup:
         self.heading = heading
         self.footer = footer
         
-        self.suffix={i: '' for i in items}
-        self.prefix={i: '' for i in items}
+        self.suffix = {i: '' for i in items}
+        self.prefix = {i: '' for i in items}
         
         self.bar_layout = widgets.Layout(
             width='200px',

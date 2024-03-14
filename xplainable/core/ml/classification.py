@@ -387,7 +387,7 @@ class XClassifier(BaseModel):
         # Calculate metrics
         cm = confusion_matrix(y, y_pred).tolist()
         cr = classification_report(y, y_pred, output_dict=True, zero_division=0)
-
+        
         try:
             roc_auc = roc_auc_score(y, y_prob)
         except Exception:

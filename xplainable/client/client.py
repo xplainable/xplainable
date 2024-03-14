@@ -152,7 +152,6 @@ class Client:
 
         return data
 
-
     def load_preprocessor(
             self, preprocessor_id: int, version_id: int,
             gui_object: bool = False, response_only: bool = False):
@@ -382,6 +381,22 @@ class Client:
                 f'Model type {cls_name} is not supported')
         
         return model_type, model.target
+
+    def create_model(self, model_name: str, model_description: str, model, x: pd.DataFrame, y: pd.Series):
+        model_id = self.create_model_id(model, model_name, model_description)
+        try:
+            version_id = self.create_model_version(model, model_id, x, y)
+        except Exception as e:
+            self.delete_model(model_id)
+            raise e
+
+        return model_id, version_id
+
+    def delete_model(self, model_id):
+        response = self.__session.delete(
+            url=f'{self.hostname}/v1/{self.__ext}/models/{model_id}'
+        )
+        return response
 
     def create_model_id(
             self, model, model_name: str, model_description: str) -> str:

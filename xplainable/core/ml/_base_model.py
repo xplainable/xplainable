@@ -435,7 +435,7 @@ class BaseModel:
 
         importances = self._calculate_gini_gain()
         sum_importances = sum(importances.values())
-        importances ={k: v/sum_importances for k, v in importances.items()}
+        importances ={k: (v/sum_importances if sum_importances > 0 else 0) for k, v in importances.items()}
         # order by importance
         importances = dict(sorted(
             importances.items(), key=lambda item: item[1], reverse=False

@@ -254,6 +254,8 @@ class XScan:
             return 'categorical'
 
     def _series_is_empty(self, ser):
+        if len(ser) == 0:
+            return True
         if ser.isna().sum() / len(ser) == 1:
             return True
         else:
