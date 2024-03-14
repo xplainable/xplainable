@@ -130,7 +130,7 @@ class XEvolutionaryNetwork:
             _mask = pd.get_dummies(id_df, columns=subset_locs, prefix_sep='_') != 0
 
         self._mask_df = _mask
-        self._mask = _mask.values
+        self._mask = _mask.to_numpy()
 
          # Copy mask for output
         _df = _mask.copy()
@@ -146,8 +146,8 @@ class XEvolutionaryNetwork:
             _df[i] = _df[i].map({True: score})
             self.root_chromosome = np.append(self.root_chromosome, score)
 
-        self.x = _df.values
-        self.y = y.values
+        self.x = _df.to_numpy()
+        self.y = y.to_numpy()
 
         return self
 

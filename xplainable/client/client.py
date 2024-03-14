@@ -13,10 +13,9 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from ..preprocessing.pipeline import XPipeline
 from ..preprocessing import transformers as xtf
+from ..utils.model_parsers import *
 from ..utils.exceptions import AuthenticationError
-from ..utils.dualdict import FeatureMap, TargetMap
 from ..utils.helpers import get_df_delta
-from ..utils.encoders import profile_parse
 from ..quality.scanner import XScan
 from ..metrics.metrics import evaluate_classification, evaluate_regression
 from ..core.models import (XClassifier, XRegressor, PartitionedRegressor, PartitionedClassifier, ConstructorParams)
@@ -153,7 +152,6 @@ class Client:
 
         return data
 
-
     def load_preprocessor(
             self, preprocessor_id: int, version_id: int,
             gui_object: bool = False, response_only: bool = False):
@@ -225,49 +223,10 @@ class Client:
         """
 
         response = self.__get_model__(model_id, version_id)
-
         if response['model_type'] != 'binary_classification':
             raise ValueError(f'Model with ID {model_id}:{version_id} is not a binary classification model')
 
-        if model is None:
-            partitioned_model = PartitionedClassifier(response['partition_on'])
-        else:
-            partitioned_model = model
-
-        for p in response['partitions']:
-            model = XClassifier()
-
-            model._profile = np.array([
-                np.array(i) for i in json.loads(p['profile'])], dtype=object)
-            
-            model._profile = profile_parse(model._profile)
-            
-            model._calibration_map = {
-                int(i): v for i, v in p['calibration_map'].items()}
-            
-            model._support_map = {
-                int(i): v for i, v in p['support_map'].items()}
-            
-            model.base_value = p['base_value']
-            model.target_map = TargetMap({int(i): v for i, v in p['target_map'].items()}, True)
-            model.feature_map = {k: FeatureMap(v) for k, v in p['feature_map'].items()}
-            
-            model.columns = p['columns']
-            model.id_columns = p['id_columns']
-
-            model.categorical_columns = p['feature_map'].keys()
-            model.numeric_columns = [c for c in model.columns if c not in model.categorical_columns]
-
-            if 'constructs' in p:
-                model.constructs_from_json(p['constructs'])
-
-            model.category_meta = {
-                i: {ii: {int(float(k)): v for k, v in vv.items()} for ii, vv \
-                    in v.items()} for i, v in p['category_meta'].items()}
-
-            partitioned_model.add_partition(model, p['partition'])
-
-        return partitioned_model
+        return parse_classifier_response(response, model)
 
     def load_regressor(self, model_id: int, version_id: int, model=None):
         """ Loads a regression model by model_id and version_id
@@ -281,39 +240,10 @@ class Client:
             xplainable.PartitionedRegressor: The loaded xplainable regressor
         """
         response = self.__get_model__(model_id, version_id)
-
         if response['model_type'] != 'regression':
             raise ValueError(f'Model with ID {model_id}:{version_id} is not a regression model')
 
-        if model is None:
-            partitioned_model = PartitionedRegressor(response['partition_on'])
-        else:
-            partitioned_model = model
-
-        for p in response['partitions']:
-            model = XRegressor()
-            model._profile = np.array([np.array(i) for i in json.loads(p['profile'])])
-            model._profile = profile_parse(model._profile)
-            model.base_value = p['base_value']
-            model.feature_map = {k: FeatureMap(v) for k, v in p['feature_map'].items()}
-            #model.parameters = ConstructorParams(p['parameters'])
-
-            model.columns = p['columns']
-            model.id_columns = p['id_columns']
-
-            model.categorical_columns = p['feature_map'].keys()
-            model.numeric_columns = [c for c in model.columns if c not in model.categorical_columns]
-
-            if 'constructs' in p:
-                model.constructs_from_json(p['constructs'])
-
-            model.category_meta = {
-                i: {ii: {int(float(k)): v for k, v in vv.items()} for ii, vv \
-                    in v.items()} for i, v in p['category_meta'].items()}
-
-            partitioned_model.add_partition(model, p['partition'])
-
-        return partitioned_model
+        return parse_regressor_response(response, model)
 
     def __get_model__(self, model_id: int, version_id: int):
         try:
@@ -451,6 +381,22 @@ class Client:
                 f'Model type {cls_name} is not supported')
         
         return model_type, model.target
+
+    def create_model(self, model_name: str, model_description: str, model, x: pd.DataFrame, y: pd.Series):
+        model_id = self.create_model_id(model, model_name, model_description)
+        try:
+            version_id = self.create_model_version(model, model_id, x, y)
+        except Exception as e:
+            self.delete_model(model_id)
+            raise e
+
+        return model_id, version_id
+
+    def delete_model(self, model_id):
+        response = self.__session.delete(
+            url=f'{self.hostname}/v1/{self.__ext}/models/{model_id}'
+        )
+        return response
 
     def create_model_id(
             self, model, model_name: str, model_description: str) -> str:

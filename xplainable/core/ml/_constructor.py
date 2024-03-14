@@ -31,6 +31,7 @@ class XConstructor:
         self.null_meta = [0, 0]
 
         self._nodes = None
+        self.fit_range = [0, 0, 0]
 
     @property
     def params(self):
@@ -127,6 +128,8 @@ class XConstructor:
 
     def fit(self, X, y, alpha=0.1):
         """ Fits feature data to target """
+        min, max = np.min(X), np.max(X)
+        self.fit_range = [min, max, max-min]
 
         self.fitted_samples = X.size
 
@@ -282,6 +285,8 @@ class XNumConstructor(XConstructor):
         psplits = (unq[:-1] + unq[1:]) / 2
 
         # Get possible splits
+        if num_bins == 0:
+            return psplits
         psplits = psplits[:: int(nunq / num_bins)]
 
         return psplits
@@ -289,7 +294,6 @@ class XNumConstructor(XConstructor):
     @staticmethod
     @njit(parallel=True, fastmath=True, nogil=True)
     def _get_base_meta(base_partition, X, y):
-
         """ Instantiates metadata at each split """
 
         _meta = np.empty((len(base_partition), 2, 2), dtype=np.float64)
