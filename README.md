@@ -10,7 +10,6 @@
     
 [![Python](https://img.shields.io/pypi/pyversions/xplainable)](https://pypi.org/project/xplainable/)
 [![PyPi](https://img.shields.io/pypi/v/xplainable?color=blue)](https://pypi.org/project/xplainable/)
-[![License: Apache-2.0](https://img.shields.io/github/license/saltstack/salt)](https://github.com/xplainable/xplainable/blob/main/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/xplainable)](https://pepy.tech/project/xplainable)
     
 **Xplainable** makes tabular machine learning transparent, fair, and actionable.
