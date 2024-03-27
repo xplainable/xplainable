@@ -8,6 +8,7 @@ import pandas as pd
 from ._base_model import BaseModel, BasePartition
 from ._constructor import XCatConstructor, XNumConstructor, ConstructorParams
 from sklearn.metrics import *
+from sklearn.linear_model import Ridge
 from time import time
 from typing import Union
 
@@ -108,6 +109,26 @@ class XRegressor(BaseModel):
         self.min_seen = 0
         self.max_seen = 0
 
+    def normalise(self, x, y):
+        trans = self._transform2(x)
+        # print(trans.shape)
+        # print(exprof)
+        # print(x)
+        # print(trans)
+        lr = Ridge().fit(trans, y)  # -self.base_value)
+        # print(y)
+        # print(lr.coef_, lr.intercept_)
+        idx = 0
+        for c_n, construct in enumerate(self._constructs):
+            for i, node in enumerate(construct._nodes):
+                # print(lr.coef_[idx])
+                self._constructs[c_n]._nodes[i][-4] = node[-1]*lr.coef_[idx]
+                idx += 1
+            # print()
+        self.base_value = lr.intercept_
+        # print(self.base_value)
+        # exit()
+
     def fit(
         self, x: Union[pd.DataFrame, np.ndarray],
         y: Union[pd.Series, np.ndarray], id_columns: list = [],
@@ -153,6 +174,9 @@ class XRegressor(BaseModel):
             xconst.construct()
             self._constructs.append(xconst)
 
+        self._build_profile()
+
+        self.normalise(x, y)
         self._build_profile()
 
         # record metadata
