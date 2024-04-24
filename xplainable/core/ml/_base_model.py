@@ -337,7 +337,7 @@ class BaseModel:
             return x, y
         return x
 
-    def _transform2(self, x):
+    def _normalise_transform(self, x):
         x = x.copy()
         x = self._cast_to_pandas(x, column_names=self.columns)
         x = self._coerce_dtypes(x)
@@ -352,18 +352,9 @@ class BaseModel:
                 a.append(np.zeros((x.shape[0], 1)))
             feature_matrix = np.concatenate(a, axis=1)
             idx = np.searchsorted(nodes[:, -5], x[:, i])
-            # print(idx.shape)
-            # print(feature_matrix[idx, :].shape)
-            # print(feature_matrix[np.arange(feature_matrix.shape[0]), idx].shape)
-            # exit()
-            # known = np.where(idx < len(nodes))
-            # unknown = np.where(idx >= len(nodes))  # flag unknown categories, the addition of nan might change this
             feature_matrix[np.arange(feature_matrix.shape[0]), idx] = nodes[idx, -4]
             b.append(feature_matrix)
         full = np.concatenate(b, axis=1)
-        # print(full.shape)
-        # print(expanded_profile)
-        # print(full[0])
 
         return full
 
