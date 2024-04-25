@@ -490,7 +490,8 @@ class Client:
         # Create a new version and fetch id
         url = f'{self.hostname}/v1/{self.__ext}/models/{model_id}/add-version'
         response = self.__session.post(
-            url=url, json=force_json_compliant(payload))
+            url=url, json=force_json_compliant(payload)
+        )
 
         version_id = get_response_content(response)
 
