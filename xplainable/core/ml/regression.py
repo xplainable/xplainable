@@ -110,24 +110,14 @@ class XRegressor(BaseModel):
         self.max_seen = 0
 
     def normalise(self, x, y):
-        trans = self._transform2(x)
-        # print(trans.shape)
-        # print(exprof)
-        # print(x)
-        # print(trans)
-        lr = Ridge().fit(trans, y)  # -self.base_value)
-        # print(y)
-        # print(lr.coef_, lr.intercept_)
+        trans = self._normalise_transform(x)
+        lr = Ridge().fit(trans, y)
         idx = 0
         for c_n, construct in enumerate(self._constructs):
             for i, node in enumerate(construct._nodes):
-                # print(lr.coef_[idx])
                 self._constructs[c_n]._nodes[i][-4] = node[-1]*lr.coef_[idx]
                 idx += 1
-            # print()
         self.base_value = lr.intercept_
-        # print(self.base_value)
-        # exit()
 
     def fit(
         self, x: Union[pd.DataFrame, np.ndarray],
