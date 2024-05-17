@@ -193,7 +193,8 @@ class BaseModel:
         ]
 
         for xconst in self._constructs:
-            xconst.normalise_scores(_sum_min, _sum_max, self.base_value, self.min_seen, self.max_seen)
+            if not xconst.regressor:
+                xconst.normalise_scores(_sum_min, _sum_max, self.base_value, self.min_seen, self.max_seen)
             self._profile.append(np.array([list(x) for x in xconst._nodes]))
 
         return self
@@ -336,6 +337,27 @@ class BaseModel:
             return x, y
         return x
 
+    def _normalise_transform(self, x):
+        x = x.copy()
+        x = self._cast_to_pandas(x, column_names=self.columns)
+        x = self._coerce_dtypes(x)
+        x = self._encode(x)
+        x = self._preprocess(x).to_numpy()
+
+        b = []
+        for i in range(x.shape[1]):
+            a = []
+            nodes = np.array(self._profile[i])
+            for _ in range(len(nodes)):
+                a.append(np.zeros((x.shape[0], 1)))
+            feature_matrix = np.concatenate(a, axis=1)
+            idx = np.searchsorted(nodes[:, -5], x[:, i])
+            feature_matrix[np.arange(feature_matrix.shape[0]), idx] = nodes[idx, -4]
+            b.append(feature_matrix)
+        full = np.concatenate(b, axis=1)
+
+        return full
+
     def _transform(self, x):
         x = x.copy()
         x = self._cast_to_pandas(x, column_names=self.columns)
@@ -352,6 +374,7 @@ class BaseModel:
             
             x[unknown, i] = 0  # Set new categories to 0 contribution
             x[known, i] = nodes[idx[known], -4]  # get score
+            # print(nodes[idx[known], -4])
 
         return x
 
