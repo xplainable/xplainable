@@ -3,7 +3,7 @@ hyperopt>=0.2.7
 ipywidgets>=8.0.5
 matplotlib>=3.4.2
 numba>=0.56.4
-numpy
+numpy>=1.26
 pandas>=1.5.2
 pyperclip>=1.8.2
 requests
