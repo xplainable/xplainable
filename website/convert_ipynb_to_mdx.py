@@ -479,9 +479,12 @@ def transform_notebook(path: Union[str, PathLike]) -> Tuple[str, str]:
     # Load all metadata for notebooks that should be included in the documentation.
     nb_metadata = load_nbs_to_convert()
 
+    # Extract title and generate the key consistently
     title = extract_title(path)
-    tutorial_folder_name = title.replace(' ', '_')
+    tutorial_folder_name = title.replace(' ', '_').lower()
     filename = title  # Since 'filename' is used for output
+
+    #Use file path for tutorials directory
     tutorial_folder = TUTORIALS_DIR
     assets_folder = tutorial_folder.joinpath("assets")
     img_folder = assets_folder.joinpath("img")
