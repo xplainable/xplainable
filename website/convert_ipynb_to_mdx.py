@@ -479,9 +479,9 @@ def transform_notebook(path: Union[str, PathLike]) -> Tuple[str, str]:
     # Load all metadata for notebooks that should be included in the documentation.
     nb_metadata = load_nbs_to_convert()
 
-    # Create the assets folder for the given tutorial.
-    tutorial_folder_name = path.stem
-    filename = " ".join([token.title() for token in tutorial_folder_name.split("_")])
+    title = extract_title(path)
+    tutorial_folder_name = title.replace(' ', '_')
+    filename = title  # Since 'filename' is used for output
     tutorial_folder = TUTORIALS_DIR
     assets_folder = tutorial_folder.joinpath("assets")
     img_folder = assets_folder.joinpath("img")
@@ -566,7 +566,6 @@ def transform_notebook(path: Union[str, PathLike]) -> Tuple[str, str]:
     mdx[frontmatter_line:frontmatter_line] = list(components) + [""]
     # Add the react components needed to display links to GitHub and Colab.
     idx = frontmatter_line + len(components) + 1
-    #TODO: Get this working
 
     glk = nb_metadata[tutorial_folder_name]["github"]
     clk = nb_metadata[tutorial_folder_name]["colab"]
@@ -596,18 +595,17 @@ def generate_tutorials_json(examples_dir):
     tutorials_json = {}
     for nb_file in os.listdir(examples_dir):
         if nb_file.endswith(".ipynb"):
-            # Generate a dictionary entry for each notebook
             title = extract_title(Path(nb_file))
             nb_path = f"website/docs/tutorials/{nb_file}"
-            tutorials_json[title.replace(' ', '_')] = {
+            key = title.replace(' ', '_').lower()
+            tutorials_json[key] = {
                 "title": title,
                 "sidebar_label": title,
                 "path": f"website/docs/tutorials",
                 "nb_path": nb_path,
-                "github": f"https://github.com/xplainable/xplainable/blob/main/examples/{title.replace(' ', '_')}.ipynb",
-                "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
+                "github": f"https://github.com/xplainable/xplainable/blob/main/examples/{key}.ipynb",
+                "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples"
             }
-
     return tutorials_json
 
 
