@@ -5,6 +5,7 @@ import uuid
 from os import PathLike
 from pathlib import Path
 from typing import Dict, Tuple, Union
+from io import StringIO
 
 import os
 import json
@@ -342,7 +343,7 @@ def transform_code_cell(
                         # the output. We will use this token to determine if a pandas
                         # DataFrame is being displayed.
                         if "dataframe" in cell_output_data:
-                            df = pd.read_html(cell_output_data, flavor="lxml")
+                            df = pd.read_html(StringIO(cell_output_data), flavor="lxml")
                             # NOTE: The return is a list of dataframes and we only care
                             #       about the first one.
                             md_df = df[0]
@@ -365,7 +366,7 @@ def transform_code_cell(
                             # Remove the index if it is just a range, and output to markdown.
                             md = ""
                             if isinstance(md_df.index, pd.RangeIndex):
-                                md = md_df.to_markdown(showindex=False)
+                                md = md_df.to_markdown(index=False)
                             else:
                                 md = md_df.to_markdown()
                             mdx_output += f"\n{md}\n\n"
