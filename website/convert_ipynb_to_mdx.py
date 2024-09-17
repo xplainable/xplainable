@@ -10,7 +10,7 @@ from io import StringIO
 import os
 import json
 
-import mdformat  # @manual=fbsource//third-party/pypi/mdformat:mdformat
+import mdformat  
 import nbformat
 import pandas as pd
 from nbformat.notebooknode import NotebookNode
@@ -29,12 +29,6 @@ WEBSITE_DIR = LIB_DIR.joinpath("website")
 DOCS_DIR = WEBSITE_DIR.joinpath("docs")
 OVERVIEW_DIR = DOCS_DIR
 TUTORIALS_DIR = DOCS_DIR.joinpath("tutorials")
-
-
-# WEBSITE_DIR = LIB_DIR.joinpath("xplainable")
-# DOCS_DIR = LIB_DIR.joinpath("website")
-# OVERVIEW_DIR = DOCS_DIR.joinpath("docs")
-# TUTORIALS_DIR = OVERVIEW_DIR.joinpath("tutorials")
 
 def load_nbs_to_convert() -> Dict[str, Dict[str, str]]:
     """Load the metadata and list of notebooks to convert to mdx.
@@ -600,14 +594,14 @@ def generate_tutorials_json(examples_dir):
         if nb_file.endswith(".ipynb"):
             title = extract_title(Path(nb_file))
             nb_path = f"website/docs/tutorials/{nb_file}"
-            key = title.replace(' ', '_').lower()
+            key = title.replace(' ', '_')
             tutorials_json[key] = {
                 "title": title,
                 "sidebar_label": title,
                 "path": f"website/docs/tutorials",
                 "nb_path": nb_path,
                 "github": f"https://github.com/xplainable/xplainable/blob/main/examples/{key}.ipynb",
-                "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples"
+                "colab": f"https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/{key}.ipynb"
             }
     return tutorials_json
 
