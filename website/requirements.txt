@@ -1,6 +1,6 @@
 jsonschema
-pandas==1.4.1
-numpy>=1.18.5,<1.23
+pandas>=2.1.1
+numpy>=1.26.0
 nbconvert==6.4.5
 nbformat==5.2.0
 mdformat
