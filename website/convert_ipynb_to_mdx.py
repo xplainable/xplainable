@@ -594,14 +594,14 @@ def generate_tutorials_json(examples_dir):
         if nb_file.endswith(".ipynb"):
             title = extract_title(Path(nb_file))
             nb_path = f"website/docs/tutorials/{nb_file}"
-            key = title.replace(' ', '_')
-            tutorials_json[key] = {
+            file_name = title.replace(' ', '_')
+            tutorials_json[file_name.lower()] = {
                 "title": title,
                 "sidebar_label": title,
                 "path": f"website/docs/tutorials",
                 "nb_path": nb_path,
-                "github": f"https://github.com/xplainable/xplainable/blob/main/examples/{key}.ipynb",
-                "colab": f"https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/{key}.ipynb"
+                "github": f"https://github.com/xplainable/xplainable/blob/main/examples/{file_name}.ipynb",
+                "colab": f"https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/{file_name}.ipynb"
             }
     return tutorials_json
 
