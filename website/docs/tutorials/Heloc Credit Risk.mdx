@@ -6,8 +6,8 @@ nb_path: website/docs/tutorials/HELOC_Credit_Risk.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb
 ---
-import LinkButtons from "../../src/components/LinkButtons.jsx";
 import CellOutput from "../../src/components/CellOutput.jsx";
+import LinkButtons from "../../src/components/LinkButtons.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb"
@@ -203,7 +203,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_1342ab70-a71e-4707-b035-cc5f07aedb40.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_39a7a60f-d764-4fdb-838d-7080f4a6914c.html' width='100%' height='520'></iframe>
 
 ## Analysing Feature Importances and Contributions
 
@@ -242,8 +242,7 @@ Creat an API key in the Xplainable platform
 
 ```python
 client = xplainable_client.Client(
-    api_key="f6eaf63f-598e-4dfc-9ebd-a343386d1905",
-    hostname="https://xplainable-api-uat-45xyq.ondigitalocean.app"
+    api_key="add_your_own_api_key_here",
 )
 ```
 
@@ -338,7 +337,7 @@ client.activate_deployment(deployment['deployment_id'])
 
 
 ```python
-deploy_key = client.generate_deploy_key('for testing', deployment['deployment_id'], 7)
+deploy_key = client.generate_deploy_key('HELOC Deploy Key', deployment['deployment_id'], 7)
 ```
 
 3. **Generating Example Payload:** An example payload for a deployment request is
@@ -355,8 +354,7 @@ option = 1
 if option == 1:
     body = client.generate_example_deployment_payload(deployment['deployment_id'])
 else:
-    body = json.loads(df.drop(columns=["RiskPerformance"]).sample(1).to_json(orient="records"))
-    # body[0]["Gender"] = None #<- Won't require this line the next release of xplainable
+    body = json.loads(data.drop(columns=["RiskPerformance"]).sample(1).to_json(orient="records"))
 ```
 
 ```python
