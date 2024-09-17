@@ -1,5 +1,6 @@
 jsonschema
 pandas==1.4.1
+numpy>=1.18.5,<1.23
 nbconvert==6.4.5
 nbformat==5.2.0
 mdformat
@@ -13,4 +14,3 @@ myst-parser
 nbclient==0.5.13
 tabulate==0.9.0
 lxml==4.9.3
-
