@@ -1,12 +1,4 @@
 {
-    "Tool_Failure": {
-        "title": "Tool Failure",
-        "sidebar_label": "Tool Failure",
-        "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/Tool_Failure.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
-    },
     "Instacart_Product_Reorder_Prediction": {
         "title": "Instacart Product Reorder Prediction",
         "sidebar_label": "Instacart Product Reorder Prediction",
@@ -21,6 +13,14 @@
         "path": "website/docs/tutorials",
         "nb_path": "website/docs/tutorials/Dozer_Price_Prediction.ipynb",
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Dozer_Price_Prediction.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
+    },
+    "Tool_Failure": {
+        "title": "Tool Failure",
+        "sidebar_label": "Tool Failure",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Tool_Failure.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/tutorials"
     },
     "Telco_Churn": {
