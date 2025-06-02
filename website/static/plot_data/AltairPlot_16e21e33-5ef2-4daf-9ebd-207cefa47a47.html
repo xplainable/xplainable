@@ -1,0 +1,66 @@
+
+<style>
+  #altair-viz-2d17c44bf672474f862c1cd51d8916b0.vega-embed {
+    width: 100%;
+    display: flex;
+  }
+
+  #altair-viz-2d17c44bf672474f862c1cd51d8916b0.vega-embed details,
+  #altair-viz-2d17c44bf672474f862c1cd51d8916b0.vega-embed details summary {
+    position: relative;
+  }
+</style>
+<div id="altair-viz-2d17c44bf672474f862c1cd51d8916b0"></div>
+<script type="text/javascript">
+  var VEGA_DEBUG = (typeof VEGA_DEBUG == "undefined") ? {} : VEGA_DEBUG;
+  (function(spec, embedOpt){
+    let outputDiv = document.currentScript.previousElementSibling;
+    if (outputDiv.id !== "altair-viz-2d17c44bf672474f862c1cd51d8916b0") {
+      outputDiv = document.getElementById("altair-viz-2d17c44bf672474f862c1cd51d8916b0");
+    }
+    const paths = {
+      "vega": "https://cdn.jsdelivr.net/npm/vega@5?noext",
+      "vega-lib": "https://cdn.jsdelivr.net/npm/vega-lib?noext",
+      "vega-lite": "https://cdn.jsdelivr.net/npm/vega-lite@5.20.1?noext",
+      "vega-embed": "https://cdn.jsdelivr.net/npm/vega-embed@6?noext",
+    };
+
+    function maybeLoadScript(lib, version) {
+      var key = `${lib.replace("-", "")}_version`;
+      return (VEGA_DEBUG[key] == version) ?
+        Promise.resolve(paths[lib]) :
+        new Promise(function(resolve, reject) {
+          var s = document.createElement('script');
+          document.getElementsByTagName("head")[0].appendChild(s);
+          s.async = true;
+          s.onload = () => {
+            VEGA_DEBUG[key] = version;
+            return resolve(paths[lib]);
+          };
+          s.onerror = () => reject(`Error loading script: ${paths[lib]}`);
+          s.src = paths[lib];
+        });
+    }
+
+    function showError(err) {
+      outputDiv.innerHTML = `<div class="error" style="color:red;">${err}</div>`;
+      throw err;
+    }
+
+    function displayChart(vegaEmbed) {
+      vegaEmbed(outputDiv, spec, embedOpt)
+        .catch(err => showError(`Javascript Error: ${err.message}<br>This usually means there's a typo in your chart specification. See the javascript console for the full traceback.`));
+    }
+
+    if(typeof define === "function" && define.amd) {
+      requirejs.config({paths});
+      require(["vega-embed"], displayChart, err => showError(`Error loading script: ${err.message}`));
+    } else {
+      maybeLoadScript("vega", "5")
+        .then(() => maybeLoadScript("vega-lite", "5.20.1"))
+        .then(() => maybeLoadScript("vega-embed", "6"))
+        .catch(showError)
+        .then(() => displayChart(vegaEmbed));
+    }
+  })({"config": {"view": {"continuousWidth": 300, "continuousHeight": 300}}, "hconcat": [{"mark": {"type": "bar", "color": "#0080ea"}, "encoding": {"color": {"condition": {"param": "param_13", "value": "lightgray"}, "value": "#0080ea"}, "tooltip": {"field": "importance_label", "type": "nominal"}, "x": {"field": "importance", "type": "quantitative"}, "y": {"field": "feature", "sort": {"field": "importance", "order": "descending"}, "type": "nominal"}}, "height": 400, "name": "view_17", "title": "Feature Importances", "transform": [{"filter": {"param": "param_14"}}], "width": 330}, {"mark": {"type": "bar", "color": "#0080ea"}, "encoding": {"x": {"axis": {"labels": false, "title": null}, "field": "importance", "type": "quantitative"}, "y": {"axis": {"labels": false, "title": null}, "field": "feature", "sort": "-x", "type": "nominal"}}, "height": 400, "name": "view_18", "width": 25}, {"data": {"name": "data-8d4d756b092e3f3ce28e1b01c22c78c5"}, "mark": {"type": "bar", "color": "#e14067"}, "encoding": {"color": {"condition": {"test": "(datum.contribution < 0)", "value": "#e14067"}, "value": "#12b980"}, "tooltip": {"field": "score_label", "type": "nominal"}, "x": {"field": "val", "type": "quantitative"}, "y": {"field": "value", "sort": {"field": "index", "order": "descending"}, "type": "nominal"}}, "height": 400, "name": "view_19", "title": "Contributions", "transform": [{"fold": ["contribution", "mean", "frequency"], "as": ["column", "val"]}, {"filter": {"param": "Select"}}, {"filter": {"param": "param_13"}}, {"filter": {"param": "param_15"}}], "width": 330}, {"data": {"name": "data-8d4d756b092e3f3ce28e1b01c22c78c5"}, "mark": {"type": "bar", "color": "#e14067"}, "encoding": {"color": {"condition": {"test": "(datum.contribution < 0)", "value": "#e14067"}, "value": "#12b980"}, "x": {"axis": {"labels": false, "title": null}, "field": "contribution", "type": "quantitative"}, "y": {"axis": {"labels": false, "title": null}, "field": "value", "sort": {"field": "index", "order": "descending"}, "type": "nominal"}}, "height": 400, "name": "view_20", "transform": [{"filter": {"param": "param_13"}}], "width": 25}], "data": {"name": "data-7927ac7ff1c3fb411be34bad59405be3"}, "params": [{"name": "param_13", "select": {"type": "point", "fields": ["feature"]}, "value": "Rotational speed [rpm]", "views": ["view_17"]}, {"name": "Select", "select": {"type": "point", "fields": ["column"]}, "bind": {"input": "select", "options": ["contribution", "mean", "frequency"]}, "value": "contribution", "views": ["view_17", "view_19"]}, {"name": "param_14", "select": {"type": "interval", "encodings": ["y"]}, "views": ["view_18"]}, {"name": "param_15", "select": {"type": "interval", "encodings": ["y"]}, "views": ["view_20"]}], "$schema": "https://vega.github.io/schema/vega-lite/v5.20.1.json", "datasets": {"data-7927ac7ff1c3fb411be34bad59405be3": [{"feature": "Air temperature [K]", "importance": 0.0, "importance_label": "0.0%"}, {"feature": "Process temperature [K]", "importance": 0.0, "importance_label": "0.0%"}, {"feature": "Type", "importance": 0.028495517140096207, "importance_label": "2.8%"}, {"feature": "Tool wear [min]", "importance": 0.10989422396210413, "importance_label": "11.0%"}, {"feature": "Torque [Nm]", "importance": 0.3584743338884663, "importance_label": "35.8%"}, {"feature": "Rotational speed [rpm]", "importance": 0.5031359250093335, "importance_label": "50.3%"}], "data-8d4d756b092e3f3ce28e1b01c22c78c5": [{"index": 0, "value": "H", "contribution": -0.004006890184702441, "mean": 0.01608187134502924, "frequency": 0.10208955223880598, "feature": "Type", "score_label": "-0.4"}, {"index": 1, "value": "M", "contribution": -0.0009333833198715297, "mean": 0.03273809523809524, "frequency": 0.3008955223880597, "feature": "Type", "score_label": "-0.1"}, {"index": 2, "value": "L", "contribution": 0.024408834293742288, "mean": 0.04025, "frequency": 0.5970149253731343, "feature": "Type", "score_label": "2.4"}, {"index": 3, "value": "Null", "contribution": 0.0, "mean": 0.0, "frequency": 0.0, "feature": "Type", "score_label": "0.0"}, {"index": 0, "value": "-inf - inf", "contribution": 0.0, "mean": 0.035522388059701496, "frequency": 1.0, "feature": "Air temperature [K]", "score_label": "0.0"}, {"index": 1, "value": "nan - nan", "contribution": 0.0, "mean": 0.0, "frequency": 0.0, "feature": "Air temperature [K]", "score_label": "0.0"}, {"index": 0, "value": "-inf - inf", "contribution": 0.0, "mean": 0.035522388059701496, "frequency": 1.0, "feature": "Process temperature [K]", "score_label": "0.0"}, {"index": 1, "value": "nan - nan", "contribution": 0.0, "mean": 0.0, "frequency": 0.0, "feature": "Process temperature [K]", "score_label": "0.0"}, {"index": 0, "value": "-inf - 1313.5", "contribution": 0.24893272329365737, "mean": 0.215962441314554, "frequency": 0.0317910447761194, "feature": "Rotational speed [rpm]", "score_label": "24.9"}, {"index": 1, "value": "1313.5 - 1341.5", "contribution": 0.1984232393148065, "mean": 0.17727272727272728, "frequency": 0.03283582089552239, "feature": "Rotational speed [rpm]", "score_label": "19.8"}, {"index": 2, "value": "1341.5 - 1364.5", "contribution": 0.1568631073339443, "mean": 0.13805970149253732, "frequency": 0.04, "feature": "Rotational speed [rpm]", "score_label": "15.7"}, {"index": 3, "value": "1364.5 - 1380.5", "contribution": 0.18484190508536333, "mean": 0.1625, "frequency": 0.03582089552238806, "feature": "Rotational speed [rpm]", "score_label": "18.5"}, {"index": 4, "value": "1380.5 - 1988.0", "contribution": -0.013910922832375576, "mean": 0.00930066177785727, "frequency": 0.8344776119402985, "feature": "Rotational speed [rpm]", "score_label": "-1.4"}, {"index": 5, "value": "1988.0 - inf", "contribution": 0.1404584900964656, "mean": 0.1488095238095238, "frequency": 0.02507462686567164, "feature": "Rotational speed [rpm]", "score_label": "14.0"}, {"index": 6, "value": "nan - nan", "contribution": 0.0, "mean": 0.0, "frequency": 0.0, "feature": "Rotational speed [rpm]", "score_label": "0.0"}, {"index": 0, "value": "-inf - 20.25", "contribution": 0.14118347500076234, "mean": 0.1497005988023952, "frequency": 0.024925373134328358, "feature": "Torque [Nm]", "score_label": "14.1"}, {"index": 1, "value": "20.25 - 52.45", "contribution": -0.011265812711409608, "mean": 0.014642549526270457, "frequency": 0.8664179104477612, "feature": "Torque [Nm]", "score_label": "-1.1"}, {"index": 2, "value": "52.45 - 55.35", "contribution": 0.08763199966998368, "mean": 0.08761329305135952, "frequency": 0.049402985074626864, "feature": "Torque [Nm]", "score_label": "8.8"}, {"index": 3, "value": "55.35 - 59.05", "contribution": 0.1292670410838899, "mean": 0.13043478260869565, "frequency": 0.0308955223880597, "feature": "Torque [Nm]", "score_label": "12.9"}, {"index": 4, "value": "59.05 - inf", "contribution": 0.45003804004833814, "mean": 0.37894736842105264, "frequency": 0.028358208955223882, "feature": "Torque [Nm]", "score_label": "45.0"}, {"index": 5, "value": "nan - nan", "contribution": 0.0, "mean": 0.0, "frequency": 0.0, "feature": "Torque [Nm]", "score_label": "0.0"}, {"index": 0, "value": "-inf - 199.5", "contribution": -0.0063387623312138736, "mean": 0.02410223228728567, "frequency": 0.9226865671641791, "feature": "Tool wear [min]", "score_label": "-0.6"}, {"index": 1, "value": "199.5 - 210.5", "contribution": 0.17431045950956717, "mean": 0.14583333333333334, "frequency": 0.04298507462686567, "feature": "Tool wear [min]", "score_label": "17.4"}, {"index": 2, "value": "210.5 - inf", "contribution": 0.24109801430456057, "mean": 0.20434782608695654, "frequency": 0.034328358208955224, "feature": "Tool wear [min]", "score_label": "24.1"}, {"index": 3, "value": "nan - nan", "contribution": 0.0, "mean": 0.0, "frequency": 0.0, "feature": "Tool wear [min]", "score_label": "0.0"}]}}, {"mode": "vega-lite"});
+</script>

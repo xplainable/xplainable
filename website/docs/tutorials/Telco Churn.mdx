@@ -6,8 +6,8 @@ nb_path: website/docs/tutorials/Telco_Churn.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb
 ---
-import CellOutput from "../../src/components/CellOutput.jsx";
 import LinkButtons from "../../src/components/LinkButtons.jsx";
+import CellOutput from "../../src/components/CellOutput.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb"
@@ -26,31 +26,30 @@ from xplainable.preprocessing.pipeline import XPipeline
 from xplainable.preprocessing import transformers as xtf
 from sklearn.model_selection import train_test_split
 import requests
+
+import xplainable_client
+import json
 ```
 
 ## Instantiate Xplainable Cloud
 
-Initialise the xplainable cloud using an API key from: https://beta.xplainable.io/
+Initialise the xplainable cloud using an API key from: https://platform.xplainable.io/
 
 This allows you to save and collaborate on models, create deployments, create shareable
 reports.
 
 
 ```python
-xp.initialise(
-    api_key="", #<- Add your own token here
+client = xplainable_client.Client(
+    api_key="",#<- Add your own token here
 )
 ```
-
-<CellOutput>
-{`VBox(children=(VBox(children=(HBox(children=(HBox(children=(Output(), HTML(value='\n        <span style="font-…`}
-</CellOutput>
 
 ## Read IBM Telco Churn Dataset
 
 
 ```python
-df = pd.read_excel('./data/Telco_customer_churn.xlsx')
+df = pd.read_csv('./data/telco_customer_churn.csv')
 ```
 
 ### Sample of the IBM Telco Churn Dataset
@@ -61,13 +60,13 @@ df.head()
 ```
 
 
-|    | CustomerID   |   Count | Country       | State      | City        |   Zip Code | Lat Long               |   Latitude |   Longitude | Gender   | ...   | Contract       | Paperless Billing   | Payment Method            |   Monthly Charges |   Total Charges | Churn Label   |   Churn Value |   Churn Score |   CLTV | Churn Reason                  |
-|---:|:-------------|--------:|:--------------|:-----------|:------------|-----------:|:-----------------------|-----------:|------------:|:---------|:------|:---------------|:--------------------|:--------------------------|------------------:|----------------:|:--------------|--------------:|--------------:|-------:|:------------------------------|
-|  0 | 3668-QPYBK   |       1 | United States | California | Los Angeles |      90003 | 33.964131, -118.272783 |    33.9641 |    -118.273 | Male     | ...   | Month-to-month | Yes                 | Mailed check              |             53.85 |          108.15 | Yes           |             1 |            86 |   3239 | Competitor made better offer  |
-|  1 | 9237-HQITU   |       1 | United States | California | Los Angeles |      90005 | 34.059281, -118.30742  |    34.0593 |    -118.307 | Female   | ...   | Month-to-month | Yes                 | Electronic check          |             70.7  |          151.65 | Yes           |             1 |            67 |   2701 | Moved                         |
-|  2 | 9305-CDSKC   |       1 | United States | California | Los Angeles |      90006 | 34.048013, -118.293953 |    34.048  |    -118.294 | Female   | ...   | Month-to-month | Yes                 | Electronic check          |             99.65 |          820.5  | Yes           |             1 |            86 |   5372 | Moved                         |
-|  3 | 7892-POOKP   |       1 | United States | California | Los Angeles |      90010 | 34.062125, -118.315709 |    34.0621 |    -118.316 | Female   | ...   | Month-to-month | Yes                 | Electronic check          |            104.8  |         3046.05 | Yes           |             1 |            84 |   5003 | Moved                         |
-|  4 | 0280-XJGEX   |       1 | United States | California | Los Angeles |      90015 | 34.039224, -118.266293 |    34.0392 |    -118.266 | Male     | ...   | Month-to-month | Yes                 | Bank transfer (automatic) |            103.7  |         5036.3  | Yes           |             1 |            89 |   5340 | Competitor had better devices |
+|    | CustomerID   |   Count | Country       | State      | City        |   Zip Code | Lat Long               |   Latitude |   Longitude | Gender   | ...   | Streaming Movies   | Contract       | Paperless Billing   | Payment Method            |   Monthly Charges | Churn Label   |   Churn Value |   Churn Score |   CLTV | Churn Reason                  |
+|---:|:-------------|--------:|:--------------|:-----------|:------------|-----------:|:-----------------------|-----------:|------------:|:---------|:------|:-------------------|:---------------|:--------------------|:--------------------------|------------------:|:--------------|--------------:|--------------:|-------:|:------------------------------|
+|  0 | 3668-QPYBK   |       1 | United States | California | Los Angeles |      90003 | 33.964131, -118.272783 |    33.9641 |    -118.273 | Male     | ...   | No                 | Month-to-month | Yes                 | Mailed check              |             53.85 | Yes           |             1 |            86 |   3239 | Competitor made better offer  |
+|  1 | 9237-HQITU   |       1 | United States | California | Los Angeles |      90005 | 34.059281, -118.30742  |    34.0593 |    -118.307 | Female   | ...   | No                 | Month-to-month | Yes                 | Electronic check          |             70.7  | Yes           |             1 |            67 |   2701 | Moved                         |
+|  2 | 9305-CDSKC   |       1 | United States | California | Los Angeles |      90006 | 34.048013, -118.293953 |    34.048  |    -118.294 | Female   | ...   | Yes                | Month-to-month | Yes                 | Electronic check          |             99.65 | Yes           |             1 |            86 |   5372 | Moved                         |
+|  3 | 7892-POOKP   |       1 | United States | California | Los Angeles |      90010 | 34.062125, -118.315709 |    34.0621 |    -118.316 | Female   | ...   | Yes                | Month-to-month | Yes                 | Electronic check          |            104.8  | Yes           |             1 |            84 |   5003 | Moved                         |
+|  4 | 0280-XJGEX   |       1 | United States | California | Los Angeles |      90015 | 34.039224, -118.266293 |    34.0392 |    -118.266 | Male     | ...   | Yes                | Month-to-month | Yes                 | Bank transfer (automatic) |            103.7  | Yes           |             1 |            89 |   5340 | Competitor had better devices |
 
 ## 1. Data Preprocessing
 
@@ -113,7 +112,7 @@ pipeline.add_stages([
 ```
 
 <CellOutput>
-{`<xplainable.preprocessing.pipeline.XPipeline at 0x1065660d0>`}
+{`<xplainable.preprocessing.pipeline.XPipeline at 0x2939438b0>`}
 </CellOutput>
 
 ### Preprocessed data
@@ -133,54 +132,20 @@ df_transformed.head()
 |  3 | los angeles | female   | no               | yes       | yes          |              28 | yes             | yes              | fiber optic        | no                | no              | yes                 | yes            | yes            | yes                | month-to-month | yes                 | electronic check          |            104.8  |             1 |
 |  4 | los angeles | male     | no               | no        | yes          |              49 | yes             | yes              | fiber optic        | no                | yes             | yes                 | no             | yes            | yes                | month-to-month | yes                 | bank transfer (automatic) |            103.7  |             1 |
 
-### Create preprocessor ID to persist to Xplainable Cloud
+### Create Preprocessor to Persist to Xplainable Cloud
 
 
 ```python
-preprocessor_id = xp.client.create_preprocessor_id(
+preprocessor_id, version_id = client.create_preprocessor(
     preprocessor_name="Telco Churn Preprocessing",
     preprocessor_description="Handling all preprocessing steps in the IBM Telco Churn Dataset",
+    pipeline=pipeline,
+    df=df
 )
-preprocessor_id
 ```
 
 <CellOutput>
-{`'HyfDRWw1ZK2e0WJN'`}
-</CellOutput>
-
-### Link a preprocessor version to the ID
-
-
-**Note:** Turn the Pipeline object into a preprocessor object. We're building out the
-functionality to persist the pipeline object directly. It's also possible to run the
-following code to view the GUI which is currently in Beta:
-
-```python
-pp.preprocessor(df)
-```
-
-
-**Note:** Turn the Pipeline object into a preprocessor object. We're building out the
-functionality to persist the pipeline object directly. It's also possible to run the
-following code to view the GUI which is currently in Beta:
-
-```python
-pp.preprocessor(df)
-```
-
-
-```python
-preprocessor_version = xp.client.create_preprocessor_version(
-    preprocessor_id, #preprocessor_id,
-    pipeline, # <-- Pass the pipeline
-    df # <-- Pass the raw dataframe
-)
-
-preprocessor_version
-```
-
-<CellOutput>
-{`{'version_id': 'aMdNQFwofZGZHP9n'}`}
+{`<Response [200]>`}
 </CellOutput>
 
 ### Loading the Preprocessor steps
@@ -190,12 +155,15 @@ transform data inplace.
 
 
 ```python
-pp_cloud = xp.client.load_preprocessor(
+pp_cloud = client.load_preprocessor(
     preprocessor_id,
-    preprocessor_version["version_id"],
-    gui_object=False # Set to true to load the GUI object, keep as False for pipeline
-    )
+    version_id
+)
 ```
+
+<CellOutput>
+{`<Response [200]>`}
+</CellOutput>
 
 ```python
 pp_cloud.stages
@@ -204,16 +172,16 @@ pp_cloud.stages
 <CellOutput>
 {`[{'feature': '__dataset__',
   'name': 'ChangeCases',
-  'transformer': <xplainable.preprocessing.transformers.dataset.ChangeCases at 0x102a89bb0>},
+  'transformer': <xplainable.preprocessing.transformers.dataset.ChangeCases at 0x11f23ee60>},
  {'feature': 'City',
   'name': 'Condense',
-  'transformer': <xplainable.preprocessing.transformers.categorical.Condense at 0x2a6ec7c70>},
+  'transformer': <xplainable.preprocessing.transformers.categorical.Condense at 0x2939428f0>},
  {'feature': 'Monthly Charges',
   'name': 'SetDType',
-  'transformer': <xplainable.preprocessing.transformers.mixed.SetDType at 0x2a6ec7b50>},
+  'transformer': <xplainable.preprocessing.transformers.mixed.SetDType at 0x293943100>},
  {'feature': '__dataset__',
   'name': 'DropCols',
-  'transformer': <xplainable.preprocessing.transformers.dataset.DropCols at 0x2a6ec7520>}]`}
+  'transformer': <xplainable.preprocessing.transformers.dataset.DropCols at 0x2939418d0>}]`}
 </CellOutput>
 
 ```python
@@ -243,7 +211,7 @@ params = opt.optimise(X_train, y_train)
 ```
 
 <CellOutput>
-{`100%|████████| 30/30 [00:03<00:00,  9.44trial/s, best loss: -0.8268936134101414]`}
+{`100%|██████████| 30/30 [00:02<00:00, 10.50trial/s, best loss: -0.8268936134101414]`}
 </CellOutput>
 
 ## 3. Model Training
@@ -259,7 +227,7 @@ model.fit(X_train, y_train)
 ```
 
 <CellOutput>
-{`<xplainable.core.ml.classification.XClassifier at 0x2abcac100>`}
+{`<xplainable.core.ml.classification.XClassifier at 0x296183040>`}
 </CellOutput>
 
 ## 4. Model Interpretability and Explainability
@@ -274,7 +242,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_a91ddf50-4a0a-4ece-b90a-f63261222e91.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_b1b8c8b5-cf85-4ea3-be72-7087879275e9.html' width='100%' height='520'></iframe>
 
 The image displays two graphs related to a churn prediction model.
 
@@ -297,52 +265,40 @@ thereby ensuring the model's impartiality regarding gender.
 ## 5. Model Persisting
 
 In this step, we first create a unique identifier for our churn prediction model using
-`xp.client.create_model_id`. This identifier, shown as `model_id`, represents the newly
+`client.create_model_id`. This identifier, shown as `model_id`, represents the newly
 instantiated model which predicts the likelihood of customers leaving within the next
 month. Following this, we generate a specific version of the model with
-`xp.client.create_model_version`, passing in our training data. The output `version_id`
+`client.create_model_version`, passing in our training data. The output `version_id`
 represents this particular iteration of our model, allowing us to track and manage
 different versions systematically.
 
 
 ```python
-model_id = xp.client.create_model_id(
-    model,
-    model_name="Telco Customer Churn",
-    model_description='Predicting customers who are likely to leave the business within the next month.'
+# Create a model
+model_id = client.create_model(
+    model=model,
+    model_name="Telco Customer Churn - Test",
+    model_description="Predicting customers who are likely to leave the business within the next month.",
+    x=X_train,
+    y=y_train
 )
-model_id
-```
-
-<CellOutput>
-{`'CxdKyfllkLMKQYT9'`}
-</CellOutput>
-
-```python
-version_id = xp.client.create_model_version(
-    model,
-    model_id,
-    X_train,
-    y_train
-)
-version_id
 ```
 
 <CellOutput>
 {`  0%|          | 0/19 [00:00<?, ?it/s]
-'3RmCOzUFTtBi5uVX'`}
+<Response [200]>`}
 </CellOutput>
 
 ### SaaS Models View
 
 
-![Model Image](assets/img/models.png)
+![Model Image](https://xplainable-public-storage.syd1.digitaloceanspaces.com/documentation_content/models.png)
 
 
 ### SaaS Explainer View
 
 
-![Model Image](assets/img/model_explainer.png)
+![Model Image](https://xplainable-public-storage.syd1.digitaloceanspaces.com/documentation_content/model_explainer.png)
 
 
 ## 6. Model Deployment
@@ -359,17 +315,19 @@ xplainable deployments.
 
 
 ```python
-deployment = xp.client.deploy(
-    hostname="https://inference.xplainable.io", #<- Can set up deployments to be hosted on-prem
-    model_id=model_id, #<- Use model id produced above
-    version_id=version_id #<- Use version id produced above
+deployment = client.deploy(
+    model_version_id=model_id["version_id"] #<- Use version id produced above
 )
 ```
+
+<CellOutput>
+{`<Response [200]>`}
+</CellOutput>
 
 ### SaaS Deployment View
 
 
-![Model Image](assets/img/deployments.png)
+![Model Image](https://xplainable-public-storage.syd1.digitaloceanspaces.com/documentation_content/deployments.png)
 
 
 ### Testing the Deployment programatically
@@ -380,12 +338,12 @@ ready to process incoming prediction requests.
 
 
 1. **Activating the Deployment:** The model deployment is activated using
-   `xp.client.activate_deployment`, which changes the deployment status to active,
-   allowing it to accept prediction requests.
+   `client.activate_deployment`, which changes the deployment status to active, allowing
+   it to accept prediction requests.
 
 
 ```python
-xp.client.activate_deployment(deployment['deployment_id'])
+client.activate_deployment(deployment['deployment_id'])
 ```
 
 <CellOutput>
@@ -393,27 +351,31 @@ xp.client.activate_deployment(deployment['deployment_id'])
 </CellOutput>
 
 2. **Creating a Deployment Key:** A deployment key is generated with
-   `xp.client.generate_deploy_key`. This key is required to authenticate and make secure
+   `client.generate_deploy_key`. This key is required to authenticate and make secure
    requests to the deployed model.
 
 
 ```python
-deploy_key = xp.client.generate_deploy_key('for testing', deployment['deployment_id'], 7, clipboard=False)
+deploy_key = client.generate_deploy_key(deployment['deployment_id'], 'Deployment API for Telco Churn', 7)
 ```
 
+<CellOutput>
+{`<Response [200]>`}
+</CellOutput>
+
 3. **Generating Example Payload:** An example payload for a deployment request is
-   generated by `xp.client.generate_example_deployment_payload`. This payload mimics the
+   generated by `client.generate_example_deployment_payload`. This payload mimics the
    input data structure the model expects when making predictions.
 
 
 ```python
 #Set the option to highlight multiple ways of creating data
-option = 1
+option = 2
 ```
 
 ```python
 if option == 1:
-    body = xp.client.generate_example_deployment_payload(deployment['deployment_id'])
+    body = client.generate_example_deployment_payload(deployment['deployment_id'])
 else:
     body = json.loads(df_transformed.drop(columns=["Churn Label"]).sample(1).to_json(orient="records"))
     body[0]["Gender"] = None #<- Won't require this line the next release of xplainable
@@ -424,25 +386,25 @@ body
 ```
 
 <CellOutput>
-{`[{'City': 'other',
-  'Gender': 'male',
-  'Senior Citizen': 'yes',
+{`[{'City': 'los angeles',
+  'Gender': None,
+  'Senior Citizen': 'no',
   'Partner': 'no',
-  'Dependents': 'yes',
-  'Tenure Months': 71.5,
-  'Phone Service': 'no',
+  'Dependents': 'no',
+  'Tenure Months': 58,
+  'Phone Service': 'yes',
   'Multiple Lines': 'no',
-  'Internet Service': 'dsl',
-  'Online Security': 'no internet service',
+  'Internet Service': 'fiber optic',
+  'Online Security': 'yes',
   'Online Backup': 'yes',
-  'Device Protection': 'no',
-  'Tech Support': 'yes',
+  'Device Protection': 'yes',
+  'Tech Support': 'no',
   'Streaming TV': 'yes',
-  'Streaming Movies': 'no',
-  'Contract': 'month-to-month',
+  'Streaming Movies': 'yes',
+  'Contract': 'one year',
   'Paperless Billing': 'yes',
-  'Payment Method': 'bank transfer (automatic)',
-  'Monthly Charges': None}]`}
+  'Payment Method': 'electronic check',
+  'Monthly Charges': 106.45}]`}
 </CellOutput>
 
 4. **Making a Prediction Request:** A POST request is made to the model's prediction
@@ -466,30 +428,34 @@ value
 {`[{'index': 0,
   'id': None,
   'partition': '__dataset__',
-  'score': 0.3928926246322737,
-  'proba': 0.11276893943031227,
-  'pred': '0',
-  'support': 303,
-  'breakdown': {'base_value': 0.2602797795676134,
-   'City': -0.0004814338695100573,
-   'Gender': -7.276610831867163e-05,
-   'Senior Citizen': 0.045826964522160306,
-   'Partner': 0.022065879046674532,
-   'Dependents': -0.01868614293728342,
-   'Tenure Months': -0.019222955135197697,
-   'Phone Service': -0.003697016407864983,
-   'Multiple Lines': -0.0014877658362602538,
-   'Internet Service': -0.007278086066799008,
-   'Online Security': -0.017775137133722977,
-   'Online Backup': -0.0046493037837984,
-   'Device Protection': 0.0422769557287958,
-   'Tech Support': -0.009955151311174023,
-   'Streaming TV': 0.011069611702865327,
-   'Streaming Movies': 0.024447731368512055,
-   'Contract': 0.05457342511379243,
-   'Paperless Billing': 0.024703763630477254,
-   'Payment Method': -0.009045727458687864,
-   'Monthly Charges': 0.0}}]`}
+  'score': 0.2846786293219753,
+  'proba': None,
+  'pred': 0,
+  'support': None,
+  'breakdown': [{'feature': 'base_value',
+    'value': None,
+    'score': 0.2602797795676134},
+   {'feature': 'City', 'value': 'los angeles', 'score': 0.0},
+   {'feature': 'Gender', 'value': 'nan', 'score': 0.0},
+   {'feature': 'Senior Citizen', 'value': 'no', 'score': 0.0},
+   {'feature': 'Partner', 'value': 'no', 'score': 0.0},
+   {'feature': 'Dependents', 'value': 'no', 'score': 0.0},
+   {'feature': 'Tenure Months', 'value': '58', 'score': -0.00999365171724382},
+   {'feature': 'Phone Service', 'value': 'yes', 'score': 0.0},
+   {'feature': 'Multiple Lines', 'value': 'no', 'score': 0.0},
+   {'feature': 'Internet Service', 'value': 'fiber optic', 'score': 0.0},
+   {'feature': 'Online Security', 'value': 'yes', 'score': 0.0},
+   {'feature': 'Online Backup', 'value': 'yes', 'score': 0.0},
+   {'feature': 'Device Protection', 'value': 'yes', 'score': 0.0},
+   {'feature': 'Tech Support', 'value': 'no', 'score': 0.0},
+   {'feature': 'Streaming TV', 'value': 'yes', 'score': 0.0},
+   {'feature': 'Streaming Movies', 'value': 'yes', 'score': 0.0},
+   {'feature': 'Contract', 'value': 'one year', 'score': 0.0},
+   {'feature': 'Paperless Billing', 'value': 'yes', 'score': 0.0},
+   {'feature': 'Payment Method', 'value': 'electronic check', 'score': 0.0},
+   {'feature': 'Monthly Charges',
+    'value': '106.45',
+    'score': 0.03439250147160574}]}]`}
 </CellOutput>
 
 ## SaaS Deployment Info
@@ -504,7 +470,7 @@ prediction response are all integrated into the application, ensuring that users
 full control and visibility over the deployment lifecycle and model interactions.
 
 
-![Model Image](assets/img/deployment_info.png)
+![Model Image](https://xplainable-public-storage.syd1.digitaloceanspaces.com/documentation_content/deployment_info.png)
 
 
 ## 7. Batch Optimisation (Beta)
