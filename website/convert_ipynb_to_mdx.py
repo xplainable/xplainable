@@ -89,13 +89,22 @@ def transform_markdown_cell(
         # Change the path to always be `assets/img/...`
         start = cell_source.find("(") + 1
         stop = cell_source.find(")")
-        old_img_path = (LIB_DIR / "website" / "docs" / "tutorials" / Path(cell_source[start:stop])).resolve()
-        name = old_img_path.name
-        img_path_str = f"assets/img/{name}"
-        cell_source = cell_source[:start] + img_path_str + cell_source[stop:]
-        # Copy the image to the folder where the markdown can access it.
-        new_img_path = str(img_folder.joinpath(name))
-        shutil.copy(str(old_img_path), new_img_path)
+        image_path = cell_source[start:stop]
+        
+        # Check if the image path is a URL (starts with http:// or https://)
+        if image_path.startswith(('http://', 'https://')):
+            # For remote images, just use the URL directly
+            # No need to copy the file locally
+            pass
+        else:
+            # Handle local files as before
+            old_img_path = (LIB_DIR / "website" / "docs" / "tutorials" / Path(image_path)).resolve()
+            name = old_img_path.name
+            img_path_str = f"assets/img/{name}"
+            cell_source = cell_source[:start] + img_path_str + cell_source[stop:]
+            # Copy the image to the folder where the markdown can access it.
+            new_img_path = str(img_folder.joinpath(name))
+            shutil.copy(str(old_img_path), new_img_path)
 
     # Wrap lines using black's default of 88 characters.
     new_cell_source = mdformat.text(
