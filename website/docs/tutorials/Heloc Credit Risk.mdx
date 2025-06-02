@@ -3,15 +3,15 @@ title: Heloc Credit Risk
 sidebar_label: Heloc Credit Risk
 path: website/docs/tutorials
 nb_path: website/docs/tutorials/HELOC_Credit_Risk.ipynb
-github: https://github.com/xplainable/xplainable/blob/main/examples/heloc_credit_risk.ipynb
-colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples
+github: https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb
+colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb
 ---
-import LinkButtons from "../../src/components/LinkButtons.jsx";
 import CellOutput from "../../src/components/CellOutput.jsx";
+import LinkButtons from "../../src/components/LinkButtons.jsx";
 
 <LinkButtons
-  githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/heloc_credit_risk.ipynb"
-  colabUrl="https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples"
+  githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb"
+  colabUrl="https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb"
 />
 
 # FICO Explainable ML: HELOC
@@ -40,138 +40,6 @@ quickly draw meaningful conclusions from the FICO HELOC dataset.
 !pip install xplainable-client
 !pip install kaggle
 ```
-
-<CellOutput>
-{`Requirement already satisfied: xplainable in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (1.2.4)
-Requirement already satisfied: hyperopt>=0.2.7 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (0.2.7)
-Requirement already satisfied: numba>=0.56.4 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (0.58.1)
-Requirement already satisfied: numpy>=1.26 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (1.26.4)
-Requirement already satisfied: pandas>=1.5.2 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (1.5.3)
-Requirement already satisfied: pyperclip>=1.8.2 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (1.8.2)
-Requirement already satisfied: scikit-learn>=1.2.2 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (1.3.2)
-Requirement already satisfied: scipy>=1.6.2 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (1.11.4)
-Requirement already satisfied: urllib3>=1.26.5 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (2.1.0)
-Requirement already satisfied: psutil>=5.9.4 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (5.9.6)
-Requirement already satisfied: joblib>=1.2.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (1.3.2)
-Requirement already satisfied: networkx>=2.6.3 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (3.2.1)
-Requirement already satisfied: tqdm>=4.62.3 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (4.66.1)
-Requirement already satisfied: ipython in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (8.18.1)
-Requirement already satisfied: packaging in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (23.2)
-Requirement already satisfied: requests in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable) (2.31.0)
-Requirement already satisfied: six in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable) (1.16.0)
-Requirement already satisfied: future in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable) (0.18.3)
-Requirement already satisfied: cloudpickle in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable) (3.0.0)
-Requirement already satisfied: py4j in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable) (0.10.9.7)
-Requirement already satisfied: llvmlite<0.42,>=0.41.0dev0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from numba>=0.56.4->xplainable) (0.41.1)
-Requirement already satisfied: python-dateutil>=2.8.1 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from pandas>=1.5.2->xplainable) (2.8.2)
-Requirement already satisfied: pytz>=2020.1 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from pandas>=1.5.2->xplainable) (2023.3.post1)
-Requirement already satisfied: threadpoolctl>=2.0.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from scikit-learn>=1.2.2->xplainable) (3.2.0)
-Requirement already satisfied: decorator in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable) (5.1.1)
-Requirement already satisfied: jedi>=0.16 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable) (0.19.1)
-Requirement already satisfied: matplotlib-inline in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable) (0.1.6)
-Requirement already satisfied: prompt-toolkit<3.1.0,>=3.0.41 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable) (3.0.41)
-Requirement already satisfied: pygments>=2.4.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable) (2.17.2)
-Requirement already satisfied: stack-data in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable) (0.6.3)
-Requirement already satisfied: traitlets>=5 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable) (5.14.0)
-Requirement already satisfied: exceptiongroup in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable) (1.2.0)
-Requirement already satisfied: pexpect>4.3 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable) (4.9.0)
-Requirement already satisfied: charset-normalizer<4,>=2 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from requests->xplainable) (3.3.2)
-Requirement already satisfied: idna<4,>=2.5 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from requests->xplainable) (3.6)
-Requirement already satisfied: certifi>=2017.4.17 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from requests->xplainable) (2023.11.17)
-Requirement already satisfied: parso<0.9.0,>=0.8.3 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from jedi>=0.16->ipython->xplainable) (0.8.3)
-Requirement already satisfied: ptyprocess>=0.5 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from pexpect>4.3->ipython->xplainable) (0.7.0)
-Requirement already satisfied: wcwidth in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from prompt-toolkit<3.1.0,>=3.0.41->ipython->xplainable) (0.2.12)
-Requirement already satisfied: executing>=1.2.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from stack-data->ipython->xplainable) (2.0.1)
-Requirement already satisfied: asttokens>=2.1.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from stack-data->ipython->xplainable) (2.4.1)
-Requirement already satisfied: pure-eval in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from stack-data->ipython->xplainable) (0.2.2)
-Requirement already satisfied: altair==5.4.1 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (5.4.1)
-Requirement already satisfied: jinja2 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from altair==5.4.1) (3.1.2)
-Requirement already satisfied: jsonschema>=3.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from altair==5.4.1) (4.20.0)
-Requirement already satisfied: narwhals>=1.5.2 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from altair==5.4.1) (1.8.1)
-Requirement already satisfied: packaging in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from altair==5.4.1) (23.2)
-Requirement already satisfied: typing-extensions>=4.10.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from altair==5.4.1) (4.12.2)
-Requirement already satisfied: attrs>=22.2.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from jsonschema>=3.0->altair==5.4.1) (23.1.0)
-Requirement already satisfied: jsonschema-specifications>=2023.03.6 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from jsonschema>=3.0->altair==5.4.1) (2023.11.1)
-Requirement already satisfied: referencing>=0.28.4 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from jsonschema>=3.0->altair==5.4.1) (0.31.0)
-Requirement already satisfied: rpds-py>=0.7.1 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from jsonschema>=3.0->altair==5.4.1) (0.13.1)
-Requirement already satisfied: MarkupSafe>=2.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from jinja2->altair==5.4.1) (2.1.3)
-Requirement already satisfied: xplainable-client in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (1.2.5.post10)
-Requirement already satisfied: ipywidgets in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable-client) (8.1.1)
-Requirement already satisfied: numpy>=1.26 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable-client) (1.26.4)
-Requirement already satisfied: pandas>=1.5.2 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable-client) (1.5.3)
-Requirement already satisfied: pyperclip in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable-client) (1.8.2)
-Requirement already satisfied: Requests in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable-client) (2.31.0)
-Requirement already satisfied: scikit-learn in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable-client) (1.3.2)
-Requirement already satisfied: setuptools>=65.5.1 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable-client) (68.2.2)
-Requirement already satisfied: urllib3 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable-client) (2.1.0)
-Requirement already satisfied: xplainable>=1.2.4 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable-client) (1.2.4)
-Requirement already satisfied: python-dateutil>=2.8.1 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from pandas>=1.5.2->xplainable-client) (2.8.2)
-Requirement already satisfied: pytz>=2020.1 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from pandas>=1.5.2->xplainable-client) (2023.3.post1)
-Requirement already satisfied: hyperopt>=0.2.7 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable>=1.2.4->xplainable-client) (0.2.7)
-Requirement already satisfied: numba>=0.56.4 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable>=1.2.4->xplainable-client) (0.58.1)
-Requirement already satisfied: scipy>=1.6.2 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable>=1.2.4->xplainable-client) (1.11.4)
-Requirement already satisfied: psutil>=5.9.4 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable>=1.2.4->xplainable-client) (5.9.6)
-Requirement already satisfied: joblib>=1.2.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable>=1.2.4->xplainable-client) (1.3.2)
-Requirement already satisfied: networkx>=2.6.3 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable>=1.2.4->xplainable-client) (3.2.1)
-Requirement already satisfied: tqdm>=4.62.3 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable>=1.2.4->xplainable-client) (4.66.1)
-Requirement already satisfied: ipython in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable>=1.2.4->xplainable-client) (8.18.1)
-Requirement already satisfied: packaging in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from xplainable>=1.2.4->xplainable-client) (23.2)
-Requirement already satisfied: threadpoolctl>=2.0.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from scikit-learn->xplainable-client) (3.2.0)
-Requirement already satisfied: comm>=0.1.3 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipywidgets->xplainable-client) (0.2.0)
-Requirement already satisfied: traitlets>=4.3.1 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipywidgets->xplainable-client) (5.14.0)
-Requirement already satisfied: widgetsnbextension~=4.0.9 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipywidgets->xplainable-client) (4.0.9)
-Requirement already satisfied: jupyterlab-widgets~=3.0.9 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipywidgets->xplainable-client) (3.0.9)
-Requirement already satisfied: charset-normalizer<4,>=2 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from Requests->xplainable-client) (3.3.2)
-Requirement already satisfied: idna<4,>=2.5 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from Requests->xplainable-client) (3.6)
-Requirement already satisfied: certifi>=2017.4.17 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from Requests->xplainable-client) (2023.11.17)
-Requirement already satisfied: six in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable>=1.2.4->xplainable-client) (1.16.0)
-Requirement already satisfied: future in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable>=1.2.4->xplainable-client) (0.18.3)
-Requirement already satisfied: cloudpickle in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable>=1.2.4->xplainable-client) (3.0.0)
-Requirement already satisfied: py4j in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable>=1.2.4->xplainable-client) (0.10.9.7)
-Requirement already satisfied: decorator in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable>=1.2.4->xplainable-client) (5.1.1)
-Requirement already satisfied: jedi>=0.16 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable>=1.2.4->xplainable-client) (0.19.1)
-Requirement already satisfied: matplotlib-inline in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable>=1.2.4->xplainable-client) (0.1.6)
-Requirement already satisfied: prompt-toolkit<3.1.0,>=3.0.41 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable>=1.2.4->xplainable-client) (3.0.41)
-Requirement already satisfied: pygments>=2.4.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable>=1.2.4->xplainable-client) (2.17.2)
-Requirement already satisfied: stack-data in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable>=1.2.4->xplainable-client) (0.6.3)
-Requirement already satisfied: exceptiongroup in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable>=1.2.4->xplainable-client) (1.2.0)
-Requirement already satisfied: pexpect>4.3 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from ipython->xplainable>=1.2.4->xplainable-client) (4.9.0)
-Requirement already satisfied: llvmlite<0.42,>=0.41.0dev0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from numba>=0.56.4->xplainable>=1.2.4->xplainable-client) (0.41.1)
-Requirement already satisfied: parso<0.9.0,>=0.8.3 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from jedi>=0.16->ipython->xplainable>=1.2.4->xplainable-client) (0.8.3)
-Requirement already satisfied: ptyprocess>=0.5 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from pexpect>4.3->ipython->xplainable>=1.2.4->xplainable-client) (0.7.0)
-Requirement already satisfied: wcwidth in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from prompt-toolkit<3.1.0,>=3.0.41->ipython->xplainable>=1.2.4->xplainable-client) (0.2.12)
-Requirement already satisfied: executing>=1.2.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from stack-data->ipython->xplainable>=1.2.4->xplainable-client) (2.0.1)
-Requirement already satisfied: asttokens>=2.1.0 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from stack-data->ipython->xplainable>=1.2.4->xplainable-client) (2.4.1)
-Requirement already satisfied: pure-eval in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from stack-data->ipython->xplainable>=1.2.4->xplainable-client) (0.2.2)
-Collecting kaggle
-  Downloading kaggle-1.6.17.tar.gz (82 kB)
-[2K     [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m82.7/82.7 kB[0m [31m162.6 kB/s[0m eta [36m0:00:00[0m00:01[0m00:01[0m
-[?25h  Preparing metadata (setup.py) ... [?25ldone
-[?25hRequirement already satisfied: six>=1.10 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from kaggle) (1.16.0)
-Requirement already satisfied: certifi>=2023.7.22 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from kaggle) (2023.11.17)
-Requirement already satisfied: python-dateutil in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from kaggle) (2.8.2)
-Requirement already satisfied: requests in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from kaggle) (2.31.0)
-Requirement already satisfied: tqdm in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from kaggle) (4.66.1)
-Collecting python-slugify (from kaggle)
-  Downloading python_slugify-8.0.4-py2.py3-none-any.whl.metadata (8.5 kB)
-Requirement already satisfied: urllib3 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from kaggle) (2.1.0)
-Requirement already satisfied: bleach in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from kaggle) (6.1.0)
-Requirement already satisfied: webencodings in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from bleach->kaggle) (0.5.1)
-Collecting text-unidecode>=1.3 (from python-slugify->kaggle)
-  Downloading text_unidecode-1.3-py2.py3-none-any.whl.metadata (2.4 kB)
-Requirement already satisfied: charset-normalizer<4,>=2 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from requests->kaggle) (3.3.2)
-Requirement already satisfied: idna<4,>=2.5 in /Users/jtuppack/miniforge3/envs/xplainable-dev/lib/python3.10/site-packages (from requests->kaggle) (3.6)
-Downloading python_slugify-8.0.4-py2.py3-none-any.whl (10 kB)
-Downloading text_unidecode-1.3-py2.py3-none-any.whl (78 kB)
-[2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m78.2/78.2 kB[0m [31m494.4 kB/s[0m eta [36m0:00:00[0ma [36m0:00:01[0m
-[?25hBuilding wheels for collected packages: kaggle
-  Building wheel for kaggle (setup.py) ... [?25ldone
-[?25h  Created wheel for kaggle: filename=kaggle-1.6.17-py3-none-any.whl size=105786 sha256=abe59f290d0441fc580ee9cf74b91b1c6f25262d844d97acdf0e4604e2d1ad61
-  Stored in directory: /Users/jtuppack/Library/Caches/pip/wheels/9f/af/22/bf406f913dc7506a485e60dce8143741abd0a92a19337d83a3
-Successfully built kaggle
-Installing collected packages: text-unidecode, python-slugify, kaggle
-Successfully installed kaggle-1.6.17 python-slugify-8.0.4 text-unidecode-1.3`}
-</CellOutput>
 
 ```python
 import pandas as pd
@@ -309,7 +177,7 @@ params = optimiser.optimise(x_train, y_train_df)
 {` 74%|███████▍  | 223/300 [00:14<00:04, 15.92trial/s, best loss: -0.7057194555537591]`}
 </CellOutput>
 
-## 3. Model Training
+# 3. Model Training
 
 The `XClassifier` is trained on the dataset, with the optimised parameters.
 
@@ -335,7 +203,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_53e5914f-0d22-41f2-8336-8301e4f4a534.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_39a7a60f-d764-4fdb-838d-7080f4a6914c.html' width='100%' height='520'></iframe>
 
 ## Analysing Feature Importances and Contributions
 
@@ -354,7 +222,7 @@ feature contributions would show how each feature (like the net fraction of trad
 revolving burden) affects the predicted risk estimate for a particular applicant.
 
 
-# 5. Saving a model to Xplainable's app
+# 5. Saving a model to the Xplainable App
 
 
 In this step, we first create a unique identifier for our HELOC risk prediction model
@@ -374,8 +242,7 @@ Creat an API key in the Xplainable platform
 
 ```python
 client = xplainable_client.Client(
-    api_key="f6eaf63f-598e-4dfc-9ebd-a343386d1905",
-    hostname="https://xplainable-api-uat-45xyq.ondigitalocean.app"
+    api_key="add_your_own_api_key_here",
 )
 ```
 
@@ -403,7 +270,7 @@ get_response_content
 <Response [200]>`}
 </CellOutput>
 
-## Xplainable App
+## Xplainable App Model View
 
 As you can see in the screenshot, now the model has been saved to Xplainable's webapp,
 allowing yourself and other members in your organisation to visually analyse the model.
@@ -470,7 +337,7 @@ client.activate_deployment(deployment['deployment_id'])
 
 
 ```python
-deploy_key = client.generate_deploy_key('for testing', deployment['deployment_id'], 7)
+deploy_key = client.generate_deploy_key('HELOC Deploy Key', deployment['deployment_id'], 7)
 ```
 
 3. **Generating Example Payload:** An example payload for a deployment request is
@@ -487,8 +354,7 @@ option = 1
 if option == 1:
     body = client.generate_example_deployment_payload(deployment['deployment_id'])
 else:
-    body = json.loads(df.drop(columns=["RiskPerformance"]).sample(1).to_json(orient="records"))
-    # body[0]["Gender"] = None #<- Won't require this line the next release of xplainable
+    body = json.loads(data.drop(columns=["RiskPerformance"]).sample(1).to_json(orient="records"))
 ```
 
 ```python
@@ -526,14 +392,6 @@ body
    prediction response, which includes the predicted class (e.g., 'No' for no churn) and
    the prediction probabilities for each class.
 
-
-```python
-deploy_key['deploy_key']
-```
-
-<CellOutput>
-{`'f2a38982-c4f2-4114-b8ce-d71e37019f5f'`}
-</CellOutput>
 
 ```python
 response = requests.post(
