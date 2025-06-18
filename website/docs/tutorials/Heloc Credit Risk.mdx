@@ -6,8 +6,8 @@ nb_path: website/docs/tutorials/HELOC_Credit_Risk.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb
 ---
-import CellOutput from "../../src/components/CellOutput.jsx";
 import LinkButtons from "../../src/components/LinkButtons.jsx";
+import CellOutput from "../../src/components/CellOutput.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb"
@@ -120,6 +120,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 import json
 import requests
+import os
 
 import xplainable_client
 import xplainable as xp
@@ -131,47 +132,8 @@ from xplainable.core.optimisation.bayesian import XParamOptimiser
 
 
 ```python
-import os
-import pandas as pd
-
-def load_heloc_data(
-        use_kaggle=True, 
-        kaggle_dataset_path="./data/heloc_dataset.csv", 
-        local_path='./data/heloc_dataset.csv'):
-    # Check if using Kaggle API
-    if use_kaggle:
-        try:
-            # Import the Kaggle API
-            from kaggle.api.kaggle_api_extended import KaggleApi
-
-            # Initialize and authenticate the Kaggle API
-            api = KaggleApi()
-            api.authenticate()
-
-            # Download the dataset
-            print("Downloading dataset from Kaggle...")
-            api.dataset_download_files(kaggle_dataset_path, path='./data', unzip=True)
-
-            # Load the dataset
-            data = pd.read_csv('./data/heloc_dataset.csv')
-            print("Dataset loaded from Kaggle.")
-            return data
-
-        except Exception as e:
-            print(f"Error downloading dataset from Kaggle: {e}. Falling back to local version.")
-
-    # Load from the local path if Kaggle download fails or is not selected
-    try:
-        data = pd.read_csv(local_path)
-        print("Dataset loaded from local path.")
-        return data
-    except FileNotFoundError:
-        print("Local file not found. Please check the file path.")
-
-# Usage
-data = load_heloc_data(use_kaggle=False)  # Set to False to skip Kaggle and use the local file
+data = pd.read_csv('https://xplainable-public-storage.syd1.digitaloceanspaces.com/example_data/heloc_dataset.csv')  # Set to False to skip Kaggle and use the local file
 data.head()
-
 ```
 
 
@@ -276,7 +238,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_37cba0bc-1885-4a07-beff-2ee30758d269.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_fc31e6fc-dbbf-4a75-89da-089a0394bcad.html' width='100%' height='520'></iframe>
 
 ## Analysing Feature Importances and Contributions
 

@@ -6,8 +6,8 @@ nb_path: website/docs/tutorials/Tool_Failure.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb
 ---
-import CellOutput from "../../src/components/CellOutput.jsx";
 import LinkButtons from "../../src/components/LinkButtons.jsx";
+import CellOutput from "../../src/components/CellOutput.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb"
@@ -28,15 +28,13 @@ from xplainable.core.models import XClassifier
 from xplainable.core.optimisation.bayesian import XParamOptimiser
 from xplainable.preprocessing.pipeline import XPipeline
 from xplainable.preprocessing import transformers as xtf
-
-import xplainable_client
 ```
 
 ## Read in the csv dataset
 
 
 ```python
-df = pd.read_csv("data/asset_failure.csv")
+df = pd.read_csv("https://xplainable-public-storage.syd1.digitaloceanspaces.com/example_data/asset_failure.csv")
 ```
 
 ```python
@@ -152,7 +150,7 @@ params = opt.optimise(X_train, y_train)
 ```
 
 <CellOutput>
-{`100%|██████████| 30/30 [00:01<00:00, 17.32trial/s, best loss: -0.9315957452699021]`}
+{`100%|██████████| 30/30 [00:01<00:00, 15.52trial/s, best loss: -0.9315957452699021]`}
 </CellOutput>
 
 ## 3. Model Training
@@ -168,7 +166,7 @@ model.fit(X_train, y_train)
 ```
 
 <CellOutput>
-{`<xplainable.core.ml.classification.XClassifier at 0x294115630>`}
+{`<xplainable.core.ml.classification.XClassifier at 0x29581d420>`}
 </CellOutput>
 
 ## 4. Model Interpretability and Explainability
@@ -183,7 +181,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_e7866482-0bf4-417e-93d0-dfb4edd2f8d0.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_38a661cf-25d5-4684-933c-1ae1f551d952.html' width='100%' height='520'></iframe>
 
 ```python
 params = {
@@ -195,14 +193,14 @@ model.update_feature_params(features=['Rotational speed [rpm]', 'Tool wear [min]
 ```
 
 <CellOutput>
-{`<xplainable.core.ml.classification.XClassifier at 0x294115630>`}
+{`<xplainable.core.ml.classification.XClassifier at 0x28fe17940>`}
 </CellOutput>
 
 ```python
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_790dbd35-118c-4633-8ac8-79f67df0904e.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_7a58abb4-eeb8-4b4d-a468-c3b5373e51e3.html' width='100%' height='520'></iframe>
 
 In this snapshot, we demonstrate the impact of hyperparameter tuning on model
 interpretability. By adjusting max_depth and min_info_gain, we refine the feature wise
@@ -229,6 +227,9 @@ reports.
 client = xplainable_client.Client(
     api_key="",#<- Add your own token here
 )
+
+
+
 ```
 
 ## 5. Model Persisting
@@ -336,12 +337,12 @@ body
 ```
 
 <CellOutput>
-{`[{'Type': 'L',
-  'Air temperature [K]': 297.9,
-  'Process temperature [K]': 307.8,
-  'Rotational speed [rpm]': 1397,
-  'Torque [Nm]': 45.0,
-  'Tool wear [min]': 104}]`}
+{`[{'Type': 'M',
+  'Air temperature [K]': 298.8,
+  'Process temperature [K]': 308.8,
+  'Rotational speed [rpm]': 1497,
+  'Torque [Nm]': 46.8,
+  'Tool wear [min]': 72}]`}
 </CellOutput>
 
 4. **Making a Prediction Request:** A POST request is made to the model's prediction
@@ -365,21 +366,21 @@ value
 {`[{'index': 0,
   'id': None,
   'partition': '__dataset__',
-  'score': 0.00400689018470244,
+  'score': 0.0,
   'proba': None,
   'pred': 0,
   'support': None,
   'breakdown': [{'feature': 'base_value',
     'value': None,
     'score': 0.035522388059701496},
-   {'feature': 'Type', 'value': 'L', 'score': 0.0},
-   {'feature': 'Air temperature [K]', 'value': '297.9', 'score': 0.0},
-   {'feature': 'Process temperature [K]', 'value': '307.8', 'score': 0.0},
+   {'feature': 'Type', 'value': 'M', 'score': 0.0},
+   {'feature': 'Air temperature [K]', 'value': '298.8', 'score': 0.0},
+   {'feature': 'Process temperature [K]', 'value': '308.8', 'score': 0.0},
    {'feature': 'Rotational speed [rpm]',
-    'value': '1397',
-    'score': -0.013910922832375576},
-   {'feature': 'Torque [Nm]', 'value': '45', 'score': -0.011265812711409608},
+    'value': '1497',
+    'score': -0.01567956188032209},
+   {'feature': 'Torque [Nm]', 'value': '46.8', 'score': -0.012698151637327479},
    {'feature': 'Tool wear [min]',
-    'value': '104',
-    'score': -0.0063387623312138736}]}]`}
+    'value': '72',
+    'score': -0.007144674542051926}]}]`}
 </CellOutput>

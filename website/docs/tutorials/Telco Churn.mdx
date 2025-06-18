@@ -6,8 +6,8 @@ nb_path: website/docs/tutorials/Telco_Churn.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb
 ---
-import CellOutput from "../../src/components/CellOutput.jsx";
 import LinkButtons from "../../src/components/LinkButtons.jsx";
+import CellOutput from "../../src/components/CellOutput.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb"
@@ -49,7 +49,7 @@ client = xplainable_client.Client(
 
 
 ```python
-df = pd.read_csv('./data/telco_customer_churn.csv')
+df = pd.read_csv('https://xplainable-public-storage.syd1.digitaloceanspaces.com/example_data/telco_customer_churn.csv')
 ```
 
 ### Sample of the IBM Telco Churn Dataset
@@ -112,7 +112,7 @@ pipeline.add_stages([
 ```
 
 <CellOutput>
-{`<xplainable.preprocessing.pipeline.XPipeline at 0x2939438b0>`}
+{`<xplainable.preprocessing.pipeline.XPipeline at 0x16dc5a050>`}
 </CellOutput>
 
 ### Preprocessed data
@@ -172,16 +172,16 @@ pp_cloud.stages
 <CellOutput>
 {`[{'feature': '__dataset__',
   'name': 'ChangeCases',
-  'transformer': <xplainable.preprocessing.transformers.dataset.ChangeCases at 0x11f23ee60>},
+  'transformer': <xplainable.preprocessing.transformers.dataset.ChangeCases at 0x294ee7ca0>},
  {'feature': 'City',
   'name': 'Condense',
-  'transformer': <xplainable.preprocessing.transformers.categorical.Condense at 0x2939428f0>},
+  'transformer': <xplainable.preprocessing.transformers.categorical.Condense at 0x294ee72e0>},
  {'feature': 'Monthly Charges',
   'name': 'SetDType',
-  'transformer': <xplainable.preprocessing.transformers.mixed.SetDType at 0x293943100>},
+  'transformer': <xplainable.preprocessing.transformers.mixed.SetDType at 0x294ee7a60>},
  {'feature': '__dataset__',
   'name': 'DropCols',
-  'transformer': <xplainable.preprocessing.transformers.dataset.DropCols at 0x2939418d0>}]`}
+  'transformer': <xplainable.preprocessing.transformers.dataset.DropCols at 0x294ee7b50>}]`}
 </CellOutput>
 
 ```python
@@ -211,7 +211,7 @@ params = opt.optimise(X_train, y_train)
 ```
 
 <CellOutput>
-{`100%|██████████| 30/30 [00:02<00:00, 10.50trial/s, best loss: -0.8268936134101414]`}
+{`100%|██████████| 30/30 [00:03<00:00,  9.12trial/s, best loss: -0.8268936134101414]`}
 </CellOutput>
 
 ## 3. Model Training
@@ -227,7 +227,7 @@ model.fit(X_train, y_train)
 ```
 
 <CellOutput>
-{`<xplainable.core.ml.classification.XClassifier at 0x296183040>`}
+{`<xplainable.core.ml.classification.XClassifier at 0x2978ae770>`}
 </CellOutput>
 
 ## 4. Model Interpretability and Explainability
@@ -242,7 +242,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_ef5ba23e-93a5-4024-8f46-bbbae20a009d.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_a39c302e-dcff-4742-a838-1245059dcaaa.html' width='100%' height='520'></iframe>
 
 The image displays two graphs related to a churn prediction model.
 
@@ -277,7 +277,7 @@ different versions systematically.
 # Create a model
 model_id = client.create_model(
     model=model,
-    model_name="Telco Customer Churn - Test",
+    model_name="Autotrain Telco Churn",
     model_description="Predicting customers who are likely to leave the business within the next month.",
     x=X_train,
     y=y_train
@@ -386,25 +386,25 @@ body
 ```
 
 <CellOutput>
-{`[{'City': 'los angeles',
+{`[{'City': 'other',
   'Gender': None,
   'Senior Citizen': 'no',
-  'Partner': 'no',
+  'Partner': 'yes',
   'Dependents': 'no',
   'Tenure Months': 58,
   'Phone Service': 'yes',
-  'Multiple Lines': 'no',
-  'Internet Service': 'fiber optic',
+  'Multiple Lines': 'yes',
+  'Internet Service': 'dsl',
   'Online Security': 'yes',
-  'Online Backup': 'yes',
+  'Online Backup': 'no',
   'Device Protection': 'yes',
-  'Tech Support': 'no',
+  'Tech Support': 'yes',
   'Streaming TV': 'yes',
   'Streaming Movies': 'yes',
-  'Contract': 'one year',
+  'Contract': 'two year',
   'Paperless Billing': 'yes',
   'Payment Method': 'electronic check',
-  'Monthly Charges': 106.45}]`}
+  'Monthly Charges': 84.3}]`}
 </CellOutput>
 
 4. **Making a Prediction Request:** A POST request is made to the model's prediction
@@ -428,34 +428,34 @@ value
 {`[{'index': 0,
   'id': None,
   'partition': '__dataset__',
-  'score': 0.2846786293219753,
+  'score': 0.4124611343175905,
   'proba': None,
   'pred': 0,
   'support': None,
   'breakdown': [{'feature': 'base_value',
     'value': None,
     'score': 0.2602797795676134},
-   {'feature': 'City', 'value': 'los angeles', 'score': 0.0},
+   {'feature': 'City', 'value': 'other', 'score': 0.0},
    {'feature': 'Gender', 'value': 'nan', 'score': 0.0},
    {'feature': 'Senior Citizen', 'value': 'no', 'score': 0.0},
-   {'feature': 'Partner', 'value': 'no', 'score': 0.0},
+   {'feature': 'Partner', 'value': 'yes', 'score': 0.0},
    {'feature': 'Dependents', 'value': 'no', 'score': 0.0},
-   {'feature': 'Tenure Months', 'value': '58', 'score': -0.00999365171724382},
+   {'feature': 'Tenure Months', 'value': '58', 'score': -0.0939361638747209},
    {'feature': 'Phone Service', 'value': 'yes', 'score': 0.0},
-   {'feature': 'Multiple Lines', 'value': 'no', 'score': 0.0},
-   {'feature': 'Internet Service', 'value': 'fiber optic', 'score': 0.0},
+   {'feature': 'Multiple Lines', 'value': 'yes', 'score': 0.0},
+   {'feature': 'Internet Service', 'value': 'dsl', 'score': 0.0},
    {'feature': 'Online Security', 'value': 'yes', 'score': 0.0},
-   {'feature': 'Online Backup', 'value': 'yes', 'score': 0.0},
+   {'feature': 'Online Backup', 'value': 'no', 'score': 0.0},
    {'feature': 'Device Protection', 'value': 'yes', 'score': 0.0},
-   {'feature': 'Tech Support', 'value': 'no', 'score': 0.0},
+   {'feature': 'Tech Support', 'value': 'yes', 'score': 0.0},
    {'feature': 'Streaming TV', 'value': 'yes', 'score': 0.0},
    {'feature': 'Streaming Movies', 'value': 'yes', 'score': 0.0},
-   {'feature': 'Contract', 'value': 'one year', 'score': 0.0},
+   {'feature': 'Contract', 'value': 'two year', 'score': 0.0},
    {'feature': 'Paperless Billing', 'value': 'yes', 'score': 0.0},
    {'feature': 'Payment Method', 'value': 'electronic check', 'score': 0.0},
    {'feature': 'Monthly Charges',
-    'value': '106.45',
-    'score': 0.03439250147160574}]}]`}
+    'value': '84.3',
+    'score': 0.24611751862469802}]}]`}
 </CellOutput>
 
 ## SaaS Deployment Info
