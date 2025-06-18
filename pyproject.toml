@@ -26,8 +26,8 @@ classifiers = [
 
 dependencies = [
   "hyperopt>=0.2.7",
-  "numba>=0.56.4",
-  "numpy>=1.26",
+  "numba>=0.56.4,<0.61",
+  "numpy>=1.26,<2.0",
   "pandas>=1.5.2",
   "pyperclip>=1.8.2",
   "scikit_learn>=1.2.2",
