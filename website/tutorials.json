@@ -1,11 +1,11 @@
 {
-    "lead_scoring_prediction": {
-        "title": "Lead Scoring Prediction",
-        "sidebar_label": "Lead Scoring Prediction",
+    "heloc_credit_risk": {
+        "title": "Heloc Credit Risk",
+        "sidebar_label": "Heloc Credit Risk",
         "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/Lead_Scoring_Prediction.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Lead_Scoring_Prediction.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Lead_Scoring_Prediction.ipynb"
+        "nb_path": "website/docs/tutorials/HELOC_Credit_Risk.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb"
     },
     "telco_churn": {
         "title": "Telco Churn",
@@ -15,6 +15,14 @@
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb"
     },
+    "instacart_product_reorder_prediction": {
+        "title": "Instacart Product Reorder Prediction",
+        "sidebar_label": "Instacart Product Reorder Prediction",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Instacart_Product_Reorder_Prediction.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Instacart_Product_Reorder_Prediction.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Instacart_Product_Reorder_Prediction.ipynb"
+    },
     "dozer_price_prediction": {
         "title": "Dozer Price Prediction",
         "sidebar_label": "Dozer Price Prediction",
@@ -23,21 +31,13 @@
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Dozer_Price_Prediction.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Dozer_Price_Prediction.ipynb"
     },
-    "heloc_credit_risk": {
-        "title": "Heloc Credit Risk",
-        "sidebar_label": "Heloc Credit Risk",
+    "lead_scoring_prediction": {
+        "title": "Lead Scoring Prediction",
+        "sidebar_label": "Lead Scoring Prediction",
         "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/HELOC_Credit_Risk.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb"
-    },
-    "instacart_product_reorder_prediction": {
-        "title": "Instacart Product Reorder Prediction",
-        "sidebar_label": "Instacart Product Reorder Prediction",
-        "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/Instacart_Product_Reorder_Prediction.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Instacart_Product_Reorder_Prediction.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Instacart_Product_Reorder_Prediction.ipynb"
+        "nb_path": "website/docs/tutorials/Lead_Scoring_Prediction.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Lead_Scoring_Prediction.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Lead_Scoring_Prediction.ipynb"
     },
     "tool_failure": {
         "title": "Tool Failure",
