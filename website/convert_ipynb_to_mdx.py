@@ -191,8 +191,43 @@ def transform_code_cell(
         # For %%html cells, extract the HTML content and save it as a file
         html_content = cell_source[cell_source.find("%%html") + 6:].strip()
         
-        # Generate a unique filename for the HTML file
+        # Add auto-resize script to the HTML content
+        resize_script = """
+<script>
+function resizeIframe() {
+    const height = Math.max(
+        document.body.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.clientHeight,
+        document.documentElement.scrollHeight,
+        document.documentElement.offsetHeight
+    );
+    window.parent.postMessage({type: 'resize', height: height + 20}, '*');
+}
+
+// Resize when page loads
+window.addEventListener('load', resizeIframe);
+
+// Resize when content changes (for dynamic content)
+if (window.ResizeObserver) {
+    const observer = new ResizeObserver(resizeIframe);
+    observer.observe(document.body);
+}
+
+// Fallback for older browsers
+setTimeout(resizeIframe, 1000);
+</script>
+"""
+        
+        # Insert the script before the closing </body> tag, or at the end if no </body>
+        if '</body>' in html_content:
+            html_content = html_content.replace('</body>', resize_script + '\n</body>')
+        else:
+            html_content = html_content + resize_script
+        
+        # Generate a unique filename and ID for the HTML file
         file_name = f"D3Visualization_{uuid.uuid4().hex[:8]}.html"
+        iframe_id = f"iframe_{file_name.replace('.html', '')}"
         
         # Save to the static/plot_data directory for serving
         static_plot_data_folder = WEBSITE_DIR.joinpath("static").joinpath("plot_data")
@@ -202,15 +237,17 @@ def transform_code_cell(
         with open(file_path, "w") as f:
             f.write(html_content)
         
-        # Add the code block showing the %%html command
-        mdx_output += f"```python\n{cell_source}\n```\n\n"
-        
-        # Add the iframe to display the HTML content
-        path_to_html = f"/plot_data/{file_name}"
+        # Add collapsible code block showing the %%html command
         mdx_output += (
-            f"<iframe src='{path_to_html}' width='100%' height='600' "
-            f"style={{{{border: '1px solid #ccc', borderRadius: '4px'}}}}></iframe>\n\n"
+            "<details>\n"
+            "<summary>Show HTML Code</summary>\n\n"
+            f"```python\n{cell_source}\n```\n\n"
+            "</details>\n\n"
         )
+        
+        # Add the iframe with auto-resize listener - simpler approach
+        path_to_html = f"/plot_data/{file_name}"
+        mdx_output += f'<iframe id="{iframe_id}" src="{path_to_html}" width="100%" height="300" style={{{{border: "1px solid #ccc", borderRadius: "4px"}}}} onLoad={{() => {{ const iframe = document.getElementById("{iframe_id}"); window.addEventListener("message", (event) => {{ if (event.data.type === "resize" && iframe) {{ iframe.style.height = event.data.height + "px"; }} }}); }}}}></iframe>\n\n'
         
         d3_html_flag = True
         
@@ -290,10 +327,10 @@ def transform_code_cell(
                         with open(file_path, "w") as f:
                             f.write(cell_output_data)
                         
-                        # Add iframe to display the HTML
+                        # Add iframe to display the HTML with reduced height
                         path_to_html = f"/plot_data/{file_name}"
                         mdx_output += (
-                            f"<iframe src='{path_to_html}' width='100%' height='600' "
+                            f"<iframe src='{path_to_html}' width='100%' height='400' "
                             f"style={{{{border: '1px solid #ccc', borderRadius: '4px'}}}}></iframe>\n\n"
                         )
                         d3_html_flag = True
