@@ -1,4 +1,12 @@
 {
+    "repurchase_window_prediction": {
+        "title": "Repurchase Window Prediction",
+        "sidebar_label": "Repurchase Window Prediction",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Repurchase_Window_Prediction.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Repurchase_Window_Prediction.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Repurchase_Window_Prediction.ipynb"
+    },
     "heloc_credit_risk": {
         "title": "Heloc Credit Risk",
         "sidebar_label": "Heloc Credit Risk",

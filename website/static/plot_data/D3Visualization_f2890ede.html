@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Repurchase Prediction Timeline (30 Days)</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .axis path, .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }
+    .tick line { stroke: #ccc; }
+    .purchase { fill: #2774AE; }
+    .window { stroke: #E44D9A; stroke-width: 4px; stroke-opacity: 0.4; }
+    .rebuy { fill: #E44D9A; }
+    .legend { font-size: 12px; }
+    .button { position: absolute; top: 10px; right: 20px; padding: 6px 12px; background: #2774AE; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <button class="button" id="replayBtn">Replay</button>
+  <h2>Repurchase Prediction Timeline (30 Days)</h2>
+  <svg width="800" height="300"></svg>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script>
+    const rawData = [
+      {id: 'C1', date: '2021-02-01', rebuy: '2021-02-25'},
+      {id: 'C1', date: '2021-04-05', rebuy: null},
+      {id: 'C2', date: '2021-03-01', rebuy: null},
+      {id: 'C2', date: '2021-04-15', rebuy: null},
+      {id: 'C3', date: '2021-06-01', rebuy: '2021-07-10'},
+      {id: 'C3', date: '2021-09-12', rebuy: null},
+      {id: 'C4', date: '2021-10-01', rebuy: null}
+    ];
+    const parseDate = d3.timeParse('%Y-%m-%d');
+    function prepareData() {
+      return rawData.map(d => {
+        const date = parseDate(d.date);
+        const rebuyDate = d.rebuy ? parseDate(d.rebuy) : null;
+        return { id: d.id, date, end: d3.timeDay.offset(date, 30), rebuyDate };
+      });
+    }
+    const svg = d3.select('svg');
+    const margin = {top: 20, right: 20, bottom: 30, left: 60};
+    const width = +svg.attr('width') - margin.left - margin.right;
+    const height = +svg.attr('height') - margin.top - margin.bottom;
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+    function render(data) {
+      g.selectAll('*').remove();
+      const customers = [...new Set(data.map(d => d.id))];
+      const x = d3.scaleTime()
+        .domain(d3.extent(data.flatMap(d => [d.date, d.end])))
+        .range([0, width]);
+      const y = d3.scalePoint()
+        .domain(customers)
+        .range([0, height])
+        .padding(0.5);
+
+      g.append('g')
+        .attr('class', 'axis')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(x).ticks(6).tickFormat(d3.timeFormat('%b-%d')));
+      g.append('g')
+        .attr('class', 'axis')
+        .call(d3.axisLeft(y));
+
+      // animate per customer
+      customers.forEach((cust, i) => {
+        const custData = data.filter(d => d.id === cust);
+        custData.forEach((d, j) => {
+          const delay = i * 1000 + j * 300;
+          // window
+          g.append('line')
+            .datum(d)
+            .attr('class', 'window')
+            .attr('x1', x(d.date))
+            .attr('x2', x(d.date))
+            .attr('y1', y(d.id))
+            .attr('y2', y(d.id))
+            .transition()
+            .delay(delay)
+            .duration(600)
+            .attr('x2', x(d.end));
+          // purchase
+          g.append('circle')
+            .datum(d)
+            .attr('class', 'purchase')
+            .attr('cx', x(d.date))
+            .attr('cy', y(d.id))
+            .attr('r', 0)
+            .transition()
+            .delay(delay + 200)
+            .duration(300)
+            .attr('r', 6);
+          // rebuy
+          if (d.rebuyDate) {
+            g.append('path')
+              .datum(d)
+              .attr('class', 'rebuy')
+              .attr('d', d3.symbol().type(d3.symbolStar).size(200))
+              .attr('transform', `translate(${x(d.rebuyDate)},${y(d.id)}) scale(0)`)  
+              .transition()
+              .delay(delay + 400)
+              .duration(400)
+              .attr('transform', `translate(${x(d.rebuyDate)},${y(d.id)}) scale(1)`);
+          }
+        });
+      });
+      // legend
+      const legend = svg.selectAll('.legend').data([0]);
+      const lg = legend.enter().append('g').attr('class','legend').merge(legend)
+        .attr('transform', `translate(${margin.left},10)`);
+      lg.selectAll('*').remove();
+      lg.append('circle').attr('cx',0).attr('cy',0).attr('r',6).attr('fill','#2774AE');
+      lg.append('text').attr('x',12).attr('y',4).text('Purchase');
+      lg.append('line').attr('x1',100).attr('x2',120).attr('y1',0).attr('y2',0)
+        .attr('stroke','#E44D9A').attr('stroke-width',4).attr('stroke-opacity',0.4);
+      lg.append('text').attr('x',130).attr('y',4).text('30-Day Window');
+      lg.append('path')
+        .attr('d', d3.symbol().type(d3.symbolStar).size(200))
+        .attr('transform', 'translate(240,0) scale(1)')
+        .attr('fill','#E44D9A');
+      lg.append('text').attr('x',250).attr('y',4).text('Rebuy');
+    }
+
+    // initial render & button handler
+    function replay() {
+      const data = prepareData();
+      render(data);
+    }
+    d3.select('#replayBtn').on('click', replay);
+    replay();
+  </script>
+</body>
+</html>

@@ -6,8 +6,8 @@ nb_path: website/docs/tutorials/Telco_Churn.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb
 ---
-import CellOutput from "../../src/components/CellOutput.jsx";
 import LinkButtons from "../../src/components/LinkButtons.jsx";
+import CellOutput from "../../src/components/CellOutput.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb"
@@ -60,13 +60,13 @@ df.head()
 ```
 
 
-|    | CustomerID   |   Count | Country       | State      | City        |   Zip Code | Lat Long               |   Latitude |   Longitude | Gender   | ...   | Streaming Movies   | Contract       | Paperless Billing   | Payment Method            |   Monthly Charges | Churn Label   |   Churn Value |   Churn Score |   CLTV | Churn Reason                  |
-|---:|:-------------|--------:|:--------------|:-----------|:------------|-----------:|:-----------------------|-----------:|------------:|:---------|:------|:-------------------|:---------------|:--------------------|:--------------------------|------------------:|:--------------|--------------:|--------------:|-------:|:------------------------------|
-|  0 | 3668-QPYBK   |       1 | United States | California | Los Angeles |      90003 | 33.964131, -118.272783 |    33.9641 |    -118.273 | Male     | ...   | No                 | Month-to-month | Yes                 | Mailed check              |             53.85 | Yes           |             1 |            86 |   3239 | Competitor made better offer  |
-|  1 | 9237-HQITU   |       1 | United States | California | Los Angeles |      90005 | 34.059281, -118.30742  |    34.0593 |    -118.307 | Female   | ...   | No                 | Month-to-month | Yes                 | Electronic check          |             70.7  | Yes           |             1 |            67 |   2701 | Moved                         |
-|  2 | 9305-CDSKC   |       1 | United States | California | Los Angeles |      90006 | 34.048013, -118.293953 |    34.048  |    -118.294 | Female   | ...   | Yes                | Month-to-month | Yes                 | Electronic check          |             99.65 | Yes           |             1 |            86 |   5372 | Moved                         |
-|  3 | 7892-POOKP   |       1 | United States | California | Los Angeles |      90010 | 34.062125, -118.315709 |    34.0621 |    -118.316 | Female   | ...   | Yes                | Month-to-month | Yes                 | Electronic check          |            104.8  | Yes           |             1 |            84 |   5003 | Moved                         |
-|  4 | 0280-XJGEX   |       1 | United States | California | Los Angeles |      90015 | 34.039224, -118.266293 |    34.0392 |    -118.266 | Male     | ...   | Yes                | Month-to-month | Yes                 | Bank transfer (automatic) |            103.7  | Yes           |             1 |            89 |   5340 | Competitor had better devices |
+|    | CustomerID   |   Count | Country       | State      | City        |   Zip Code | Lat Long               |   Latitude |   Longitude | Gender   | ...   | Contract       | Paperless Billing   | Payment Method            |   Monthly Charges |   Total Charges | Churn Label   |   Churn Value |   Churn Score |   CLTV | Churn Reason                  |
+|---:|:-------------|--------:|:--------------|:-----------|:------------|-----------:|:-----------------------|-----------:|------------:|:---------|:------|:---------------|:--------------------|:--------------------------|------------------:|----------------:|:--------------|--------------:|--------------:|-------:|:------------------------------|
+|  0 | 3668-QPYBK   |       1 | United States | California | Los Angeles |      90003 | 33.964131, -118.272783 |    33.9641 |    -118.273 | Male     | ...   | Month-to-month | Yes                 | Mailed check              |             53.85 |          108.15 | Yes           |             1 |            86 |   3239 | Competitor made better offer  |
+|  1 | 9237-HQITU   |       1 | United States | California | Los Angeles |      90005 | 34.059281, -118.30742  |    34.0593 |    -118.307 | Female   | ...   | Month-to-month | Yes                 | Electronic check          |             70.7  |          151.65 | Yes           |             1 |            67 |   2701 | Moved                         |
+|  2 | 9305-CDSKC   |       1 | United States | California | Los Angeles |      90006 | 34.048013, -118.293953 |    34.048  |    -118.294 | Female   | ...   | Month-to-month | Yes                 | Electronic check          |             99.65 |          820.5  | Yes           |             1 |            86 |   5372 | Moved                         |
+|  3 | 7892-POOKP   |       1 | United States | California | Los Angeles |      90010 | 34.062125, -118.315709 |    34.0621 |    -118.316 | Female   | ...   | Month-to-month | Yes                 | Electronic check          |            104.8  |         3046.05 | Yes           |             1 |            84 |   5003 | Moved                         |
+|  4 | 0280-XJGEX   |       1 | United States | California | Los Angeles |      90015 | 34.039224, -118.266293 |    34.0392 |    -118.266 | Male     | ...   | Month-to-month | Yes                 | Bank transfer (automatic) |            103.7  |         5036.3  | Yes           |             1 |            89 |   5340 | Competitor had better devices |
 
 ## 1. Data Preprocessing
 
@@ -144,10 +144,6 @@ preprocessor_id, version_id = client.create_preprocessor(
 )
 ```
 
-<CellOutput>
-{`<Response [200]>`}
-</CellOutput>
-
 ### Loading the Preprocessor steps
 
 Use the api to load pre-existing preprocessor steps from the xplainable cloud and
@@ -192,7 +188,7 @@ df_transformed_cloud = pp_cloud.transform(df)
 
 
 ```python
-X, y = df_transformed_cloud.drop(columns=['Churn Label']), df['Churn Label']
+X, y = df_transformed.drop(columns=['Churn Label']), df['Churn Label']
 
 X_train, X_test, y_train, y_test = train_test_split(
      X, y, test_size=0.33, random_state=42)
@@ -242,7 +238,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_6e398367-37fa-411a-8173-b156fc4e52ea.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_3c2eaa49-8ca9-47d2-9bfa-6f690c5d653f.html' width='100%' height='520'></iframe>
 
 The image displays two graphs related to a churn prediction model.
 
@@ -272,6 +268,33 @@ month. Following this, we generate a specific version of the model with
 represents this particular iteration of our model, allowing us to track and manage
 different versions systematically.
 
+
+```python
+X_train
+```
+
+
+|      | City          | Gender   | Senior Citizen   | Partner   | Dependents   | Tenure Months   | Phone Service   | Multiple Lines   | Internet Service   | Online Security     | Online Backup       | Device Protection   | Tech Support        | Streaming TV        | Streaming Movies    | Contract       | Paperless Billing   | Payment Method          | Monthly Charges   |
+|:-----|:--------------|:---------|:-----------------|:----------|:-------------|:----------------|:----------------|:-----------------|:-------------------|:--------------------|:--------------------|:--------------------|:--------------------|:--------------------|:--------------------|:---------------|:--------------------|:------------------------|:------------------|
+| 298  | stockton      | female   | no               | no        | no           | 2               | yes             | yes              | fiber optic        | no                  | no                  | no                  | no                  | yes                 | yes                 | month-to-month | yes                 | electronic check        | 95.15             |
+| 3318 | other         | female   | no               | yes       | yes          | 33              | yes             | yes              | fiber optic        | no                  | yes                 | yes                 | yes                 | no                  | no                  | month-to-month | no                  | credit card (automatic) | 88.60             |
+| 5586 | other         | male     | no               | yes       | no           | 20              | yes             | no               | no                 | no internet service | no internet service | no internet service | no internet service | no internet service | no internet service | one year       | no                  | mailed check            | 20.65             |
+| 6654 | other         | female   | no               | no        | no           | 21              | no              | no phone service | dsl                | yes                 | no                  | no                  | yes                 | no                  | no                  | two year       | no                  | mailed check            | 35.10             |
+| 5362 | other         | male     | no               | yes       | yes          | 19              | yes             | no               | no                 | no internet service | no internet service | no internet service | no internet service | no internet service | no internet service | one year       | no                  | mailed check            | 19.90             |
+| ...  | ...           | ...      | ...              | ...       | ...          | ...             | ...             | ...              | ...                | ...                 | ...                 | ...                 | ...                 | ...                 | ...                 | ...            | ...                 | ...                     | ...               |
+| 3772 | san francisco | female   | no               | yes       | yes          | 42              | yes             | no               | fiber optic        | no                  | no                  | yes                 | yes                 | yes                 | yes                 | two year       | yes                 | electronic check        | 100.40            |
+| 5191 | other         | female   | no               | no        | no           | 39              | yes             | no               | no                 | no internet service | no internet service | no internet service | no internet service | no internet service | no internet service | two year       | no                  | credit card (automatic) | 20.70             |
+| 5226 | other         | male     | no               | yes       | yes          | 19              | yes             | no               | no                 | no internet service | no internet service | no internet service | no internet service | no internet service | no internet service | two year       | no                  | mailed check            | 20.20             |
+| 5390 | sacramento    | male     | no               | yes       | yes          | 35              | yes             | no               | no                 | no internet service | no internet service | no internet service | no internet service | no internet service | no internet service | one year       | no                  | electronic check        | 19.90             |
+| 860  | other         | male     | no               | no        | no           | 31              | yes             | yes              | fiber optic        | no                  | yes                 | yes                 | no                  | yes                 | yes                 | one year       | yes                 | electronic check        | 103.45            |
+
+```python
+xp.__version__
+```
+
+<CellOutput>
+{`'1.2.7'`}
+</CellOutput>
 
 ```python
 # Create a model
@@ -320,10 +343,6 @@ deployment = client.deploy(
 )
 ```
 
-<CellOutput>
-{`<Response [200]>`}
-</CellOutput>
-
 ### SaaS Deployment View
 
 
@@ -346,10 +365,6 @@ ready to process incoming prediction requests.
 client.activate_deployment(deployment['deployment_id'])
 ```
 
-<CellOutput>
-{`{'message': 'activated deployment'}`}
-</CellOutput>
-
 2. **Creating a Deployment Key:** A deployment key is generated with
    `client.generate_deploy_key`. This key is required to authenticate and make secure
    requests to the deployed model.
@@ -358,10 +373,6 @@ client.activate_deployment(deployment['deployment_id'])
 ```python
 deploy_key = client.generate_deploy_key(deployment['deployment_id'], 'Deployment API for Telco Churn', 7)
 ```
-
-<CellOutput>
-{`<Response [200]>`}
-</CellOutput>
 
 3. **Generating Example Payload:** An example payload for a deployment request is
    generated by `client.generate_example_deployment_payload`. This payload mimics the
