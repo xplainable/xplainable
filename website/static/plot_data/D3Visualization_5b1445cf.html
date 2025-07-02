@@ -129,5 +129,31 @@
     d3.select('#replayBtn').on('click', replay);
     replay();
   </script>
+
+<script>
+function resizeIframe() {
+    const height = Math.max(
+        document.body.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.clientHeight,
+        document.documentElement.scrollHeight,
+        document.documentElement.offsetHeight
+    );
+    window.parent.postMessage({type: 'resize', height: height + 20}, '*');
+}
+
+// Resize when page loads
+window.addEventListener('load', resizeIframe);
+
+// Resize when content changes (for dynamic content)
+if (window.ResizeObserver) {
+    const observer = new ResizeObserver(resizeIframe);
+    observer.observe(document.body);
+}
+
+// Fallback for older browsers
+setTimeout(resizeIframe, 1000);
+</script>
+
 </body>
 </html>
