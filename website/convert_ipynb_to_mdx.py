@@ -148,8 +148,8 @@ def transform_code_cell(
         filename (str): File name to use for the mdx and jsx output.
 
     Returns:
-        Tuple[str, str]: First object is for mdx inclusion, and the second is for jsx if
-        a bokeh or altair plot was found.
+        Dict[str, Union[str, bool]]: Dictionary containing mdx output, jsx output, 
+        components, and flags for different plot types.
 
     """
     plot_data_folder = Path(plot_data_folder).resolve()
@@ -171,6 +171,7 @@ def transform_code_cell(
     bokeh_flag = False
     plotly_flag = False
     altair_flag = False
+    d3_html_flag = False
 
     mdx_output = ""
     jsx_output = ""
@@ -182,7 +183,49 @@ def transform_code_cell(
 
     # Handle cell input.
     cell_source = cell.get("source", "")
-    mdx_output += f"```python\n{cell_source}\n```\n\n"
+    
+    # Check if this is a %%html cell (D3/HTML visualization)
+    is_html_cell = cell_source.strip().startswith("%%html")
+    
+    if is_html_cell:
+        # For %%html cells, extract the HTML content and save it as a file
+        html_content = cell_source[cell_source.find("%%html") + 6:].strip()
+        
+        # Generate a unique filename for the HTML file
+        file_name = f"D3Visualization_{uuid.uuid4().hex[:8]}.html"
+        
+        # Save to the static/plot_data directory for serving
+        static_plot_data_folder = WEBSITE_DIR.joinpath("static").joinpath("plot_data")
+        static_plot_data_folder.mkdir(parents=True, exist_ok=True)
+        
+        file_path = static_plot_data_folder.joinpath(file_name)
+        with open(file_path, "w") as f:
+            f.write(html_content)
+        
+        # Add the code block showing the %%html command
+        mdx_output += f"```python\n{cell_source}\n```\n\n"
+        
+        # Add the iframe to display the HTML content
+        path_to_html = f"/plot_data/{file_name}"
+        mdx_output += (
+            f"<iframe src='{path_to_html}' width='100%' height='600' "
+            f"style={{{{border: '1px solid #ccc', borderRadius: '4px'}}}}></iframe>\n\n"
+        )
+        
+        d3_html_flag = True
+        
+        return {
+            "mdx": mdx_output,
+            "jsx": jsx_output,
+            "components": components_output,
+            "bokeh": bokeh_flag,
+            "plotly": plotly_flag,
+            "altair": altair_flag,
+            "d3_html": d3_html_flag,
+        }
+    else:
+        # Regular code cell handling
+        mdx_output += f"```python\n{cell_source}\n```\n\n"
 
     # Handle cell outputs.
     cell_outputs = cell.get("outputs", [])
@@ -217,7 +260,6 @@ def transform_code_cell(
         if "bokeh" in str(cell_output_dtypes):
             bokeh_flag = True
 
-
         # Cycle through the cell outputs and transform them for inclusion in the mdx
         # string.
         display_data_outputs = []
@@ -232,9 +274,31 @@ def transform_code_cell(
             cell_output_data = cell_output.get("data", {}).get(data_object, "")
             cell_output_type = cell_output_types[i]
 
-
             # Handle "display_data".
             if cell_output_type == "display_data":
+                # Handle HTML content from display_data (for cases where HTML is in output)
+                if data_category == "text" and data_type == "html":
+                    # Check if this looks like a D3/custom HTML visualization
+                    if any(keyword in cell_output_data.lower() for keyword in ['d3.', '<script', '<svg', 'visualization']):
+                        file_name = f"HTMLVisualization_{uuid.uuid4().hex[:8]}.html"
+                        
+                        # Save to the static/plot_data directory
+                        static_plot_data_folder = WEBSITE_DIR.joinpath("static").joinpath("plot_data")
+                        static_plot_data_folder.mkdir(parents=True, exist_ok=True)
+                        
+                        file_path = static_plot_data_folder.joinpath(file_name)
+                        with open(file_path, "w") as f:
+                            f.write(cell_output_data)
+                        
+                        # Add iframe to display the HTML
+                        path_to_html = f"/plot_data/{file_name}"
+                        mdx_output += (
+                            f"<iframe src='{path_to_html}' width='100%' height='600' "
+                            f"style={{{{border: '1px solid #ccc', borderRadius: '4px'}}}}></iframe>\n\n"
+                        )
+                        d3_html_flag = True
+                        continue
+
                 if not bokeh_flag and not plotly_flag:
                     # Handle binary images.
                     if data_category == "image":
@@ -428,7 +492,8 @@ def transform_code_cell(
         "components": components_output,
         "bokeh": bokeh_flag,
         "plotly": plotly_flag,
-        "altair": altair_flag,  
+        "altair": altair_flag,
+        "d3_html": d3_html_flag,
     }
 
 def find_frontmatter_ending(mdx: str, stop_looking_after: int = 10) -> int:
@@ -535,6 +600,7 @@ def transform_notebook(path: Union[str, PathLike]) -> Tuple[str, str]:
     # Cycle through each cell in the notebook.
     bokeh_flags = []
     plotly_flags = []
+    d3_html_flags = []
     for cell in nb["cells"]:
         cell_type = cell["cell_type"]
 
@@ -549,6 +615,7 @@ def transform_notebook(path: Union[str, PathLike]) -> Tuple[str, str]:
             jsx += str(tx["jsx"])
             bokeh_flags.append(tx["bokeh"])
             plotly_flags.append(tx["plotly"])
+            d3_html_flags.append(tx.get("d3_html", False))
             for component in str(tx["components"]).splitlines():
                 components.add(component)
 
@@ -556,6 +623,7 @@ def transform_notebook(path: Union[str, PathLike]) -> Tuple[str, str]:
     # that is needed.
     bokeh_flag = any(bokeh_flags)
     plotly_flag = any(plotly_flags)
+    d3_html_flag = any(d3_html_flags)
     plotting_fp = "./website/src/components/Plotting.jsx"
     JSX_TEMPLATE = ["import React from 'react';"]
     if bokeh_flag:
