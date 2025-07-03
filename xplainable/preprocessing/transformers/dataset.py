@@ -612,7 +612,11 @@ class SetDTypes(XBaseTransformer):
                 df[i] = df[i].astype(str)
                 continue
             
-            df[i] = pd.to_numeric(df[i], errors='coerce')
+            try:
+                df[i] = pd.to_numeric(df[i])
+            except (ValueError, TypeError):
+                # Keep original values if conversion fails, equivalent to errors='coerce'
+                df[i] = pd.to_numeric(df[i], errors='coerce')
 
             if v == 'integer':
                 # If missing value are present, cannot cast to int

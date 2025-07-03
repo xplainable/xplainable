@@ -352,6 +352,13 @@ class XScan:
 
     def _scan_feature(self, ser):
 
+        # Check if series is empty or all NA first
+        if self._series_is_empty(ser):
+            return {
+                'type': 'empty',
+                'missing_pct': 1
+            }
+
         if is_bool_dtype(ser):
             ser = ser.astype(str)
             sub_profile = self._scan_categorical_feature(ser)
@@ -366,7 +373,9 @@ class XScan:
             sub_profile = self._scan_date_feature(ser)
 
         else:
-            raise TypeError(f"Feature {ser.name} has unknown type")
+            # Handle unknown types by treating them as categorical
+            # This includes cases where all values are NA in pandas 2.x
+            sub_profile = self._scan_categorical_feature(ser)
 
         return sub_profile
 
