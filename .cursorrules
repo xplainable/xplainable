@@ -1,0 +1,194 @@
+# Cursor Rules for xplainable Package
+
+## 🧬 Core ML Package Development Rules
+
+### 🚨 CRITICAL: Performance Regression Prevention
+When making ANY changes to core ML algorithms (`xplainable/core/ml/`), you MUST:
+
+1. **Run smoke tests BEFORE and AFTER changes:**
+   ```bash
+   python -m pytest tests/test_smoke.py -v -s
+   ```
+
+2. **Check for performance regression:**
+   ```bash
+   python scripts/check_performance.py
+   ```
+
+3. **Update CHANGELOG with fresh metrics:**
+   ```bash
+   python scripts/update_changelog_metrics.py
+   ```
+
+### 📊 Performance Metrics System
+
+The package tracks performance metrics automatically:
+- **Classification**: Accuracy, F1-weighted, sample/feature counts
+- **Regression**: RMSE, R², sample/feature counts  
+- **Storage**: `tests/performance_metrics.json` (last 10 runs per test)
+- **Baseline**: Documented in CHANGELOG.md tables
+
+### 🔍 Core ML Files to Watch
+
+Changes to these files require extra attention:
+- `xplainable/core/ml/classification.py` - Classification algorithms
+- `xplainable/core/ml/regression.py` - Regression algorithms
+- `xplainable/core/ml/_base_model.py` - Base model functionality
+- `xplainable/core/ml/partitioned.py` - Partitioned models
+- `xplainable/core/optimise/` - Optimization algorithms
+- `xplainable/core/models/` - Model implementations
+
+### 🛠️ Development Workflow
+
+#### For Core ML Changes:
+1. **Before Changes:**
+   ```bash
+   # Establish baseline
+   python scripts/update_changelog_metrics.py
+   git add CHANGELOG.md tests/performance_metrics.json
+   git commit -m "Baseline metrics before ML changes"
+   ```
+
+2. **During Development:**
+   ```bash
+   # Quick regression check (uses existing metrics)
+   python scripts/check_performance.py
+   ```
+
+3. **After Changes:**
+   ```bash
+   # Full test suite with fresh metrics
+   python scripts/update_changelog_metrics.py
+   
+   # Check for regression
+   python scripts/check_performance.py
+   ```
+
+4. **If Regression Detected:**
+   ```bash
+   # View detailed comparison
+   python scripts/check_performance.py --trends
+   
+   # Investigate specific metrics
+   cat tests/performance_metrics.json | jq '.iris_classification[-2:]'
+   ```
+
+### 🎯 Regression Thresholds
+
+Default regression detection: **5%** performance drop
+- Accuracy/F1/R² decrease > 5% = ❌ REGRESSION
+- RMSE increase > 5% = ❌ REGRESSION
+
+Custom thresholds:
+```bash
+# More sensitive (2% threshold)
+python scripts/check_performance.py --regression-threshold 0.02
+
+# Less sensitive (10% threshold)  
+python scripts/check_performance.py --regression-threshold 0.10
+```
+
+### 📋 Smoke Test Coverage
+
+The smoke tests verify:
+- **Iris Classification**: 4 features, 150 samples, 3 classes
+- **Breast Cancer Classification**: 30 features, 300 samples, 2 classes
+- **Diabetes Regression**: 10 features, 300 samples, continuous target
+- **Partitioned Models**: Multi-partition functionality
+- **Model Evaluation**: Confusion matrix, Cohen's kappa, classification reports
+
+### 🚫 DO NOT Commit If:
+- Smoke tests fail
+- Performance regression > 5% without justification
+- Missing performance metrics update
+- CHANGELOG not updated with new metrics
+
+### ✅ Required for Core ML PRs:
+1. **Smoke tests passing**: `python -m pytest tests/test_smoke.py -v`
+2. **No regression**: `python scripts/check_performance.py` (exit code 0)
+3. **Updated CHANGELOG**: Performance tables with latest metrics
+4. **Metrics file**: `tests/performance_metrics.json` committed
+
+### 🔧 Quick Commands Reference
+
+```bash
+# Complete workflow (development)
+python scripts/update_changelog_metrics.py --skip-tests
+
+# Complete workflow (pre-release)
+python scripts/update_changelog_metrics.py
+
+# Regression check only
+python scripts/check_performance.py
+
+# View performance trends
+python scripts/check_performance.py --trends
+
+# Run smoke tests manually
+python -m pytest tests/test_smoke.py -v -s
+```
+
+### 📁 File Structure for ML Development
+
+```
+xplainable/
+├── core/ml/                          # 🚨 CRITICAL: Core algorithms
+│   ├── classification.py            # Classification models
+│   ├── regression.py                # Regression models
+│   ├── _base_model.py               # Base functionality
+│   └── partitioned.py               # Partitioned models
+├── tests/
+│   ├── test_smoke.py                # 🧪 Smoke tests (auto-metrics)
+│   └── performance_metrics.json    # 📊 Performance history
+├── scripts/
+│   ├── check_performance.py         # 🔍 Regression detection
+│   └── update_changelog_metrics.py  # 📝 CHANGELOG automation
+├── CHANGELOG.md                     # 📋 Auto-updated metrics tables
+└── DEVELOPMENT.md                   # 📖 Complete development guide
+```
+
+### 🐛 Debugging Performance Issues
+
+If performance drops:
+1. **Check recent changes**: `git log --oneline xplainable/core/ml/`
+2. **Compare metrics**: `python scripts/check_performance.py --trends`
+3. **Isolate issue**: Run individual tests to identify problematic component
+4. **Validate fix**: Ensure metrics return to baseline after fix
+
+### 🔄 CI/CD Integration
+
+For automated checks:
+```yaml
+# GitHub Actions example
+- name: Check Performance Regression
+  run: |
+    python scripts/check_performance.py
+    # Fails build if regression detected (exit code 1)
+```
+
+### 📚 Additional Resources
+
+- **Development Guide**: `DEVELOPMENT.md` - Complete workflow documentation
+- **Scripts Documentation**: `scripts/README.md` - Detailed script usage
+- **Performance History**: `tests/performance_metrics.json` - Historical data
+- **Smoke Tests**: `tests/test_smoke.py` - Test implementation details
+
+### 🎯 Success Criteria
+
+Before merging core ML changes:
+- ✅ All smoke tests pass
+- ✅ No performance regression detected
+- ✅ CHANGELOG updated with fresh metrics
+- ✅ Performance metrics committed to repo
+- ✅ Documentation updated if API changes
+
+### ⚠️ Warning Signs
+
+Watch for these indicators:
+- Accuracy dropping on classification tasks
+- RMSE increasing on regression tasks
+- F1-scores decreasing significantly
+- Model evaluation failing
+- Partitioned models not working correctly
+
+Remember: **Performance regression prevention is critical for maintaining algorithm quality!** 
