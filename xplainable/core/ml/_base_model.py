@@ -239,13 +239,17 @@ class BaseModel:
                 x.columns = column_names
             else:
                 x.columns = [f"feature_{i}" for i in range(x.shape[1])]
-            # Convert to numeric where possible, keep original values for non-numeric
+            # Only convert to numeric for numpy arrays, not for existing DataFrames
+            # This preserves the original intent of categorical vs numeric features
             for col in x.columns:
                 try:
                     x[col] = pd.to_numeric(x[col])
                 except (ValueError, TypeError):
                     # Keep original values if conversion fails
                     pass
+
+        # If x is already a DataFrame, don't modify dtypes - preserve user intent
+        # This prevents categorical features with numeric strings from being converted
 
         if y is not None:
             if isinstance(y, np.ndarray):
@@ -335,10 +339,20 @@ class BaseModel:
         if y is not None:
             y = y.copy()
         for f, m in self.feature_map.items():
-            x.loc[:, f] = x.loc[:, f].map(m)
+            # Convert FeatureMap to regular dict for pandas 2.x compatibility
+            if hasattr(m, '_forward'):
+                mapping_dict = dict(m._forward)
+            else:
+                mapping_dict = dict(m)
+            x.loc[:, f] = x.loc[:, f].map(mapping_dict)
         if y is not None:
             if len(self.target_map) > 0:
-                y = y.map(self.target_map)
+                # Convert TargetMap to regular dict for pandas 2.x compatibility
+                if hasattr(self.target_map, '_forward'):
+                    target_dict = dict(self.target_map._forward)
+                else:
+                    target_dict = dict(self.target_map)
+                y = y.map(target_dict)
             y = y.astype(float)
             return x, y
         return x
@@ -591,11 +605,21 @@ class BasePartition:
 
         # Apply encoding
         for f, m in self.partitions[partition].feature_map.items():
-            x.loc[:, f] = x.loc[:, f].map(m)
+            # Convert FeatureMap to regular dict for pandas 2.x compatibility
+            if hasattr(m, '_forward'):
+                mapping_dict = dict(m._forward)
+            else:
+                mapping_dict = dict(m)
+            x.loc[:, f] = x.loc[:, f].map(mapping_dict)
 
         if y is not None:
             if len(self.partitions[partition].target_map) > 0:
-                y = y.map(self.partitions[partition].target_map)
+                # Convert TargetMap to regular dict for pandas 2.x compatibility
+                if hasattr(self.partitions[partition].target_map, '_forward'):
+                    target_dict = dict(self.partitions[partition].target_map._forward)
+                else:
+                    target_dict = dict(self.partitions[partition].target_map)
+                y = y.map(target_dict)
                 
             y = y.astype(float)
             return x, y
