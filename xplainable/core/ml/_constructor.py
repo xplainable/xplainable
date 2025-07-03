@@ -7,6 +7,20 @@ from scipy.interpolate import CubicSpline
 from ._constructor_parameters import ConstructorParams
 from ...utils.encoders import NpEncoder
 import json
+import os
+
+# Handle numba compilation issues in Jupyter notebooks
+try:
+    # Test if we can get the current working directory
+    _cwd = os.getcwd()
+except (OSError, FileNotFoundError):
+    # If we can't get the current working directory, disable numba error reporting
+    import numba
+    numba.config.DISABLE_JIT = False  # Keep JIT enabled
+    # Set a safe temporary directory for numba cache
+    import tempfile
+    os.environ['NUMBA_CACHE_DIR'] = tempfile.gettempdir()
+    os.environ['NUMBA_DISABLE_ERROR_MESSAGE_HIGHLIGHTING'] = '1'
 
 
 class XConstructor:
@@ -124,10 +138,83 @@ class XConstructor:
     @staticmethod
     @njit(parallel=True, fastmath=True, nogil=True)
     def _get_base_meta(base_partition, X, y):
-        return np.empty((len(base_partition), 2), dtype=np.float64)
+        """ Instantiates metadata at each split """
+
+        _meta = np.empty((len(base_partition), 2, 2), dtype=np.float64)
+
+        _len_y = y.size
+        _n_splits = base_partition.size
+
+        for i in prange(_n_splits):
+
+            _split = base_partition[i]
+
+            _0_cnt = 0
+            _0_tot = 0
+            _1_cnt = 0
+            _1_tot = 0
+
+            # Create splits
+            for v in prange(_len_y):
+                if X[v] <= _split:
+                    _0_cnt += 1
+                    _0_tot += y[v]
+
+                else:
+                    _1_cnt += 1
+                    _1_tot += y[v]
+
+            _0_mean = _0_tot / _0_cnt
+            _1_mean = _1_tot / _1_cnt
+
+            _meta[i, 0, 0] = _0_cnt
+            _meta[i, 0, 1] = _0_mean
+            _meta[i, 1, 0] = _1_cnt
+            _meta[i, 1, 1] = _1_mean
+
+        return _meta
+
+    @staticmethod
+    def _get_base_meta_fallback(base_partition, X, y):
+        """ Fallback version without numba compilation for Jupyter notebook compatibility """
+        
+        _meta = np.empty((len(base_partition), 2, 2), dtype=np.float64)
+
+        _len_y = y.size
+        _n_splits = base_partition.size
+
+        for i in range(_n_splits):
+
+            _split = base_partition[i]
+
+            _0_cnt = 0
+            _0_tot = 0
+            _1_cnt = 0
+            _1_tot = 0
+
+            # Create splits
+            for v in range(_len_y):
+                if X[v] <= _split:
+                    _0_cnt += 1
+                    _0_tot += y[v]
+
+                else:
+                    _1_cnt += 1
+                    _1_tot += y[v]
+
+            _0_mean = _0_tot / _0_cnt
+            _1_mean = _1_tot / _1_cnt
+
+            _meta[i, 0, 0] = _0_cnt
+            _meta[i, 0, 1] = _0_mean
+            _meta[i, 1, 0] = _1_cnt
+            _meta[i, 1, 1] = _1_mean
+
+        return _meta
 
     def fit(self, X, y, alpha=0.1):
         """ Fits feature data to target """
+        # Call parent fit method but override the base_meta calculation
         min, max = np.min(X), np.max(X)
         self.fit_range = [min, max, max-min]
 
@@ -135,9 +222,19 @@ class XConstructor:
 
         self.base_value = np.mean(y)
         self.base_partition = self._get_base_partition(X, alpha)
-        self.base_meta = self._get_base_meta(self.base_partition, X, y)
+        
+        # Try to use numba-compiled version, fall back to pure Python if it fails
+        try:
+            self.base_meta = self._get_base_meta(self.base_partition, X, y)
+        except (FileNotFoundError, OSError):
+            # Use fallback version when numba compilation fails in Jupyter notebooks
+            self.base_meta = self._get_base_meta_fallback(self.base_partition, X, y)
+        
         self.null_meta = self._get_null_meta(X, y)
-
+        
+        self.abs_min_leaf_size = np.max(
+            [1, int(self.params.min_leaf_size * self.fitted_samples)])
+        
         return self
 
     def _get_null_meta(self, X, y):
@@ -330,28 +427,6 @@ class XNumConstructor(XConstructor):
 
         return _meta
 
-        """ Instantiates metadata at each split 
-        _meta = np.empty((len(base_partition), 2, 2), dtype=np.float64)
-        _len_y = y.size
-
-        for i in prange(len(base_partition)):
-            _split = base_partition[i]
-            new_X = np.repeat(X[np.newaxis, :], 2, 0)
-            div_mask = np.where(new_X < _split, 1, 0) * np.array([[1], [-1]]) \
-                + np.array([[0], [1]])
-            
-            pos = np.sum(div_mask * y, axis=1)
-            cnt = np.sum(div_mask, axis=1)
-            mean = pos / cnt
-            _meta[i] = np.transpose(
-                np.array([
-                    cnt,
-                    mean
-                ])
-            )
-
-        return _meta"""
-
     @staticmethod
     @njit(parallel=False, fastmath=True, nogil=True)
     def _best_split(meta, mls, bv, samp, mig):
@@ -523,7 +598,24 @@ class XNumConstructor(XConstructor):
 
     def fit(self, X, y, alpha=0.1):
         """ Fits feature data to target """
-        super().fit(X, y, alpha)
+        # Call parent fit method but override the base_meta calculation
+        min, max = np.min(X), np.max(X)
+        self.fit_range = [min, max, max-min]
+
+        self.fitted_samples = X.size
+
+        self.base_value = np.mean(y)
+        self.base_partition = self._get_base_partition(X, alpha)
+        
+        # Try to use numba-compiled version, fall back to pure Python if it fails
+        try:
+            self.base_meta = self._get_base_meta(self.base_partition, X, y)
+        except (FileNotFoundError, OSError):
+            # Use fallback version when numba compilation fails in Jupyter notebooks
+            self.base_meta = self._get_base_meta_fallback(self.base_partition, X, y)
+        
+        self.null_meta = self._get_null_meta(X, y)
+        
         self.abs_min_leaf_size = np.max(
             [1, int(self.params.min_leaf_size * self.fitted_samples)])
         
