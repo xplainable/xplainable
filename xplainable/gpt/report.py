@@ -26,6 +26,12 @@ def gpt_explainer(
             "You must initialise a valid API key to use this feature.") \
                 from None
 
+    # Updated to work with external client - check if method exists
+    if not hasattr(xp.client, '_gpt_report'):
+        raise ValueError(
+            "GPT report functionality is not available in the current client version.") \
+                from None
+
     report_json = xp.client._gpt_report(
         model_id, version_id, target_description, project_objective,
         max_features, temperature)
