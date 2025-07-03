@@ -239,7 +239,13 @@ class BaseModel:
                 x.columns = column_names
             else:
                 x.columns = [f"feature_{i}" for i in range(x.shape[1])]
-            x = x.apply(pd.to_numeric, errors='ignore')
+            # Convert to numeric where possible, keep original values for non-numeric
+            for col in x.columns:
+                try:
+                    x[col] = pd.to_numeric(x[col])
+                except (ValueError, TypeError):
+                    # Keep original values if conversion fails
+                    pass
 
         if y is not None:
             if isinstance(y, np.ndarray):

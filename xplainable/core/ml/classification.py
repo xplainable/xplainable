@@ -110,7 +110,7 @@ class XClassifier(BaseModel):
         x['bin'] = pd.cut(x['y_prob'], [i / 100 for i in range(0, 101, 5)])
 
         # Get target info grouped by bins
-        df = x.groupby('bin').agg({'target': ['mean', 'count']})
+        df = x.groupby('bin', observed=True).agg({'target': ['mean', 'count']})
 
         # Fix column formatting
         df.columns = df.columns.map('_'.join)
@@ -138,17 +138,19 @@ class XClassifier(BaseModel):
         df['wp'] = (df['lc_pct'] * df['lm']) + (df['tc_pct'] * df['tm']) + \
             (df['nc_pct'] * df['nm'])
 
-        # Forward fill zero values
-        df['wp'] = df['wp'].replace(
-            to_replace=0, method='ffill')
+        # Forward fill zero values - use where to replace zeros with forward filled values
+        df_wp_filled = df['wp'].ffill()
+        df['wp'] = df['wp'].where(df['wp'] != 0, df_wp_filled)
 
         # Get weighted probability and arrange
         wp = df['wp']
         wp = pd.DataFrame(np.repeat(wp.to_numpy(), 5, axis=0))
-        wp = pd.concat([wp, wp.iloc[99]], ignore_index=True)
+        # Use the last available index instead of hardcoded 99
+        last_idx = len(wp) - 1
+        wp = pd.concat([wp, wp.iloc[last_idx:last_idx+1]], ignore_index=True)
 
         # Forward fill nan values
-        wp = wp.fillna(method='ffill')
+        wp = wp.ffill()
 
         # Fill missing values that could not be
         # forward filled
@@ -157,14 +159,14 @@ class XClassifier(BaseModel):
         # Calculate support at each bin
         s = df['tc']
         s = pd.DataFrame(np.repeat(s.to_numpy(), 5, axis=0))
-        s = pd.concat([s, s.iloc[99]], ignore_index=True)
-        s = s.fillna(method='ffill')
+        s = pd.concat([s, s.iloc[last_idx:last_idx+1]], ignore_index=True)
+        s = s.ffill()
         s = s.fillna(0)
         self._support_map.update(dict(s[0]))
 
         wp = wp.rolling(smooth, center=True, min_periods=3).mean()[0]
-        wp.fillna(method='ffill')
-        wp.fillna(0)
+        wp = wp.ffill()
+        wp = wp.fillna(0)
 
         # Store results dict to class variable
         return dict(wp)

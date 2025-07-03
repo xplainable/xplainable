@@ -65,7 +65,11 @@ class SetDType(XBaseTransformer):
         if self.to_type == 'string':
             return ser.astype(str)
             
-        ser = pd.to_numeric(ser, errors='coerce')
+        try:
+            ser = pd.to_numeric(ser)
+        except (ValueError, TypeError):
+            # Keep original values if conversion fails, equivalent to errors='coerce'
+            ser = pd.to_numeric(ser, errors='coerce')
 
         if self.to_type == 'integer':
             # If missing value are present, cannot cast to int
