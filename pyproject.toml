@@ -45,7 +45,6 @@ dependencies = [
 
 [project.optional-dependencies]
 gui = [
-  "tornado==6.1",
   "jupyter-client==7.3.2",
   "ipywidgets>=8.0.5",
   "matplotlib>=3.4.2",

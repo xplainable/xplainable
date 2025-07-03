@@ -13,7 +13,6 @@ def _try_optional_dependencies_gui():
         import traitlets
         import seaborn
         import matplotlib
-        import tornado
 
         if not HAS_WARNED:
             if version.parse(ipywidgets.__version__) < version.parse('8.0.0'):
@@ -31,18 +30,7 @@ def _try_optional_dependencies_gui():
 def _check_critical_versions():
     """ This is implemented to ensure critical dependencies are imported."""
     
-    # Tornado
-    try:
-        import tornado
-
-        if version.parse(tornado.version) > version.parse('6.1'):
-            warnings.warn("Your version of Tornado is greater than 6.1, which"
-                          " is known to crash the Jupyter kernel when training"
-                          " models. Please consider downgrading to Tornado 6.1")
-            
-    except ImportError:
-        pass
-    
+    # No critical version checks needed currently
     return
 
 def _check_ipywidgets():
