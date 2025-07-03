@@ -22,6 +22,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Model evaluation and metrics
   - Client graceful handling
 - Graceful fallback handling for missing external client dependency
+- **Performance metrics tracking system** to monitor algorithm performance and prevent regression
+- Automated metrics collection in `tests/performance_metrics.json` with version history
+- **Performance checker utility** (`scripts/check_performance.py`) for:
+  - Viewing latest performance metrics
+  - Detecting algorithm regression with configurable thresholds
+  - Analyzing performance trends across versions
+  - CI/CD integration support
+- **CHANGELOG metrics updater** (`scripts/update_changelog_metrics.py`) for:
+  - Automatically running smoke tests and updating CHANGELOG.md
+  - Formatting performance metrics in separate classification and regression tables
+  - Timestamped updates with latest performance data
+  - Integration with release and development workflows
 
 ### Removed
 - Internal client implementation (`xplainable/client/` directory)
@@ -42,7 +54,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Target map handling for custom `TargetMap` class
 - Partitioned models requiring `add_partition()` method
 
-### Security
+### Performance Baseline (v1.2.9) - Updated 2025-07-03
+
+**Classification Tasks:**
+| Dataset | Accuracy | F1-Weighted | Samples | Features | Additional |
+|---------|----------|-------------|---------|----------|------------|
+| Iris Dataset | 0.5667 | 0.4765 | 150 | 4 |  |
+| Breast Cancer Dataset | 0.9600 | 0.9595 | 300 | 30 |  |
+| Partitioned Classifier | 0.5667 | N/A | 150 | 4 | 3 partitions |
+| Model Evaluation | 0.5667 | N/A | N/A | N/A | CM: ✓, Kappa: ✓ |
+
+
+**Regression Tasks:**
+| Dataset | RMSE | R² | Samples | Features | Additional |
+|---------|------|----|---------|---------|-----------|
+| Diabetes Dataset | 36.8482 | 0.7563 | 300 | 10 |  |
+| Partitioned Regressor | N/A | N/A | 442 | 10 | 2 partitions |
+
+
+*Note: These metrics serve as baseline for detecting algorithm regression in future versions. All metrics are automatically tracked in `tests/performance_metrics.json`.*### Security
 - **CRITICAL**: Removed tornado dependency eliminating 6 security vulnerabilities (2 High, 4 Moderate)
 - Conducted security audit of codebase
 - Identified safe usage of `exec()` in build and documentation scripts
@@ -51,10 +81,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical Details
 - Version bumped from 1.2.8 to 1.2.9 with breaking changes for client functionality
-- All 7 smoke tests pass successfully in ~3.3 seconds
+- All 7 smoke tests pass successfully in ~3.6 seconds
 - Maintained backward compatibility where possible with graceful error handling
 - Updated documentation build process to work with external client
 - Tornado removal does not affect functionality as it was not actively used in the codebase
+- Performance metrics tracking system keeps last 10 entries per test for trend analysis
 
 ## [1.2.8] - Previous Release
 - Last version with internal client implementation 
