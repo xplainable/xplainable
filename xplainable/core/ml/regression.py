@@ -323,15 +323,15 @@ class XRegressor(BaseModel):
 
         y_pred = self.predict(x)
 
-        mae = round(mean_absolute_error(y, y_pred), 4)
-        mape = round(mean_absolute_percentage_error(y, y_pred), 4)
-        r2 = round(r2_score(y, y_pred), 4)
-        mse = round(mean_squared_error(y, y_pred), 4)
-        rmse = round(np.sqrt(mse), 4)
-        evs = round(explained_variance_score(y, y_pred), 4)
+        mae = round(float(mean_absolute_error(y, y_pred)), 4)
+        mape = round(float(mean_absolute_percentage_error(y, y_pred)), 4)
+        r2 = round(float(r2_score(y, y_pred)), 4)
+        mse = round(float(mean_squared_error(y, y_pred)), 4)
+        rmse = round(float(np.sqrt(mse)), 4)
+        evs = round(float(explained_variance_score(y, y_pred)), 4)
         
         try:
-            msle = round(mean_squared_log_error(y, y_pred), 4)
+            msle = round(float(mean_squared_log_error(y, y_pred)), 4)
         except Exception:
             msle = np.nan
 

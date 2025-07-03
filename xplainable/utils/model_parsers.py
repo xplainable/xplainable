@@ -58,7 +58,10 @@ def parse_regressor_response(response, model=None):
 
     for p in response['partitions']:
         model = XRegressor()
-        model._profile = np.array([np.array(i) for i in json.loads(p['profile'])])
+        
+        model._profile = np.array([
+            np.array(i) for i in json.loads(p['profile'])], dtype=object)
+        
         model._profile = profile_parse(model._profile)
         model.base_value = p['base_value']
         model.feature_map = {k: FeatureMap(v) for k, v in p['feature_map'].items()}

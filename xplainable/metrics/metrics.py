@@ -1,7 +1,6 @@
 """ Copyright Xplainable Pty Ltd, 2023"""
 
 import numpy as np
-import pandas as pd
 from ..utils.encoders import force_json_compliant
 from sklearn.metrics import (
     roc_auc_score, matthews_corrcoef, log_loss, auc, mean_absolute_error,
