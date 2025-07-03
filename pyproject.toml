@@ -7,7 +7,7 @@ find = {}
 
 [project]
 name = "xplainable"
-version = "1.2.8"
+version = "1.2.9"
 authors = [
   { name="xplainable pty ltd", email="contact@xplainable.io" },
 ]
@@ -25,6 +25,7 @@ classifiers = [
 ]
 
 dependencies = [
+  "xplainable-client>=1.0.0",
   "hyperopt>=0.2.7",
   "numba>=0.56.4,<0.61",
   "numpy>=1.26,<2.0",

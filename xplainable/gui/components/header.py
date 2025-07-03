@@ -19,7 +19,7 @@ class Header:
         )
         self.user = widgets.HBox([
             docs_button,
-            xp.client.avatar if xp.client else offline_button
+            xp.client.avatar if (xp.client and hasattr(xp.client, 'avatar')) else offline_button
             ])
         self.user.layout = widgets.Layout(
             margin='auto', margin_right='15px', align_items = 'center'
