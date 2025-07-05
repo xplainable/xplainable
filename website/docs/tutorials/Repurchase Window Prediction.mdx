@@ -47,8 +47,7 @@ and query models.
 
 ```python
 client = xplainable_client.Client(
-    api_key="b4e83004-c978-437b-a13f-276d03219953",#<- Add your own token here
-    hostname="https://xplainable-api-uat-itdcj.ondigitalocean.app"
+    api_key="",#<- Add your own token here
 )
 ```
 
@@ -108,6 +107,9 @@ positive cases (“repurchased”), while those without a star are negative. Vis
 stepping through these tracks makes it clear how the dataset converts raw transactions
 into a binary outcome that the model can learn to predict.
 
+
+<details>
+<summary>Show HTML Code</summary>
 
 ```python
 %%html
@@ -247,7 +249,9 @@ into a binary outcome that the model can learn to predict.
 
 ```
 
-<iframe src='/plot_data/D3Visualization_f2890ede.html' width='100%' height='600' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+</details>
+
+<iframe id="iframe_D3Visualization_16004e9e" src="/plot_data/D3Visualization_16004e9e.html" width="100%" height="300" style={{border: "1px solid #ccc", borderRadius: "4px"}} onLoad={() => { const iframe = document.getElementById("iframe_D3Visualization_16004e9e"); window.addEventListener("message", (event) => { if (event.data.type === "resize" && iframe) { iframe.style.height = event.data.height + "px"; } }); }}></iframe>
 
 ```python
 # --- 1. LOAD & CLEAN -------------------------------------------------
@@ -471,7 +475,7 @@ what drives predictions.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_c154c2e9-7e4f-468b-8a47-5bb98277f18d.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_68dfabba-c7f0-42dc-b78f-da634f22069d.html' width='100%' height='520'></iframe>
 
 ## 10 | Hold-out evaluation
 
