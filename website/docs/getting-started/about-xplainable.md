@@ -4,53 +4,192 @@ sidebar_position: 1
 
 # About Xplainable
 
+:::info What is Xplainable?
+**Xplainable** is a transparent machine learning package that provides real-time explainability without sacrificing performance. It bridges the gap between accuracy and interpretability through novel algorithms designed specifically for complete transparency.
+:::
+
 ## Overview
 
-xplainable is a Python package that leverages explainable machine learning for fully transparent machine learning and advanced data optimisation in production systems.
+Xplainable is a Python package that leverages explainable machine learning for fully transparent machine learning and advanced data optimization in production systems. Unlike traditional black-box models, xplainable provides **real-time explainability** without needing surrogate models like SHAP or LIME.
 
-xplainable bridges the gap between data scientists, analysts, developers, and business domain experts by providing a simple Python API and web interface to manage machine learning systems at both a technical and managerial level. It achieves this by providing a set of tools that allow users to:
+### Key Features
 
-* Quickly preprocess data and generate features
-* Train and evaluate machine learning models
-* Visualise and interpret model performance
-* Explain model predictions
-* Deploy models to production as REST APIs in seconds
-* Collaborate with other users on model development and evaluation
-* Save and load preprocessing pipelines and models across your team or organisation
-* Share model profiles with other users via [xplainable cloud](https://beta.xplainable.io)
+<div className="row">
+  <div className="col col--6">
+    <div className="card">
+      <div className="card__header">
+        <h3>🔍 Real-time Explainability</h3>
+      </div>
+      <div className="card__body">
+        <p>
+          Get instant explanations without fitting surrogate models. Our transparent algorithms provide explanations as part of the prediction process.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div className="col col--6">
+    <div className="card">
+      <div className="card__header">
+        <h3>⚡ Rapid Refitting</h3>
+      </div>
+      <div className="card__body">
+        <p>
+          Update model parameters on-the-fly, even for individual features. Fine-tune your models without complete retraining.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
 
-At the core of xplainable is a set of novel explainable machine learning algorithms designed to provide similar performance to black box models while maintaining complete transparency.
+<div className="row">
+  <div className="col col--6">
+    <div className="card">
+      <div className="card__header">
+        <h3>🎯 Dual Interface</h3>
+      </div>
+      <div className="card__body">
+        <p>
+          Use either programmatic Python APIs or interactive Jupyter GUIs. Perfect for both data scientists and business users.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div className="col col--6">
+    <div className="card">
+      <div className="card__header">
+        <h3>☁️ Cloud Integration</h3>
+      </div>
+      <div className="card__body">
+        <p>
+          Deploy models to production in seconds with Xplainable Cloud. Full collaboration and model management features.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
 
-These docs contain details about how xplainable works and how to get the most out of it.
+## Core Capabilities
 
-## Who is Xplainable For?
+Xplainable provides a comprehensive suite of tools for the entire machine learning lifecycle:
 
-xplainable is for anyone who wants to build machine learning models that can be easily understood and explained. Experienced professionals, novices, students, and hobbyists can all use the package given appropriate data. The only requirement is a basic understanding of Python and machine learning at a conceptual level.
+### 📊 **Data Preprocessing**
+- Comprehensive preprocessing pipeline with 15+ transformers
+- Data quality scanning and health checks
+- Feature engineering and transformation
+- Pipeline persistence and reusability
 
-The users who will get the most out of xplainable include:
+### 🤖 **Model Training**
+- **XClassifier**: Transparent binary classification
+- **XRegressor**: Transparent regression
+- **Partitioned Models**: Multi-segment modeling
+- **Surrogate Models**: Explain black-box models
 
-* Data scientists
-* Data analysts
-* Data engineers
-* Developers
-* Business domain experts
+### 🔧 **Hyperparameter Optimization**
+- Bayesian optimization with Hyperopt
+- Evolutionary algorithms
+- Cross-validation with early stopping
+- Custom search spaces
 
-The package, combined with the web application, is designed to be used by individuals and teams within data-centric organisations.
+### 📈 **Visualization & Explainability**
+- Global, regional, and local explanations
+- Feature importance analysis
+- Waterfall plots and decision trees
+- Real-time model insights
 
-## Skill Requirements
+### 🚀 **Deployment**
+- One-click API deployments
+- Model versioning and management
+- A/B testing capabilities
+- Production monitoring
 
-Anyone with a basic understanding of Python and machine learning at a conceptual level can use xplainable. The package is intuitive and easy to use by design, and the web application provides a simple interface for managing models and deployments.
+## Why Choose Xplainable?
 
-### Experienced Users
+:::tip The Transparency Advantage
+Traditional ML requires choosing between **accuracy** and **explainability**. Xplainable eliminates this trade-off by providing transparent algorithms that match the performance of black-box models while maintaining complete interpretability.
+:::
 
-Experienced users can use xplainable like any other open-source machine learning package. The package provides a simple API for training and evaluating models with the added benefit of novel model-tuning methods and advanced explainability tools.
+### Performance Without Compromise
 
-These users can still benefit from the GUI tools of xplainable by streamlining the process of training and evaluating models, but they can also go as low-level into the code as they require for complete control over the model development process.
+| Feature | Traditional ML | Xplainable |
+|---------|---------------|------------|
+| **Accuracy** | ✅ High | ✅ High |
+| **Explainability** | ❌ Post-hoc only | ✅ Real-time |
+| **Speed** | ⚡ Fast training | ⚡ Fast + rapid refitting |
+| **Deployment** | 🔧 Complex | 🚀 One-click |
+| **Collaboration** | 📝 Code-only | 👥 GUI + API |
 
-### Novice Users
+### Novel Algorithms
 
-Novice users can use xplainable to learn about machine learning and experiment with models and datasets using AutoML. The package provides a simple embedded GUI for training and evaluating models without having to write much code or understand the underlying algorithms.
+Xplainable introduces several breakthrough concepts:
 
-xplainable also gives users with little to no experience with machine learning the ability to deploy models to production as REST APIs in seconds, which significantly reduces the barrier to entry of adding tangible value to data-centric organisations.
+1. **Feature-wise Ensemble**: Each feature gets its own decision tree, optimized for information gain
+2. **Rapid Refitting**: Update parameters without full retraining
+3. **Transparent Architecture**: No black-box components
+4. **Real-time Explanations**: Explanations are part of the prediction process
 
-As novice users become more experienced, they can start to interface with xplainable at a lower level and start to use the more advanced features of the package.
+## Who Uses Xplainable?
+
+### 👨‍💼 **Business Users**
+- Domain experts who need to understand model decisions
+- Managers requiring transparent AI for compliance
+- Analysts building interpretable models
+
+### 👩‍💻 **Data Scientists**
+- ML engineers seeking explainable alternatives to XGBoost/LightGBM
+- Researchers working on interpretable AI
+- Teams requiring rapid model iteration
+
+### 🏢 **Organizations**
+- Financial services (regulatory compliance)
+- Healthcare (clinical decision support)
+- Manufacturing (process optimization)
+- Any industry requiring AI transparency
+
+## Getting Started
+
+:::note Ready to Start?
+Jump to our [Installation Guide](./installation.md) to get xplainable up and running in minutes, or explore our [Python API documentation](../python-api/classification-binary.md) for detailed examples.
+:::
+
+### Quick Example
+
+```python
+import xplainable as xp
+from xplainable.core.models import XClassifier
+
+# Load data
+data = xp.load_dataset('titanic')
+X, y = data.drop('Survived', axis=1), data['Survived']
+
+# Train transparent model
+model = XClassifier()
+model.fit(X, y)
+
+# Get real-time explanations
+model.explain()  # No surrogate models needed!
+```
+
+## Architecture Overview
+
+```mermaid
+graph TD
+    A[Raw Data] --> B[Preprocessing Pipeline]
+    B --> C[Feature Engineering]
+    C --> D[Transparent Models]
+    D --> E[Real-time Explanations]
+    D --> F[Predictions]
+    E --> G[Visualizations]
+    F --> H[Deployment]
+    H --> I[Cloud Platform]
+```
+
+## Community & Support
+
+- **Documentation**: Comprehensive guides and API reference
+- **Examples**: Real-world use cases and tutorials
+- **Community**: Active user community and support
+- **Enterprise**: Professional support and custom solutions
+
+:::info Learn More
+Explore our [tutorials](../tutorials/) for hands-on examples, or dive into the [Python API](../python-api/) documentation for detailed technical information.
+:::
