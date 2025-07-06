@@ -6,8 +6,8 @@ nb_path: website/docs/tutorials/Tool_Failure.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb
 ---
-import CellOutput from "@site/src/components/CellOutput.jsx";
 import LinkButtons from "@site/src/components/LinkButtons.jsx";
+import CellOutput from "@site/src/components/CellOutput.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb"
@@ -63,17 +63,17 @@ prediction. Below is an overview of its structure and the data it contains:
 1. **Type:** Indicates the type or category of the product or process, with different
    types represented by different letters (e.g., 'M', 'L').
 
-1. **Air temperature \[K\] (Kelvin):** The temperature of the air in the environment
-   where the machine operates, measured in Kelvin.
+1. **Air temperature [K] (Kelvin):** The temperature of the air in the environment where
+   the machine operates, measured in Kelvin.
 
-1. **Process temperature \[K\] (Kelvin):** The operational temperature of the process or
+1. **Process temperature [K] (Kelvin):** The operational temperature of the process or
    machine, also measured in Kelvin.
 
-1. **Rotational speed \[rpm\] (Revolutions per Minute):** This column shows the speed at
+1. **Rotational speed [rpm] (Revolutions per Minute):** This column shows the speed at
    which a component of the machine is rotating.
 
-1. **Torque \[Nm\] (Newton Meters):** The torque being applied in the process, measured
-   in Newton meters.
+1. **Torque [Nm] (Newton Meters):** The torque being applied in the process, measured in
+   Newton meters.
 
 1. **Tool wear \[min\]:** Indicates the amount of wear on the tools used in the machine,
    measured in minutes of operation.
@@ -181,7 +181,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_1e880720-5c73-4f93-b8c7-16edae2feeb5.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_2e6034ad-b201-4dfb-8999-f5fa0675ae6f.html' width='100%' height='520'></iframe>
 
 ```python
 params = {
@@ -200,7 +200,7 @@ model.update_feature_params(features=['Rotational speed [rpm]', 'Tool wear [min]
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_8c03fd00-0033-4c97-8c73-f630b273d373.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_939c5028-73c0-46dc-8cc7-7a0fa6f9c85c.html' width='100%' height='520'></iframe>
 
 In this snapshot, we demonstrate the impact of hyperparameter tuning on model
 interpretability. By adjusting max_depth and min_info_gain, we refine the feature wise

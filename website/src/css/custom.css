@@ -494,7 +494,61 @@ li.icon-send>.menu__list-item-collapsible>.menu__link--sublist:before {
 }
 
 .theme-doc-generated-index-page .card {
-  width: 100%;
-  max-width: 400px;
+  max-width: 300px;
   margin: 0 auto;
+}
+
+/* Version dropdown styling fixes */
+.navbar__item.dropdown .navbar__link {
+  color: var(--ifm-navbar-link-color);
+}
+
+.navbar__item.dropdown .navbar__link:hover {
+  color: var(--ifm-color-emphasis-900) !important;
+}
+
+.dropdown__menu {
+  background-color: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  box-shadow: var(--ifm-global-shadow-md);
+}
+
+.dropdown__link {
+  color: var(--ifm-font-color-base) !important;
+  padding: 0.5rem 1rem;
+}
+
+.dropdown__link:hover {
+  background-color: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-emphasis-900) !important;
+  text-decoration: none;
+}
+
+.dropdown__link--active {
+  background-color: var(--ifm-color-primary);
+  color: var(--ifm-color-white) !important;
+}
+
+.dropdown__link--active:hover {
+  background-color: var(--ifm-color-primary-dark);
+  color: var(--ifm-color-white) !important;
+}
+
+/* Dark mode version dropdown fixes */
+[data-theme='dark'] .dropdown__menu {
+  background-color: var(--ifm-background-surface-color);
+  border-color: var(--ifm-color-emphasis-300);
+}
+
+[data-theme='dark'] .navbar__item.dropdown .navbar__link:hover {
+  color: var(--ifm-color-emphasis-100) !important;
+}
+
+[data-theme='dark'] .dropdown__link {
+  color: var(--ifm-font-color-base) !important;
+}
+
+[data-theme='dark'] .dropdown__link:hover {
+  background-color: var(--ifm-color-emphasis-200);
+  color: var(--ifm-color-emphasis-900) !important;
 }

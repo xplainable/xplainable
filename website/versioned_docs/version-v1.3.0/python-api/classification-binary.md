@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-import BlogPost from "../../src/components/Cards/BlogPost.jsx";
+import BlogPost from "@site/src/components/Cards/BlogPost.jsx";
 
 # Classification – Binary
 

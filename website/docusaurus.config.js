@@ -91,6 +91,11 @@ const config = {
             position: 'left',
           },
           {
+            type: 'docsVersionDropdown',
+            position: 'right',
+            dropdownActiveClassDisabled: true,
+          },
+          {
             href: 'https://github.com/xplainable/xplainable',
             label: 'GitHub',
             position: 'right',

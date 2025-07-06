@@ -175,9 +175,9 @@ def transform_code_cell(
 
     mdx_output = ""
     jsx_output = ""
-    link_btn = "../../src/components/LinkButtons.jsx"
-    cell_out = "../../src/components/CellOutput.jsx"
-    plot_out = "../../src/components/Plotting.jsx"
+    link_btn = "@site/src/components/LinkButtons.jsx"
+    cell_out = "@site/src/components/CellOutput.jsx"
+    plot_out = "@site/src/components/Plotting.jsx"
     components_output = f'import LinkButtons from "{link_btn}";\n'
     components_output += f'import CellOutput from "{cell_out}";\n'
 
@@ -661,7 +661,7 @@ def transform_notebook(path: Union[str, PathLike]) -> Tuple[str, str]:
     bokeh_flag = any(bokeh_flags)
     plotly_flag = any(plotly_flags)
     d3_html_flag = any(d3_html_flags)
-    plotting_fp = "./website/src/components/Plotting.jsx"
+    plotting_fp = "@site/src/components/Plotting.jsx"
     JSX_TEMPLATE = ["import React from 'react';"]
     if bokeh_flag:
         JSX_TEMPLATE.append(f"import {{ BokehFigure }} from '{plotting_fp}';")
