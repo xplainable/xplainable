@@ -480,6 +480,21 @@ li[class*=icon-]>.menu__list-item-collapsible>.menu__link--active:before {
 }
 
 li.icon-send>.menu__list-item-collapsible>.menu__link--sublist:before {
-  content: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUiIGhlaWdodD0iMTciIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Im0uODM2IDcuMDY3LTEuMDc0LjQ3IDEuMDgzLjQ1IDUuODAxIDIuNDA3IDIuOTI3IDUuMzM3LjU3MiAxLjA0NC4zNDUtMS4xNEwxNC42MzIgMS45M2wuMzE0LTEuMDM3LS45OTMuNDM0TC44MzYgNy4wNjdabTYuMDMgMi4zMzYtNC41NTQtMS44OSAxMC4zNjUtNC41MzYtNS44MTEgNi40MjZabS43NDQuNjY4IDIuMjY3IDQuMTM1IDMuMDE2LTkuOTc2TDcuNjEgMTAuMDdaIiBmaWxsPSIjMEEwRTEyIi8+PC9zdmc+);
-  padding: 7px 6px 3px 4px;
+  content: "📧";
+}
+
+/* Center generated index cards */
+.theme-doc-generated-index-page .row {
+  justify-content: center;
+}
+
+.theme-doc-generated-index-page .col {
+  display: flex;
+  justify-content: center;
+}
+
+.theme-doc-generated-index-page .card {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
 }

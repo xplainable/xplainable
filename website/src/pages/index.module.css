@@ -4,20 +4,311 @@
  */
 
 .heroBanner {
-  padding: 4rem 0;
+  background: var(--ifm-background-color);
+  color: var(--ifm-color-content);
+  padding: 6rem 0;
   text-align: center;
   position: relative;
   overflow: hidden;
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
 }
 
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
-  }
+.heroBanner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--ifm-color-emphasis-100) 0%, var(--ifm-color-emphasis-200) 100%);
+  opacity: 0.5;
+}
+
+[data-theme='light'] .heroBanner {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
+  color: white;
+}
+
+[data-theme='light'] .heroBanner::before {
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="white" fill-opacity="0.1"><polygon points="0,0 1000,0 1000,100 0,80"/></svg>');
+  background-size: cover;
+  background-position: bottom;
+  opacity: 1;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.heroTitle {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.heroSubtitle {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+  font-weight: 300;
 }
 
 .buttons {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.heroButton {
+  background: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px var(--ifm-color-emphasis-300);
+}
+
+.heroButton:hover {
+  background: var(--ifm-color-primary-dark);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px var(--ifm-color-emphasis-400);
+}
+
+.heroButtonSecondary {
+  border: 2px solid var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.heroButtonSecondary:hover {
+  background: var(--ifm-color-primary);
+  color: white;
+  transform: translateY(-2px);
+}
+
+[data-theme='light'] .heroButton {
+  background: white;
+  color: #1e3a8a;
+}
+
+[data-theme='light'] .heroButton:hover {
+  background: #f8fafc;
+  color: #1e3a8a;
+}
+
+[data-theme='light'] .heroButtonSecondary {
+  border: 2px solid white;
+  color: white;
+}
+
+[data-theme='light'] .heroButtonSecondary:hover {
+  background: white;
+  color: #1e3a8a;
+}
+
+.quickStart {
+  padding: 4rem 0;
+  background: var(--ifm-color-emphasis-100);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.quickStartContent {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.sectionTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--ifm-color-content);
+}
+
+.sectionSubtitle {
+  font-size: 1.2rem;
+  color: var(--ifm-color-content-secondary);
+  margin-bottom: 2rem;
+}
+
+.codeBlock {
+  background: var(--ifm-color-emphasis-800);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem 0;
+  box-shadow: 0 8px 32px var(--ifm-color-emphasis-300);
+  border: 1px solid var(--ifm-color-emphasis-600);
+  position: relative;
+  overflow: hidden;
+}
+
+.codeBlock::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--ifm-color-primary), var(--ifm-color-success));
+}
+
+.codeBlock::after {
+  content: '$ ';
+  position: absolute;
+  left: 2rem;
+  top: 2rem;
+  color: var(--ifm-color-success);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 1.2rem;
+  font-weight: 600;
+  opacity: 0.8;
+  line-height: 1.5;
+}
+
+.codeBlock pre {
+  margin: 0;
+  font-family: var(--ifm-font-family-monospace);
+  padding-left: 2.5rem;
+  position: relative;
+  z-index: 1;
+  line-height: 1.5;
+}
+
+.codeBlock code {
+  color: var(--ifm-color-success);
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+}
+
+.copyButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--ifm-color-emphasis-600);
+  border: 1px solid var(--ifm-color-emphasis-500);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  color: var(--ifm-color-content-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+  font-family: var(--ifm-font-family-base);
+}
+
+.copyButton:hover {
+  background: var(--ifm-color-emphasis-500);
+  color: var(--ifm-color-content);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px var(--ifm-color-emphasis-400);
+}
+
+.copyButton:active {
+  transform: translateY(0);
+}
+
+.features {
+  padding: 5rem 0;
+  background: var(--ifm-background-color);
+}
+
+.features .sectionTitle {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.featureCard {
+  background: var(--ifm-background-surface-color);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px var(--ifm-color-emphasis-200);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  transition: all 0.3s ease;
+  height: 100%;
+}
+
+.featureCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px var(--ifm-color-emphasis-400);
+  border-color: var(--ifm-color-primary);
+}
+
+.featureIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.featureTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--ifm-color-content);
+}
+
+.featureDescription {
+  color: var(--ifm-color-content-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 4rem 0;
+  }
+  
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+  
+  .heroSubtitle {
+    font-size: 1.2rem;
+  }
+  
+  .buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .sectionTitle {
+    font-size: 2rem;
+  }
+  
+  .featureCard {
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .heroBanner {
+    padding: 3rem 0;
+  }
+  
+  .heroTitle {
+    font-size: 2rem;
+  }
+  
+  .heroSubtitle {
+    font-size: 1.1rem;
+  }
+  
+  .quickStart {
+    padding: 3rem 0;
+  }
+  
+  .features {
+    padding: 3rem 0;
+  }
 }

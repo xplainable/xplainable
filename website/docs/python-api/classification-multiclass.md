@@ -4,90 +4,131 @@ sidebar_position: 3
 
 # Classification – Multi-Class
 
-:::warning
-Important! Multi-Class is still being developed and is yet to be available in a release version of xplainable. Please check back soon for updates.
+:::info Coming Soon
+**Multi-Class Classification** is currently in active development and will be available in an upcoming release of xplainable. We're working hard to bring you transparent, explainable multi-class models with the same ease of use you've come to expect.
 :::
 
+## What to Expect
 
-## Using the GUI
+When released, xplainable's Multi-Class Classification will provide:
 
-Train a classification model with the embedded xplainable GUI.
+<div className="row">
+  <div className="col col--6">
+    <div className="card">
+      <div className="card__header">
+        <h3>🎯 Multi-Class Support</h3>
+      </div>
+      <div className="card__body">
+        <p>Handle classification problems with 3+ classes while maintaining full transparency and explainability.</p>
+      </div>
+    </div>
+  </div>
+  <div className="col col--6">
+    <div className="card">
+      <div className="card__header">
+        <h3>🔍 Class-Specific Insights</h3>
+      </div>
+      <div className="card__body">
+        <p>Understand what drives predictions for each individual class with detailed feature importance.</p>
+      </div>
+    </div>
+  </div>
+</div>
 
-### Example – GUI
+<div className="row">
+  <div className="col col--6">
+    <div className="card">
+      <div className="card__header">
+        <h3>⚡ Real-Time Explanations</h3>
+      </div>
+      <div className="card__body">
+        <p>Get instant explanations for multi-class predictions with the same speed as binary classification.</p>
+      </div>
+    </div>
+  </div>
+  <div className="col col--6">
+    <div className="card">
+      <div className="card__header">
+        <h3>🎨 GUI Integration</h3>
+      </div>
+      <div className="card__body">
+        <p>Train and explore multi-class models using the intuitive xplainable GUI interface.</p>
+      </div>
+    </div>
+  </div>
+</div>
 
-```python
-import xplainable as xp
-import pandas as pd
-import os
+## Planned Features
 
-# Initialise your session
-xp.initialise(api_key=os.environ['XP_API_KEY'])
-
-# Load your data
-data = pd.read_csv('data.csv')
-
-# Train your model (this will open an embedded gui)
-model = xp.multiclass_classifier(data)
-```
-
-&nbsp;
-
-## Using the Python API
-You can also train a multi-class classification model programmatically. This works in a very similar way to other popular machine learning libraries.
-
-You can import the `XMultiClassifier` class and train a model as follows:
-
-### Example – XMultiClassifier()
+### XMultiClassifier API
+The upcoming `XMultiClassifier` will follow the same intuitive API pattern as our binary classifier:
 
 ```python
 from xplainable.core.models import XMultiClassifier
-from sklearn.model_selection import train_test_split
-import pandas as pd
 
-# Load your data
-data = pd.read_csv('data.csv')
-x, y = data.drop('target', axis=1), data['target']
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
-
-# Train your model
+# Simple, familiar API
 model = XMultiClassifier()
-model.fit(x_train, y_train)
+model.fit(X_train, y_train)
+predictions = model.predict(X_test)
 
-# Predict on the test set
-y_pred = model.predict(x_test)
-
+# Get explanations for each class
+explanations = model.explain(X_test)
 ```
 
-### Example – PartitionedMultiClassifier()
+### GUI Integration
+Train multi-class models with the embedded GUI:
+
+```python
+import xplainable as xp
+
+# Initialize session
+xp.initialise(api_key=os.environ['XP_API_KEY'])
+
+# Train with GUI (coming soon)
+model = xp.multiclass_classifier(data)
+```
+
+### Partitioned Multi-Class Models
+Support for partitioned multi-class models for complex segmentation:
+
 ```python
 from xplainable.core.models import PartitionedMultiClassifier
-from xpainable.core.models import XMultiClassifier
-import pandas as pd
-from sklearn.model_selection import train_test_split
 
-# Load your data
-data = pd.read_csv('data.csv')
-train, test = train_test_split(data, test_size=0.2)
-
-# Train your model (this will open an embedded gui)
-partitioned_model = PartitionedMultiClassifier(partition_on='partition_column')
-
-# Iterate over the unique values in the partition column
-for partition in train['partition_column'].unique():
-      # Get the data for the partition
-      part = train[train['partition_column'] == partition]
-      x_train, y_train = part.drop('target', axis=1), part['target']
-
-      # Fit the embedded model
-      model = XMultiClassifier()
-      model.fit(x, y)
-
-      # Add the model to the partitioned model
-      partitioned_model.add_partition(model, partition)
-
-# Prepare the test data
-x_test, y_test = test.drop('target', axis=1), test['target']
-
-# Predict on the partitioned model
-y_pred = partitioned_model.predict(x_test)
+# Advanced partitioning (coming soon)
+partitioned_model = PartitionedMultiClassifier(partition_on='segment')
 ```
+
+## Current Alternatives
+
+While we work on multi-class support, you can:
+
+### 1. Use Binary Classification
+For problems with 3+ classes, consider:
+- **One-vs-Rest approach**: Train separate binary classifiers for each class
+- **Binary decomposition**: Break down into multiple binary problems
+
+### 2. Preprocessing Strategies
+- **Class grouping**: Combine similar classes into broader categories
+- **Hierarchical classification**: Use a tree-like structure of binary classifiers
+
+### 3. Stay Updated
+- **Follow our releases**: Check the [GitHub repository](https://github.com/xplainable/xplainable) for updates
+- **Join our community**: Get notified when multi-class support is released
+
+## Timeline
+
+:::tip Development Status
+Multi-class classification is a **high priority** feature currently in active development. We're targeting release in the coming months and will announce availability through our official channels.
+:::
+
+## Get Notified
+
+Want to be the first to know when multi-class classification is available?
+
+- ⭐ **Star our [GitHub repository](https://github.com/xplainable/xplainable)**
+- 📧 **Follow our release notes**
+- 💬 **Join our community discussions**
+
+---
+
+*In the meantime, explore our powerful [binary classification](./classification-binary.md) and [regression](./regression.md) capabilities, or check out [advanced topics](../advanced-topics/) for sophisticated modeling techniques.*

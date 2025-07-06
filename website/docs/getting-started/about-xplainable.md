@@ -171,6 +171,8 @@ model.explain()  # No surrogate models needed!
 
 ## Architecture Overview
 
+<div style={{textAlign: 'center'}}>
+
 ```mermaid
 graph TD
     A[Raw Data] --> B[Preprocessing Pipeline]
@@ -182,6 +184,8 @@ graph TD
     F --> H[Deployment]
     H --> I[Cloud Platform]
 ```
+
+</div>
 
 ## Community & Support
 

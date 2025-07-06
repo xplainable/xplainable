@@ -122,7 +122,7 @@ default_model.fit(
     train.drop(['target', partition_column], axis=1),
     train['target']
 )
-partitioned_models['__default__'] = default_model
+partitioned_models['__dataset__'] = default_model
 
 # Prediction function
 def predict_partitioned(X, partition_values, models):
@@ -134,7 +134,7 @@ def predict_partitioned(X, partition_values, models):
         if partition_value in models:
             model = models[partition_value]
         else:
-            model = models['__default__']
+            model = models['__dataset__']
         
         # Make prediction
         pred = model.predict(X.iloc[[i]])
@@ -189,7 +189,7 @@ default_regressor.fit(
     data.drop(['sales', partition_column], axis=1),
     data['sales']
 )
-partitioned_regressors['__default__'] = default_regressor
+partitioned_regressors['__dataset__'] = default_regressor
 
 # Make predictions
 def predict_partitioned_regression(X, partition_values, models):
@@ -197,7 +197,7 @@ def predict_partitioned_regression(X, partition_values, models):
     predictions = []
     
     for i, partition_value in enumerate(partition_values):
-        model = models.get(partition_value, models['__default__'])
+        model = models.get(partition_value, models['__dataset__'])
         pred = model.predict(X.iloc[[i]])
         predictions.append(pred[0])
     
@@ -581,7 +581,7 @@ def compare_partitioned_vs_single_model(data, partition_column, test_size=0.2):
     # Create default model for unknown segments
     default_model = XClassifier(max_depth=5, min_info_gain=0.02)
     default_model.fit(X_train_single, y_train_single)
-    partitioned_models['__default__'] = default_model
+    partitioned_models['__dataset__'] = default_model
     
     # Test single model
     X_test = test_data.drop(['target', partition_column], axis=1)
@@ -593,7 +593,7 @@ def compare_partitioned_vs_single_model(data, partition_column, test_size=0.2):
     partitioned_predictions = []
     for i, row in test_data.iterrows():
         segment = row[partition_column]
-        model = partitioned_models.get(segment, partitioned_models['__default__'])
+        model = partitioned_models.get(segment, partitioned_models['__dataset__'])
         
         X_row = row.drop(['target', partition_column]).to_frame().T
         pred = model.predict(X_row)[0]
@@ -654,7 +654,7 @@ def analyze_partition_feature_importance(partitioned_models, feature_names):
     importance_data = {}
     
     for partition, model in partitioned_models.items():
-        if partition == '__default__':
+        if partition == '__dataset__':
             continue
         
         try:
