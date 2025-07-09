@@ -14,7 +14,7 @@ import CellOutput from "@site/src/components/CellOutput.jsx";
   colabUrl="https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Repurchase_Window_Prediction.ipynb"
 />
 
-## 0 | Environment setup
+## 0  |  Environment setup
 
 Installs required packages (`xplainable`, `xplainable-client`) and imports libraries
 used throughout the notebook.
@@ -39,7 +39,7 @@ import xplainable_client
 import json
 ```
 
-## 1 | Connect to Xplainable API
+## 1  |  Connect to Xplainable API
 
 Creates an authenticated `xplainable_client.Client` instance so you can train, deploy,
 and query models.
@@ -51,7 +51,7 @@ client = xplainable_client.Client(
 )
 ```
 
-## 2 | Load Online Retail II dataset
+## 2  |  Load Online Retail II dataset
 
 Downloads the two-sheet Excel file from UCI, concatenates them, and performs basic
 cleanup (`Amount` column, drop returns, etc.).
@@ -108,150 +108,7 @@ stepping through these tracks makes it clear how the dataset converts raw transa
 into a binary outcome that the model can learn to predict.
 
 
-<details>
-<summary>Show HTML Code</summary>
-
-```python
-%%html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Repurchase Prediction Timeline (30 Days)</title>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    .axis path, .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }
-    .tick line { stroke: #ccc; }
-    .purchase { fill: #2774AE; }
-    .window { stroke: #E44D9A; stroke-width: 4px; stroke-opacity: 0.4; }
-    .rebuy { fill: #E44D9A; }
-    .legend { font-size: 12px; }
-    .button { position: absolute; top: 10px; right: 20px; padding: 6px 12px; background: #2774AE; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-  </style>
-</head>
-<body>
-  <button class="button" id="replayBtn">Replay</button>
-  <h2>Repurchase Prediction Timeline (30 Days)</h2>
-  <svg width="800" height="300"></svg>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script>
-    const rawData = [
-      {id: 'C1', date: '2021-02-01', rebuy: '2021-02-25'},
-      {id: 'C1', date: '2021-04-05', rebuy: null},
-      {id: 'C2', date: '2021-03-01', rebuy: null},
-      {id: 'C2', date: '2021-04-15', rebuy: null},
-      {id: 'C3', date: '2021-06-01', rebuy: '2021-07-10'},
-      {id: 'C3', date: '2021-09-12', rebuy: null},
-      {id: 'C4', date: '2021-10-01', rebuy: null}
-    ];
-    const parseDate = d3.timeParse('%Y-%m-%d');
-    function prepareData() {
-      return rawData.map(d => {
-        const date = parseDate(d.date);
-        const rebuyDate = d.rebuy ? parseDate(d.rebuy) : null;
-        return { id: d.id, date, end: d3.timeDay.offset(date, 30), rebuyDate };
-      });
-    }
-    const svg = d3.select('svg');
-    const margin = {top: 20, right: 20, bottom: 30, left: 60};
-    const width = +svg.attr('width') - margin.left - margin.right;
-    const height = +svg.attr('height') - margin.top - margin.bottom;
-    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
-
-    function render(data) {
-      g.selectAll('*').remove();
-      const customers = [...new Set(data.map(d => d.id))];
-      const x = d3.scaleTime()
-        .domain(d3.extent(data.flatMap(d => [d.date, d.end])))
-        .range([0, width]);
-      const y = d3.scalePoint()
-        .domain(customers)
-        .range([0, height])
-        .padding(0.5);
-
-      g.append('g')
-        .attr('class', 'axis')
-        .attr('transform', `translate(0,${height})`)
-        .call(d3.axisBottom(x).ticks(6).tickFormat(d3.timeFormat('%b-%d')));
-      g.append('g')
-        .attr('class', 'axis')
-        .call(d3.axisLeft(y));
-
-      // animate per customer
-      customers.forEach((cust, i) => {
-        const custData = data.filter(d => d.id === cust);
-        custData.forEach((d, j) => {
-          const delay = i * 1000 + j * 300;
-          // window
-          g.append('line')
-            .datum(d)
-            .attr('class', 'window')
-            .attr('x1', x(d.date))
-            .attr('x2', x(d.date))
-            .attr('y1', y(d.id))
-            .attr('y2', y(d.id))
-            .transition()
-            .delay(delay)
-            .duration(600)
-            .attr('x2', x(d.end));
-          // purchase
-          g.append('circle')
-            .datum(d)
-            .attr('class', 'purchase')
-            .attr('cx', x(d.date))
-            .attr('cy', y(d.id))
-            .attr('r', 0)
-            .transition()
-            .delay(delay + 200)
-            .duration(300)
-            .attr('r', 6);
-          // rebuy
-          if (d.rebuyDate) {
-            g.append('path')
-              .datum(d)
-              .attr('class', 'rebuy')
-              .attr('d', d3.symbol().type(d3.symbolStar).size(200))
-              .attr('transform', `translate(${x(d.rebuyDate)},${y(d.id)}) scale(0)`)  
-              .transition()
-              .delay(delay + 400)
-              .duration(400)
-              .attr('transform', `translate(${x(d.rebuyDate)},${y(d.id)}) scale(1)`);
-          }
-        });
-      });
-      // legend
-      const legend = svg.selectAll('.legend').data([0]);
-      const lg = legend.enter().append('g').attr('class','legend').merge(legend)
-        .attr('transform', `translate(${margin.left},10)`);
-      lg.selectAll('*').remove();
-      lg.append('circle').attr('cx',0).attr('cy',0).attr('r',6).attr('fill','#2774AE');
-      lg.append('text').attr('x',12).attr('y',4).text('Purchase');
-      lg.append('line').attr('x1',100).attr('x2',120).attr('y1',0).attr('y2',0)
-        .attr('stroke','#E44D9A').attr('stroke-width',4).attr('stroke-opacity',0.4);
-      lg.append('text').attr('x',130).attr('y',4).text('30-Day Window');
-      lg.append('path')
-        .attr('d', d3.symbol().type(d3.symbolStar).size(200))
-        .attr('transform', 'translate(240,0) scale(1)')
-        .attr('fill','#E44D9A');
-      lg.append('text').attr('x',250).attr('y',4).text('Rebuy');
-    }
-
-    // initial render & button handler
-    function replay() {
-      const data = prepareData();
-      render(data);
-    }
-    d3.select('#replayBtn').on('click', replay);
-    replay();
-  </script>
-</body>
-</html>
-
-```
-
-</details>
-
-<iframe id="iframe_D3Visualization_72066e95" src="/plot_data/D3Visualization_72066e95.html" width="100%" height="300" style={{border: "1px solid #ccc", borderRadius: "4px"}} onLoad={() => { const iframe = document.getElementById("iframe_D3Visualization_72066e95"); window.addEventListener("message", (event) => { if (event.data.type === "resize" && iframe) { iframe.style.height = event.data.height + "px"; } }); }}></iframe>
+<iframe src='/plot_data/D3Visualization_9e70c6c9.html' width='100%' height='400' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ```python
 # --- 1. LOAD & CLEAN -------------------------------------------------
@@ -264,7 +121,7 @@ df["Amount"]       = df["Price"] * df["Quantity"]
 df["InvoiceMonth"] = df["InvoiceDate"].dt.to_period("M")
 ```
 
-## 3 | Data preview
+## 3  |  Data preview
 
 Quick `df.head()` to verify the raw dataset looks correct after loading.
 
@@ -282,7 +139,7 @@ df.head()
 |  3 |    489434 | 22041       | RECORD FRAME 7" SINGLE SIZE         |         48 | 2009-12-01 07:45:00 |    2.1  |         13085 | United Kingdom |    100.8 | 2009-12        |
 |  4 |    489434 | 21232       | STRAWBERRY CERAMIC TRINKET BOX      |         24 | 2009-12-01 07:45:00 |    1.25 |         13085 | United Kingdom |     30   | 2009-12        |
 
-## 4 | RFM feature engineering
+## 4  |  RFM feature engineering
 
 Sorts data by customer/date, builds monthly features (`Frequency`, `DistinctItems`,
 `Monetary`, `Country`), and calculates `Recency`.
@@ -340,7 +197,7 @@ grp["Month"] = grp["InvoiceMonth"].dt.month
 grp["Quarter"] = grp["InvoiceMonth"].dt.quarter
 ```
 
-## 5 | Build 30-day repurchase label
+## 5  |  Build 30-day repurchase label
 
 Creates `will_rebuy_30d` by checking whether each purchase is followed by another within
 the next 30 days, then aggregates to monthly level and merges with feature matrix.
@@ -395,7 +252,7 @@ data[f"will_rebuy_{DAYS}d"].value_counts()
 Name: will_rebuy_30d, dtype: int64`}
 </CellOutput>
 
-## 6 | Train / test time-based split
+## 6  |  Train / test time-based split
 
 Converts `InvoiceMonth` to a timestamp, splits data before vs after **1 July 2011**, and
 defines `X_train`, `X_test`, `y_train`, `y_test` (no one-hot encoding).
@@ -436,7 +293,7 @@ X_train
 | 25592 | 1           | 187             | 381.50     | United Kingdom | 7.0       | 11      | 4         |
 | 25593 | 1           | 488             | 765.28     | United Kingdom | 8.0       | 5       | 2         |
 
-## 7 | Hyper-parameter optimisation
+## 7  |  Hyper-parameter optimisation
 
 Runs `XParamOptimiser` to search the best parameters for an XGBoost-style classifier on
 the training set.
@@ -451,7 +308,7 @@ params = opt.optimise(X_train, y_train)
 {`100%|██████████| 30/30 [00:08<00:00,  3.60trial/s, best loss: -0.8776764727397712]`}
 </CellOutput>
 
-## 8 | Fit best model
+## 8  |  Fit best model
 
 Initialises `XPClassifier` with the chosen params and trains it on `X_train`/`y_train`.
 
@@ -465,7 +322,7 @@ model.fit(X_train, y_train)
 {`<xplainable.core.ml.classification.XClassifier at 0x2a566e140>`}
 </CellOutput>
 
-## 9 | Global & local explanations
+## 9  |  Global & local explanations
 
 `model.explain()` renders feature importances and SHAP-style breakdowns to understand
 what drives predictions.
@@ -475,9 +332,9 @@ what drives predictions.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_9965d22a-069c-4f03-a532-005b7367ba28.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_4cf99106-da02-4870-aa81-8a31413a94c0.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
-## 10 | Hold-out evaluation
+## 10  |  Hold-out evaluation
 
 Evaluates the model on `X_test` and prints full classification report, confusion matrix,
 ROC-AUC, log-loss, etc.
@@ -512,7 +369,7 @@ model.evaluate(X_test, y_test)
  'cohen_kappa': 0.7074258976095472}`}
 </CellOutput>
 
-## 11 | Register model in Xplainable Hub
+## 11  |  Register model in Xplainable Hub
 
 Creates a new model version with metadata (`model_name`, `model_description`) and
 uploads training data schema.
@@ -528,7 +385,7 @@ model_id = client.create_model(
 )
 ```
 
-## 12 | Deploy model to inference API
+## 12  |  Deploy model to inference API
 
 Spins up an API endpoint, activates the deployment, and generates a deploy key for
 secure requests.
@@ -548,7 +405,7 @@ client.activate_deployment(deployment['deployment_id'])
 deploy_key = client.generate_deploy_key(deployment['deployment_id'], 'Deployment API for Purchase Prediction', 7)
 ```
 
-## 13 | Generate example payload
+## 13  |  Generate example payload
 
 Either pull a random sample from the dataset or use
 `Client.generate_example_deployment_payload()` to obtain a ready-made JSON record.
@@ -570,9 +427,9 @@ else:
 body
 ```
 
-## 14 | Call inference endpoint
+## 14  |  Call inference endpoint
 
-Sends a POST request to the deployment's `/predict` route with the JSON payload and
+Sends a POST request to the deployment’s `/predict` route with the JSON payload and
 prints the returned probability + feature breakdown.
 
 

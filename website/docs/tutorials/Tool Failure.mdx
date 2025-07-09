@@ -63,17 +63,17 @@ prediction. Below is an overview of its structure and the data it contains:
 1. **Type:** Indicates the type or category of the product or process, with different
    types represented by different letters (e.g., 'M', 'L').
 
-1. **Air temperature [K] (Kelvin):** The temperature of the air in the environment where
-   the machine operates, measured in Kelvin.
+1. **Air temperature \[K\] (Kelvin):** The temperature of the air in the environment
+   where the machine operates, measured in Kelvin.
 
-1. **Process temperature [K] (Kelvin):** The operational temperature of the process or
+1. **Process temperature \[K\] (Kelvin):** The operational temperature of the process or
    machine, also measured in Kelvin.
 
-1. **Rotational speed [rpm] (Revolutions per Minute):** This column shows the speed at
+1. **Rotational speed \[rpm\] (Revolutions per Minute):** This column shows the speed at
    which a component of the machine is rotating.
 
-1. **Torque [Nm] (Newton Meters):** The torque being applied in the process, measured in
-   Newton meters.
+1. **Torque \[Nm\] (Newton Meters):** The torque being applied in the process, measured
+   in Newton meters.
 
 1. **Tool wear \[min\]:** Indicates the amount of wear on the tools used in the machine,
    measured in minutes of operation.
@@ -181,7 +181,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_7e24e3c0-6e36-4f42-8344-b58d64075f20.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_8494ca8e-0e83-4a2e-b301-dd8275b1d312.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ```python
 params = {
@@ -200,7 +200,7 @@ model.update_feature_params(features=['Rotational speed [rpm]', 'Tool wear [min]
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_1973d2d8-72b4-44e4-8b5e-fc7afb3aa07e.html' width='100%' height='520'></iframe>
+<iframe src='/plot_data/AltairPlot_a1613d0d-dbd1-43e4-944c-07dafbfb93db.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 In this snapshot, we demonstrate the impact of hyperparameter tuning on model
 interpretability. By adjusting max_depth and min_info_gain, we refine the feature wise

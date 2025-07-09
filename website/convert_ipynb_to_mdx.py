@@ -29,6 +29,7 @@ WEBSITE_DIR = LIB_DIR.joinpath("website")
 DOCS_DIR = WEBSITE_DIR.joinpath("docs")
 OVERVIEW_DIR = DOCS_DIR
 TUTORIALS_DIR = DOCS_DIR.joinpath("tutorials")
+STATIC_DIR = WEBSITE_DIR.joinpath("static")
 
 def load_nbs_to_convert() -> Dict[str, Dict[str, str]]:
     """Load the metadata and list of notebooks to convert to mdx.
@@ -193,61 +194,36 @@ def transform_code_cell(
         
         # Add auto-resize script to the HTML content
         resize_script = """
-<script>
-function resizeIframe() {
-    const height = Math.max(
-        document.body.scrollHeight,
-        document.body.offsetHeight,
-        document.documentElement.clientHeight,
-        document.documentElement.scrollHeight,
-        document.documentElement.offsetHeight
-    );
-    window.parent.postMessage({type: 'resize', height: height + 20}, '*');
-}
-
-// Resize when page loads
-window.addEventListener('load', resizeIframe);
-
-// Resize when content changes (for dynamic content)
-if (window.ResizeObserver) {
-    const observer = new ResizeObserver(resizeIframe);
-    observer.observe(document.body);
-}
-
-// Fallback for older browsers
-setTimeout(resizeIframe, 1000);
-</script>
-"""
+        <script>
+        function resizeIframe() {
+            const iframe = window.parent.document.querySelector('iframe[src*="''' + f"D3Visualization_{uuid.uuid4().hex[:8]}.html" + '''"]');
+            if (iframe) {
+                iframe.style.height = document.body.scrollHeight + 'px';
+            }
+        }
+        window.addEventListener('load', resizeIframe);
+        window.addEventListener('resize', resizeIframe);
+        </script>
+        """
         
-        # Insert the script before the closing </body> tag, or at the end if no </body>
-        if '</body>' in html_content:
-            html_content = html_content.replace('</body>', resize_script + '\n</body>')
-        else:
-            html_content = html_content + resize_script
+        full_html_content = html_content + resize_script
         
-        # Generate a unique filename and ID for the HTML file
+        # Save to static directory for proper serving
+        static_plot_folder = STATIC_DIR.joinpath("plot_data")
+        static_plot_folder.mkdir(parents=True, exist_ok=True)
+        
         file_name = f"D3Visualization_{uuid.uuid4().hex[:8]}.html"
-        iframe_id = f"iframe_{file_name.replace('.html', '')}"
         
-        # Save to the static/plot_data directory for serving
-        static_plot_data_folder = WEBSITE_DIR.joinpath("static").joinpath("plot_data")
-        static_plot_data_folder.mkdir(parents=True, exist_ok=True)
+        # Write HTML file to static directory
+        with open(static_plot_folder.joinpath(file_name), "w") as f:
+            f.write(full_html_content)
         
-        file_path = static_plot_data_folder.joinpath(file_name)
-        with open(file_path, "w") as f:
-            f.write(html_content)
-        
-        # Add collapsible code block showing the %%html command
-        mdx_output += (
-            "<details>\n"
-            "<summary>Show HTML Code</summary>\n\n"
-            f"```python\n{cell_source}\n```\n\n"
-            "</details>\n\n"
-        )
-        
-        # Add the iframe with auto-resize listener - simpler approach
+        # Use absolute path for iframe that works with static files
         path_to_html = f"/plot_data/{file_name}"
-        mdx_output += f'<iframe id="{iframe_id}" src="{path_to_html}" width="100%" height="300" style={{{{border: "1px solid #ccc", borderRadius: "4px"}}}} onLoad={{() => {{ const iframe = document.getElementById("{iframe_id}"); window.addEventListener("message", (event) => {{ if (event.data.type === "resize" && iframe) {{ iframe.style.height = event.data.height + "px"; }} }}); }}}}></iframe>\n\n'
+        mdx_output += (
+            f"<iframe src='{path_to_html}' width='100%' height='400' "
+            f"style={{{{border: '1px solid #ccc', borderRadius: '4px'}}}}></iframe>\n\n"
+        )
         
         d3_html_flag = True
         
@@ -319,16 +295,16 @@ setTimeout(resizeIframe, 1000);
                     if any(keyword in cell_output_data.lower() for keyword in ['d3.', '<script', '<svg', 'visualization']):
                         file_name = f"HTMLVisualization_{uuid.uuid4().hex[:8]}.html"
                         
-                        # Save to the static/plot_data directory
-                        static_plot_data_folder = WEBSITE_DIR.joinpath("static").joinpath("plot_data")
-                        static_plot_data_folder.mkdir(parents=True, exist_ok=True)
+                        # Save to the tutorial assets directory
+                        tutorial_assets_folder = TUTORIALS_DIR.joinpath("assets").joinpath("plot_data")
+                        tutorial_assets_folder.mkdir(parents=True, exist_ok=True)
                         
-                        file_path = static_plot_data_folder.joinpath(file_name)
+                        file_path = tutorial_assets_folder.joinpath(file_name)
                         with open(file_path, "w") as f:
                             f.write(cell_output_data)
                         
-                        # Add iframe to display the HTML with reduced height
-                        path_to_html = f"/plot_data/{file_name}"
+                        # Use relative path to the assets folder
+                        path_to_html = f"./assets/plot_data/{file_name}"
                         mdx_output += (
                             f"<iframe src='{path_to_html}' width='100%' height='400' "
                             f"style={{{{border: '1px solid #ccc', borderRadius: '4px'}}}}></iframe>\n\n"
@@ -503,19 +479,35 @@ setTimeout(resizeIframe, 1000);
                     html_content = data["text/html"]
                     file_name = f"AltairPlot_{uuid.uuid4()}.html"
 
-                    # Assuming 'static' directory is at the root of your Docusaurus project
-                    file_path = WEBSITE_DIR.joinpath("static").joinpath("plot_data").joinpath(file_name)
+                    # Save to static directory for proper serving
+                    static_plot_folder = STATIC_DIR.joinpath("plot_data")
+                    static_plot_folder.mkdir(parents=True, exist_ok=True)
                     
-                    # Ensure the plot_data directory exists
-                    file_path.parent.mkdir(parents=True, exist_ok=True)
+                    # Add auto-resize script to the HTML content
+                    resize_script = """
+                    <script>
+                    function resizeIframe() {
+                        const iframe = window.parent.document.querySelector('iframe[src*="''' + file_name + '''"]');
+                        if (iframe) {
+                            iframe.style.height = document.body.scrollHeight + 'px';
+                        }
+                    }
+                    window.addEventListener('load', resizeIframe);
+                    window.addEventListener('resize', resizeIframe);
+                    </script>
+                    """
                     
-                    with open(file_path, "w") as f:
-                        f.write(html_content)
-
-                    # The path where the file is served, relative to your site's base URL
+                    full_html_content = html_content + resize_script
+                    
+                    # Write HTML file to static directory
+                    with open(static_plot_folder.joinpath(file_name), "w") as f:
+                        f.write(full_html_content)
+                    
+                    # Use absolute path for iframe that works with static files
                     path_to_html = f"/plot_data/{file_name}"
                     mdx_output += (
-                        f"<iframe src='{path_to_html}' width='100%' height='520'></iframe>\n\n"
+                        f"<iframe src='{path_to_html}' width='100%' height='520' "
+                        f"style={{{{border: '1px solid #ccc', borderRadius: '4px'}}}}></iframe>\n\n"
                     )
                     altair_flag = True
 
@@ -732,7 +724,7 @@ if __name__ == "__main__":
     print("--------------------------------------------")
 
     # Define the path to your 'plot_data' directory
-    plot_data_dir = WEBSITE_DIR.joinpath("static").joinpath("plot_data")
+    plot_data_dir = STATIC_DIR.joinpath("plot_data")
 
     # Ensure the plot_data directory exists
     plot_data_dir.mkdir(parents=True, exist_ok=True)

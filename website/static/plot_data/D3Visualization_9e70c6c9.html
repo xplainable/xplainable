@@ -129,31 +129,16 @@
     d3.select('#replayBtn').on('click', replay);
     replay();
   </script>
-
-<script>
-function resizeIframe() {
-    const height = Math.max(
-        document.body.scrollHeight,
-        document.body.offsetHeight,
-        document.documentElement.clientHeight,
-        document.documentElement.scrollHeight,
-        document.documentElement.offsetHeight
-    );
-    window.parent.postMessage({type: 'resize', height: height + 20}, '*');
-}
-
-// Resize when page loads
-window.addEventListener('load', resizeIframe);
-
-// Resize when content changes (for dynamic content)
-if (window.ResizeObserver) {
-    const observer = new ResizeObserver(resizeIframe);
-    observer.observe(document.body);
-}
-
-// Fallback for older browsers
-setTimeout(resizeIframe, 1000);
-</script>
-
 </body>
 </html>
+        <script>
+        function resizeIframe() {
+            const iframe = window.parent.document.querySelector('iframe[src*="''' + f"D3Visualization_{uuid.uuid4().hex[:8]}.html" + '''"]');
+            if (iframe) {
+                iframe.style.height = document.body.scrollHeight + 'px';
+            }
+        }
+        window.addEventListener('load', resizeIframe);
+        window.addEventListener('resize', resizeIframe);
+        </script>
+        

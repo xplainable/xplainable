@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-import BlogPost from "@site/src/components/Cards/BlogPost.jsx";
+import BlogPost from "../../../src/components/Cards/BlogPost.jsx";
 
 # Partitioned Models
 
