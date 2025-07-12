@@ -23,6 +23,22 @@
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb"
     },
+    "power_plant_energy_output": {
+        "title": "Power Plant Energy Output",
+        "sidebar_label": "Power Plant Energy Output",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Power_Plant_Energy_Output.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Power_Plant_Energy_Output.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Power_Plant_Energy_Output.ipynb"
+    },
+    "house_prices_regression": {
+        "title": "House Prices Regression",
+        "sidebar_label": "House Prices Regression",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/House_Prices_Regression.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb"
+    },
     "repurchase_window_prediction": {
         "title": "Repurchase Window Prediction",
         "sidebar_label": "Repurchase Window Prediction",
@@ -38,6 +54,14 @@
         "nb_path": "website/docs/tutorials/Tool_Failure.ipynb",
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb"
+    },
+    "concrete_compressive_strength": {
+        "title": "Concrete Compressive Strength",
+        "sidebar_label": "Concrete Compressive Strength",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Concrete_Compressive_Strength.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Concrete_Compressive_Strength.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Concrete_Compressive_Strength.ipynb"
     },
     "instacart_product_reorder_prediction": {
         "title": "Instacart Product Reorder Prediction",

@@ -6,148 +6,66 @@ nb_path: website/docs/tutorials/HELOC_Credit_Risk.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb
 ---
-import CellOutput from "@site/src/components/CellOutput.jsx";
 import LinkButtons from "@site/src/components/LinkButtons.jsx";
+import CellOutput from "@site/src/components/CellOutput.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb"
   colabUrl="https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb"
 />
 
-# FICO Explainable ML: HELOC
+# Classification - HELOC Credit Risk
 
+Predicting credit risk for Home Equity Line of Credit applications using the FICO HELOC
+dataset.
 
-## Introduction
+**Dataset Source**:
+[FICO HELOC Dataset](https://www.kaggle.com/c/fico-machine-learning-challenge/data)
+**Problem Type**: Classification\
+**Target Variable**: RiskPerformance - Whether applicant will pay as negotiated
+(Good/Bad) **Use Case**: Credit risk assessment for financial institutions to identify
+borrowers at risk of defaulting
 
-In this walkthrough, we'll use Xplainable's platform to analyze the FICO Home Equity
-Line of Credit (HELOC) dataset. This dataset is commonly used to predict credit risk,
-helping to identify borrowers who may be at risk of defaulting on their line of credit.
-
-We'll go step-by-step through Xplainable's features, starting with data preprocessing,
-moving on to model training, and finally, interpreting the results. The goal is to show
-how Xplainable can simplify the process of building and understanding machine learning
-models, providing clear insights without the need for complex coding or deep statistical
-knowledge. By the end of this walkthrough, you'll see how Xplainable can help you
-quickly draw meaningful conclusions from the FICO HELOC dataset.
+## Package Imports
 
 
 # Install and import relevant packages
 
 
 ```python
-!pip install altair==5.4.1 #Upgrade this to work in Google Colab
+!pip install xplainable
 !pip install xplainable-client
-!pip install xplainable=1.2.3
-!pip install kaggle
 ```
-
-<CellOutput>
-{`Requirement already satisfied: altair==5.4.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (5.4.1)
-Requirement already satisfied: jinja2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from altair==5.4.1) (3.1.6)
-Requirement already satisfied: jsonschema>=3.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from altair==5.4.1) (4.23.0)
-Requirement already satisfied: narwhals>=1.5.2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from altair==5.4.1) (1.40.0)
-Requirement already satisfied: packaging in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from altair==5.4.1) (25.0)
-Requirement already satisfied: typing-extensions>=4.10.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from altair==5.4.1) (4.13.2)
-Requirement already satisfied: attrs>=22.2.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from jsonschema>=3.0->altair==5.4.1) (25.3.0)
-Requirement already satisfied: jsonschema-specifications>=2023.03.6 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from jsonschema>=3.0->altair==5.4.1) (2025.4.1)
-Requirement already satisfied: referencing>=0.28.4 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from jsonschema>=3.0->altair==5.4.1) (0.36.2)
-Requirement already satisfied: rpds-py>=0.7.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from jsonschema>=3.0->altair==5.4.1) (0.25.1)
-Requirement already satisfied: MarkupSafe>=2.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from jinja2->altair==5.4.1) (3.0.2)
-Requirement already satisfied: xplainable-client in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (1.2.6)
-Requirement already satisfied: ipywidgets in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (8.1.7)
-Requirement already satisfied: numpy in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (1.23.5)
-Requirement already satisfied: pandas>=1.5.2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (1.5.3)
-Requirement already satisfied: pyperclip in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (1.9.0)
-Requirement already satisfied: Requests in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (2.32.3)
-Requirement already satisfied: scikit_learn in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (1.6.1)
-Requirement already satisfied: setuptools>=65.5.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (80.8.0)
-Requirement already satisfied: urllib3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (2.4.0)
-Requirement already satisfied: xplainable==1.2.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (1.2.3)
-Requirement already satisfied: hyperopt>=0.2.7 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (0.2.7)
-Requirement already satisfied: numba>=0.56.4 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (0.60.0)
-Requirement already satisfied: scipy>=1.6.2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (1.15.3)
-Requirement already satisfied: psutil>=5.9.4 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (7.0.0)
-Requirement already satisfied: joblib>=1.2.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (1.5.1)
-Requirement already satisfied: networkx>=2.6.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (3.4.2)
-Requirement already satisfied: tqdm>=4.62.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (4.67.1)
-Requirement already satisfied: ipython in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (8.36.0)
-Requirement already satisfied: packaging in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (25.0)
-Requirement already satisfied: python-dateutil>=2.8.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pandas>=1.5.2->xplainable-client) (2.9.0.post0)
-Requirement already satisfied: pytz>=2020.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pandas>=1.5.2->xplainable-client) (2025.2)
-Requirement already satisfied: six in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable==1.2.3->xplainable-client) (1.17.0)
-Requirement already satisfied: future in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable==1.2.3->xplainable-client) (1.0.0)
-Requirement already satisfied: cloudpickle in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable==1.2.3->xplainable-client) (3.1.1)
-Requirement already satisfied: py4j in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable==1.2.3->xplainable-client) (0.10.9.9)
-Requirement already satisfied: llvmlite<0.44,>=0.43.0dev0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from numba>=0.56.4->xplainable==1.2.3->xplainable-client) (0.43.0)
-Requirement already satisfied: threadpoolctl>=3.1.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from scikit_learn->xplainable-client) (3.6.0)
-Requirement already satisfied: decorator in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (5.2.1)
-Requirement already satisfied: exceptiongroup in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (1.3.0)
-Requirement already satisfied: jedi>=0.16 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (0.19.2)
-Requirement already satisfied: matplotlib-inline in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (0.1.7)
-Requirement already satisfied: pexpect>4.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (4.9.0)
-Requirement already satisfied: prompt_toolkit<3.1.0,>=3.0.41 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (3.0.51)
-Requirement already satisfied: pygments>=2.4.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (2.19.1)
-Requirement already satisfied: stack_data in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (0.6.3)
-Requirement already satisfied: traitlets>=5.13.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (5.14.3)
-Requirement already satisfied: typing_extensions>=4.6 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (4.13.2)
-Requirement already satisfied: wcwidth in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from prompt_toolkit<3.1.0,>=3.0.41->ipython->xplainable==1.2.3->xplainable-client) (0.2.13)
-Requirement already satisfied: parso<0.9.0,>=0.8.4 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from jedi>=0.16->ipython->xplainable==1.2.3->xplainable-client) (0.8.4)
-Requirement already satisfied: ptyprocess>=0.5 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pexpect>4.3->ipython->xplainable==1.2.3->xplainable-client) (0.7.0)
-Requirement already satisfied: comm>=0.1.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipywidgets->xplainable-client) (0.2.2)
-Requirement already satisfied: widgetsnbextension~=4.0.14 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipywidgets->xplainable-client) (4.0.14)
-Requirement already satisfied: jupyterlab_widgets~=3.0.15 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipywidgets->xplainable-client) (3.0.15)
-Requirement already satisfied: charset-normalizer<4,>=2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from Requests->xplainable-client) (3.4.2)
-Requirement already satisfied: idna<4,>=2.5 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from Requests->xplainable-client) (3.10)
-Requirement already satisfied: certifi>=2017.4.17 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from Requests->xplainable-client) (2025.4.26)
-Requirement already satisfied: executing>=1.2.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from stack_data->ipython->xplainable==1.2.3->xplainable-client) (2.2.0)
-Requirement already satisfied: asttokens>=2.1.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from stack_data->ipython->xplainable==1.2.3->xplainable-client) (3.0.0)
-Requirement already satisfied: pure_eval in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from stack_data->ipython->xplainable==1.2.3->xplainable-client) (0.2.3)
-[31mERROR: Invalid requirement: 'xplainable=1.2.3': Expected end or semicolon (after name and no valid version specifier)
-    xplainable=1.2.3
-              ^
-Hint: = is not a valid operator. Did you mean == ?[0m[31m
-[0mCollecting kaggle
-  Downloading kaggle-1.7.4.5-py3-none-any.whl.metadata (16 kB)
-Collecting bleach (from kaggle)
-  Using cached bleach-6.2.0-py3-none-any.whl.metadata (30 kB)
-Requirement already satisfied: certifi>=14.05.14 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (2025.4.26)
-Requirement already satisfied: charset-normalizer in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (3.4.2)
-Requirement already satisfied: idna in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (3.10)`}
-</CellOutput>
 
 ```python
 import pandas as pd
 from sklearn.model_selection import train_test_split
-import json
 import requests
-import os
+import json
+
+import xplainable as xp
+from xplainable.core.models import XClassifier
+from xplainable.core.optimisation.bayesian import XParamOptimiser
+from xplainable.preprocessing.pipeline import XPipeline
+from xplainable.preprocessing import transformers as xtf
 
 import xplainable_client
-import xplainable as xp
-from xplainable.core import XClassifier
-from xplainable.core.optimisation.bayesian import XParamOptimiser
 ```
 
-# 1. Import CSV and Perform Data Processing
+## Data Loading and Exploration
+
+Load the HELOC dataset and explore its structure
 
 
 ```python
-data = pd.read_csv('https://xplainable-public-storage.syd1.digitaloceanspaces.com/example_data/heloc_dataset.csv')  # Set to False to skip Kaggle and use the local file
+# Load dataset
+data = pd.read_csv('https://xplainable-public-storage.syd1.digitaloceanspaces.com/example_data/heloc_dataset.csv')
+
+# Display basic information
+print(f"Dataset shape: {data.shape}")
+print(f"Target distribution:\n{data['RiskPerformance'].value_counts()}")
 data.head()
 ```
-
-
-|    | RiskPerformance   |   ExternalRiskEstimate |   MSinceOldestTradeOpen |   MSinceMostRecentTradeOpen |   AverageMInFile |   NumSatisfactoryTrades |   NumTrades60Ever2DerogPubRec |   NumTrades90Ever2DerogPubRec |   PercentTradesNeverDelq |   MSinceMostRecentDelq | ...   |   PercentInstallTrades |   MSinceMostRecentInqexcl7days |   NumInqLast6M |   NumInqLast6Mexcl7days |   NetFractionRevolvingBurden |   NetFractionInstallBurden |   NumRevolvingTradesWBalance |   NumInstallTradesWBalance |   NumBank2NatlTradesWHighUtilization |   PercentTradesWBalance |
-|---:|:------------------|-----------------------:|------------------------:|----------------------------:|-----------------:|------------------------:|------------------------------:|------------------------------:|-------------------------:|-----------------------:|:------|-----------------------:|-------------------------------:|---------------:|------------------------:|-----------------------------:|---------------------------:|-----------------------------:|---------------------------:|-------------------------------------:|------------------------:|
-|  0 | Bad               |                     55 |                     144 |                           4 |               84 |                      20 |                             3 |                             0 |                       83 |                      2 | ...   |                     43 |                              0 |              0 |                       0 |                           33 |                         -8 |                            8 |                          1 |                                    1 |                      69 |
-|  1 | Bad               |                     61 |                      58 |                          15 |               41 |                       2 |                             4 |                             4 |                      100 |                     -7 | ...   |                     67 |                              0 |              0 |                       0 |                            0 |                         -8 |                            0 |                         -8 |                                   -8 |                       0 |
-|  2 | Bad               |                     67 |                      66 |                           5 |               24 |                       9 |                             0 |                             0 |                      100 |                     -7 | ...   |                     44 |                              0 |              4 |                       4 |                           53 |                         66 |                            4 |                          2 |                                    1 |                      86 |
-|  3 | Bad               |                     66 |                     169 |                           1 |               73 |                      28 |                             1 |                             1 |                       93 |                     76 | ...   |                     57 |                              0 |              5 |                       4 |                           72 |                         83 |                            6 |                          4 |                                    3 |                      91 |
-|  4 | Bad               |                     81 |                     333 |                          27 |              132 |                      12 |                             0 |                             0 |                      100 |                     -7 | ...   |                     25 |                              0 |              1 |                       1 |                           51 |                         89 |                            3 |                          1 |                                    0 |                      80 |
-
-<CellOutput>
-{`Dataset loaded from local path.`}
-</CellOutput>
 
 Where the defition of each of the fields are below:
 
@@ -180,7 +98,9 @@ Where the defition of each of the fields are below:
 | PercentTradesWBalance              | Percent of Trades with Balance                                                                                                                                    |
 
 
-### Seperate data into target (y) and features (x)
+## 1. Data Preprocessing
+
+### Prepare features and target variable
 
 
 ```python
@@ -188,57 +108,49 @@ y = data['RiskPerformance']
 x = data.drop('RiskPerformance',axis=1)
 ```
 
-### Create test and train datasets
+### Create Train/Test Split
 
 
 ```python
-x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.2, random_state=42, stratify=y)
+X, y = data.drop(columns=['RiskPerformance']), data['RiskPerformance']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
 ```
 
-# 2. Model Optimisation
+## 2. Model Optimization
 
-Xplainable's `XParamOptimiser `fine-tunes the hyperparameters of our model. This
-produces the most optimal parameters that will result in the best model performance.
+The XParamOptimiser fine-tunes the hyperparameters of our model to achieve optimal
+performance.
 
 
 ```python
-y_train_df = pd.Series(y_train)
-
-optimiser = XParamOptimiser(metric='f1-score',n_trials=300, n_folds=2, early_stopping=150)
-params = optimiser.optimise(x_train, y_train_df)
+opt = XParamOptimiser(metric='f1-score', n_trials=300, n_folds=2, early_stopping=150)
+params = opt.optimise(X_train, y_train)
 ```
 
-<CellOutput>
-{` 74%|███████▍  | 223/300 [00:12<00:04, 17.97trial/s, best loss: -0.7057194555537591]`}
-</CellOutput>
+## 3. Model Training
 
-# 3. Model Training
-
-The `XClassifier` is trained on the dataset, with the optimised parameters.
+Train the XClassifier with optimized parameters.
 
 
 ```python
 model = XClassifier(**params)
-model.fit(x_train, y_train)
+model.fit(X_train, y_train)
 ```
 
-<CellOutput>
-{`<xplainable.core.ml.classification.XClassifier at 0x29ca500a0>`}
-</CellOutput>
+## 4. Model Interpretability and Explainability
 
-# 4. Explaining and Interpreting the Model
-
-Following training, the `model.explain()` method is called to generate insights into the
-model's decision-making process. This step is crucial for understanding the factors that
-influence the model's predictions and ensuring that the model's behaviour is transparent
-and explainable.
+Generate insights into the model's decision-making process and understand feature
+importance.
 
 
 ```python
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_62c84719-c1c5-463a-8d4a-ade8a8287a0a.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_799c6ce3-6ab3-4c69-8206-c773fc4549d9.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ## Analysing Feature Importances and Contributions
 
@@ -257,7 +169,9 @@ feature contributions would show how each feature (like the net fraction of trad
 revolving burden) affects the predicted risk estimate for a particular applicant.
 
 
-# 5. Saving a model to the Xplainable App
+## 5. Model Persistence
+
+Save the model to Xplainable Cloud for collaboration and deployment.
 
 
 In this step, we first create a unique identifier for our HELOC risk prediction model
@@ -269,15 +183,16 @@ version_id represents this particular iteration of our model, allowing us to tra
 manage different versions systematically.
 
 
-Creat an API key in the Xplainable platform
+## Xplainable Cloud Setup
 
 
 ![Heloc Deployment](https://xplainable-public-storage.syd1.digitaloceanspaces.com/documentation_content/heloc_api_key.png)
 
 
 ```python
+# Initialize Xplainable Cloud client
 client = xplainable_client.Client(
-    api_key="",#Insert API Key here
+    api_key="",  # Add your API key from https://platform.xplainable.io/
 )
 ```
 
@@ -285,28 +200,25 @@ client = xplainable_client.Client(
 # Create a model
 model_id = client.create_model(
     model=model,
-    model_name="HELOC Model",
-    model_description="Predicting applicant risk estimates",
-    x=x_train,
+    model_name="HELOC Credit Risk Model",
+    model_description="Predicting applicant credit risk for HELOC applications",
+    x=X_train,
     y=y_train
 )
 ```
 
-<CellOutput>
-{`  0%|          | 0/23 [00:00<?, ?it/s]
-<Response [200]>`}
-</CellOutput>
+# Initialize Xplainable Cloud client
 
-## Xplainable App Model View
-
-As you can see in the screenshot, now the model has been saved to Xplainable's webapp,
-allowing yourself and other members in your organisation to visually analyse the model.
+client = xplainable_client.Client( api_key="83b8d99c-ca2c-4132-b1e9-ed86db83f306",
+hostname="https://xplainable-api-uat-itdcj.ondigitalocean.app/" )
 
 
 ![Heloc Deployment](https://xplainable-public-storage.syd1.digitaloceanspaces.com/documentation_content/heloc_api_key.png)
 
 
-# 6. Deployments
+## 6. Model Deployment
+
+Deploy the model for real-time predictions.
 
 
 The code block illustrates the deployment of our churn prediction model using the
@@ -345,11 +257,9 @@ deployment
 {`{'deployment_id': 'trsizk2zUOtKFdR8'}`}
 </CellOutput>
 
-### Testing the Deployment programatically
+## 7. Model Testing
 
-This section demonstrates the steps taken to programmatically test a deployed model.
-These steps are essential for validating that the model's deployment is functional and
-ready to process incoming prediction requests.
+Test the deployed model with sample predictions.
 
 
 1. **Activating the Deployment:** The model deployment is activated using

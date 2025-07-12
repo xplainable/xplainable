@@ -1,0 +1,293 @@
+---
+title: House Prices Regression
+sidebar_label: House Prices Regression
+path: website/docs/tutorials
+nb_path: website/docs/tutorials/House_Prices_Regression.ipynb
+github: https://github.com/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb
+colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb
+---
+import LinkButtons from "@site/src/components/LinkButtons.jsx";
+import CellOutput from "@site/src/components/CellOutput.jsx";
+
+<LinkButtons
+  githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb"
+  colabUrl="https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb"
+/>
+
+# Regression - House Prices Advanced Regression
+
+Predicting house prices using advanced regression techniques with comprehensive feature
+engineering.
+
+**Dataset Source**:
+[Kaggle House Prices Competition](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques)
+**Problem Type**: Regression **Target Variable**: SalePrice - Final sale price of houses
+**Use Case**: Real estate valuation, property investment analysis, market trend
+prediction
+
+## Package Imports
+
+
+```python
+import pandas as pd
+import xplainable as xp
+from xplainable.core.models import XRegressor
+from xplainable.core.optimisation.genetic import XEvolutionaryNetwork
+from xplainable.core.optimisation.layers import Evolve, Tighten
+from xplainable.preprocessing.pipeline import XPipeline
+from xplainable.preprocessing import transformers as xtf
+from sklearn.model_selection import train_test_split
+import requests
+import json
+
+# Additional imports specific to this example
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+import xplainable_client
+```
+
+```python
+!pip install xplainable
+!pip install xplainable-client
+```
+
+## Xplainable Cloud Setup
+
+
+```python
+# Initialize Xplainable Cloud client
+client = xplainable_client.Client(
+    api_key="83b8d99c-ca2c-4132-b1e9-ed86db83f306",
+    hostname="https://xplainable-api-uat-itdcj.ondigitalocean.app/"
+)
+```
+
+## Data Loading and Exploration
+
+Load the House Prices dataset from Kaggle.
+
+**Note**: Download the dataset from
+[Kaggle](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/data)
+or use the Kaggle API.
+
+
+```python
+# Load dataset
+try:
+    # If you have downloaded the dataset manually
+    train_df = pd.read_csv('train.csv')
+    test_df = pd.read_csv('test.csv')
+    
+    # Display basic information
+    print(f"Training dataset shape: {train_df.shape}")
+    print(f"Test dataset shape: {test_df.shape}")
+    print(f"Target variable statistics:")
+    print(train_df['SalePrice'].describe())
+    
+    train_df.head()
+    
+except FileNotFoundError:
+    print("Dataset files not found. Please download from Kaggle:")
+    print("https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/data")
+    print("Or use: kaggle competitions download -c house-prices-advanced-regression-techniques")
+    
+    # For testing purposes, create a simple synthetic dataset
+    print("\\nCreating synthetic dataset for testing...")
+    import numpy as np
+    np.random.seed(42)
+    
+    # Create a simple synthetic housing dataset
+    n_samples = 1000
+    train_df = pd.DataFrame({
+        'LotArea': np.random.normal(10000, 2000, n_samples),
+        'YearBuilt': np.random.randint(1950, 2020, n_samples),
+        'TotalBsmtSF': np.random.normal(1000, 300, n_samples),
+        'GrLivArea': np.random.normal(1500, 400, n_samples),
+        'GarageCars': np.random.randint(0, 4, n_samples),
+        'Neighborhood': np.random.choice(['A', 'B', 'C', 'D'], n_samples),
+        'HouseStyle': np.random.choice(['1Story', '2Story', 'Split'], n_samples)
+    })
+    
+    # Create target variable with realistic relationship
+    train_df['SalePrice'] = (
+        train_df['LotArea'] * 0.01 + 
+        train_df['GrLivArea'] * 80 + 
+        train_df['TotalBsmtSF'] * 30 +
+        train_df['GarageCars'] * 5000 +
+        np.random.normal(0, 10000, n_samples)
+    ).astype(int)
+    
+    print(f"Synthetic dataset created: {train_df.shape}")
+    print(f"Target variable statistics:")
+    print(train_df['SalePrice'].describe())
+```
+
+## 1. Data Preprocessing
+
+Handle missing values, encode categorical variables, and engineer features.
+
+
+```python
+# Simple data preprocessing without complex pipeline
+# Drop columns with too many missing values or non-informative features
+if 'Id' in train_df.columns:
+    df_processed = train_df.drop(columns=['Id'])
+else:
+    df_processed = train_df.copy()
+
+# Fill missing values with simple pandas operations
+df_processed = df_processed.fillna(df_processed.median(numeric_only=True))
+df_processed = df_processed.fillna(df_processed.mode().iloc[0])
+
+print(f"Processed dataset shape: {df_processed.shape}")
+print(f"Missing values: {df_processed.isnull().sum().sum()}")
+df_processed.head()
+```
+
+### Create Train/Test Split
+
+
+```python
+X, y = df_processed.drop(columns=['SalePrice']), df_processed['SalePrice']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+```
+
+## 2. Model Optimization
+
+Optimize the model using genetic algorithms with evolutionary networks for house price
+prediction.
+
+
+```python
+# First train a base model
+model = XRegressor()
+model.fit(X_train, y_train)
+
+# Create evolutionary network for optimization
+network = XEvolutionaryNetwork(model)
+
+# Add optimization layers
+# Start with an initial Tighten layer
+network.add_layer(
+    Tighten(
+        iterations=100,
+        learning_rate=0.1,
+        early_stopping=20
+    )
+)
+
+# Add an Evolve layer with high severity for exploration
+network.add_layer(
+    Evolve(
+        mutations=100,
+        generations=50,
+        max_severity=0.5,
+        max_leaves=20,
+        early_stopping=20
+    )
+)
+
+# Add another Evolve layer with lower severity for refinement
+network.add_layer(
+    Evolve(
+        mutations=100,
+        generations=50,
+        max_severity=0.3,
+        max_leaves=15,
+        early_stopping=20
+    )
+)
+
+# Add a final Tighten layer with low learning rate for fine-tuning
+network.add_layer(
+    Tighten(
+        iterations=100,
+        learning_rate=0.025,
+        early_stopping=20
+    )
+)
+
+# Fit the network and run optimization
+network.fit(X_train, y_train)
+network.optimise()
+```
+
+## 3. Model Training
+
+The model has been trained and optimized through the evolutionary network process.
+
+
+```python
+# Model is already trained through the evolutionary network
+# Let's evaluate the optimized model performance
+train_performance = model.evaluate(X_train, y_train)
+print("Training Performance:")
+for metric, value in train_performance.items():
+    print(f"{metric}: {value:.4f}")
+```
+
+## 4. Model Interpretability and Explainability
+
+Analyze which features most influence house price predictions.
+
+
+```python
+model.explain()
+```
+
+## 5. Model Persistence (Optional)
+
+Save the model to Xplainable Cloud for collaboration and deployment.
+
+
+```python
+# Uncomment to save model to Xplainable Cloud
+# model_id = client.create_model(
+#     model=model,
+#     model_name="House Prices Regression Model",
+#     model_description="Predicting house sale prices using property characteristics",
+#     x=X_train,
+#     y=y_train
+# )
+```
+
+## 6. Model Deployment (Optional)
+
+Deploy the model for real-time predictions.
+
+
+```python
+# Uncomment to deploy model
+# deployment = client.deploy(
+#     model_version_id=model_id["version_id"]
+# )
+```
+
+## 7. Model Testing
+
+Evaluate model performance on test data.
+
+
+```python
+# Evaluate on test set
+test_predictions = model.predict(X_test)
+test_performance = model.evaluate(X_test, y_test)
+
+print("Test Set Performance:")
+for metric, value in test_performance.items():
+    print(f"{metric}: {value:.4f}")
+
+# Plot predictions vs actual
+plt.figure(figsize=(10, 6))
+plt.scatter(y_test, test_predictions, alpha=0.5)
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+plt.xlabel('Actual Sale Price')
+plt.ylabel('Predicted Sale Price')
+plt.title('House Price Predictions vs Actual Values')
+plt.show()
+```

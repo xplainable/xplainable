@@ -6,105 +6,118 @@ nb_path: website/docs/tutorials/Instacart_Product_Reorder_Prediction.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Instacart_Product_Reorder_Prediction.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Instacart_Product_Reorder_Prediction.ipynb
 ---
-import CellOutput from "@site/src/components/CellOutput.jsx";
 import LinkButtons from "@site/src/components/LinkButtons.jsx";
+import CellOutput from "@site/src/components/CellOutput.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Instacart_Product_Reorder_Prediction.ipynb"
   colabUrl="https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Instacart_Product_Reorder_Prediction.ipynb"
 />
 
-# Instacart Market Basket Analysis: Leveraging Xplainable Classifier for Transparent Recommendations
+# Classification - Instacart Product Reorder Prediction
 
-## Introduction
+Predicting whether a customer will reorder products in their next order using the
+Instacart Market Basket Analysis dataset.
 
-Welcome to our comprehensive walkthrough of the
-[Instacart Market Basket Analysis Challenge](https://www.kaggle.com/c/instacart-market-basket-analysis)
-on Kaggle. This challenge presents an opportunity for data enthusiasts to dive deep into
-the world of grocery shopping and unravel the patterns behind consumer purchase
-behavior. Instacart, a prominent online grocery delivery platform, has provided a rich
-dataset that includes a information on customer orders through time. The objective? To
-predict which previously purchased products will be in a user's next order.
+**Dataset Source**:
+[Kaggle Instacart Market Basket Analysis](https://www.kaggle.com/competitions/instacart-market-basket-analysis/data)
+**Problem Type**: Classification **Target Variable**: Binary prediction of whether a
+product will be reordered (1) or not (0) **Use Case**: E-commerce recommendation
+systems, inventory management, personalized marketing campaigns
 
-As data scientists and technical experts, we understand the criticality of not just
-making accurate predictions but also being able to interpret and explain our models.
-This is where our novel approach comes into play. We're introducing the **Xplainable**
-algorithm - a novel machine learning algorithm designed to enhance the transparency and
-interpretability of the recommendations.
+## Package Imports
 
 
-## Enhancing Brand Trust through Two-Way Transparency
-
-An integral aspect of our approach with the **Xplainable** algorithm is fostering
-two-way transparency between the recommender system and the customer. In traditional
-recommender systems, users are often left wondering why certain products are recommended
-to them. Our method provides the opportunity to bridge this gap by incorporating an
-explanatory feature, such as "users like yourself also purchase."
-
-### The Importance of Relatable Recommendations
-
-By providing context such as "users like yourself also purchase," we achieve several key
-objectives:
-
-1. **Enhanced User Engagement**: When users understand the rationale behind
-   recommendations, they are more likely to explore and accept these suggestions.
-1. **Increased Personalisation**: This approach reflects a deeper understanding of user
-   behaviour and preferences, leading to more personalised shopping experiences.
-1. **Greater Brand Trust and Loyalty**: Transparency in recommendations fosters trust.
-   When users feel that their needs are understood and catered to, it enhances their
-   loyalty to the brand.
-1. **Feedback Loop for Continuous Improvement**: Such transparent systems encourage user
-   feedback, providing valuable insights that can be used to further refine and improve
-   the recommender system.
-
-By implementing a two-way transparent model, we not only elevate the accuracy of our
-predictions but also enrich the user experience, instilling a sense of trust and
-reliability in the brand. In this walkthrough, we will explore how the **Xplainable**
-algorithm not only achieves high accuracy in predicting the next set of products for
-Instacart users but also provides clear insights into the 'why' behind its predictions.
+## Xplainable Cloud Setup
 
 
 ```python
-import xplainable as xp
-import numpy as np
+!pip install xplainable
+!pip install xplainable-client
+```
+
+```python
 import pandas as pd
+import xplainable as xp
+from xplainable.core.models import XClassifier
+from xplainable.core.optimisation.bayesian import XParamOptimiser
+from xplainable.preprocessing.pipeline import XPipeline
+from xplainable.preprocessing import transformers as xtf
+from sklearn.model_selection import train_test_split
+import requests
+import json
+
+# Additional imports specific to this example
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-%matplotlib inline
-color = sns.color_palette()
 import warnings
-warnings.filterwarnings('ignore')
+import gc
 
-# Garbage Collector to free up memory
-import gc                         
-gc.enable()   
+import xplainable_client
 ```
 
 ```python
-print(f"This notebook was created using Xplainable version {xp.__version__}")
+# Initialize Xplainable Cloud client
+client = xplainable_client.Client(
+    api_key="",  # Add your API key from https://platform.xplainable.io/
+)
 ```
 
-<CellOutput>
-{`This notebook was created using Xplainable version 1.2.3`}
-</CellOutput>
+## Data Loading and Exploration
 
-# **Load the datasets**
+Load the Instacart Market Basket Analysis datasets.
+
+**Note**: Download the datasets from
+[Kaggle](https://www.kaggle.com/competitions/instacart-market-basket-analysis/data) and
+extract the CSV files, or use the direct download links below.
 
 
-It's possible to download the Instacart price prediction dataset at the following link:
-https://www.kaggle.com/competitions/instacart-market-basket-analysis/data
+### Dataset Download Instructions
 
-Following extraction of the .zip file build the dataset as below:
+**Option 1: Direct Download (Recommended for beginners)**
+
+1. Visit the
+   [Kaggle Instacart Market Basket Analysis competition](https://www.kaggle.com/competitions/instacart-market-basket-analysis/data)
+1. Create a free Kaggle account if you don't have one
+1. Download the dataset ZIP file (~200MB)
+1. Extract all CSV files to your working directory
+
+**Option 2: Kaggle API (Recommended for experienced users)**
+
+```bash
+pip install kaggle
+kaggle competitions download -c instacart-market-basket-analysis
+unzip instacart-market-basket-analysis.zip
+```
+
+**Note**: The dataset contains 6 CSV files with over 3 million orders and 32 million
+order products.
 
 
 ```python
-# Load the datasets
-orders = pd.read_csv('./data/orders.csv' )
-order_products_train = pd.read_csv('./data/order_products__train.csv')
-order_products_prior = pd.read_csv('./data/order_products__prior.csv')
-products = pd.read_csv('./data/products.csv')
-aisles = pd.read_csv('./data/aisles.csv')
-departments = pd.read_csv('./data/departments.csv')
+# Load datasets (update paths if files are in a different directory)
+try:
+    orders = pd.read_csv('orders.csv')
+    order_products_train = pd.read_csv('order_products__train.csv')
+    order_products_prior = pd.read_csv('order_products__prior.csv')
+    products = pd.read_csv('products.csv')
+    aisles = pd.read_csv('aisles.csv')
+    departments = pd.read_csv('departments.csv')
+    
+    # Display dataset information
+    print("Datasets loaded successfully!")
+    print(f"Orders: {orders.shape}")
+    print(f"Order Products (Train): {order_products_train.shape}")
+    print(f"Order Products (Prior): {order_products_prior.shape}")
+    print(f"Products: {products.shape}")
+    print(f"Aisles: {aisles.shape}")
+    print(f"Departments: {departments.shape}")
+    
+except FileNotFoundError as e:
+    print(f"Error loading files: {e}")
+    print("Please ensure you have downloaded and extracted the Instacart dataset files.")
+    print("Files should be in the same directory as this notebook.")
 ```
 
 **Inspecting orders dataset**
@@ -530,7 +543,12 @@ train_data_reordered.head()
 |  3 |         96 | [20574, 40706, 27966, 24489, 39275]               |
 |  4 |         98 | [8859, 19731, 43654, 13176, 4357, 37664, 34065... |
 
-# **Feature Engineering**
+## 1. Data Preprocessing
+
+### Feature Engineering and Data Preparation
+
+Create features for user behavior, product characteristics, and user-product
+interactions.
 
 
 ```python
@@ -549,7 +567,7 @@ gc.collect()
 
 ```python
 # Get 15% of users as it is a huge dataset and will take lots of time to train.
-#orders = orders.loc[orders.user_id.isin(orders.user_id.drop_duplicates().sample(frac=0.15, random_state=101))] 
+orders = orders.loc[orders.user_id.isin(orders.user_id.drop_duplicates().sample(frac=0.15, random_state=101))] 
 ```
 
 ```python
@@ -1322,7 +1340,9 @@ gc.collect()
 X_train, y_train = train_data.drop('reordered', axis=1), train_data.reordered
 ```
 
-### Optimise on 1,000,000 rows
+## 2. Model Optimization
+
+Optimize hyperparameters using a subset of the data for computational efficiency.
 
 
 ```python
@@ -1338,7 +1358,9 @@ params = opt.optimise(X_train[:1000000], y_train[:1000000])
 {`100%|████████| 30/30 [00:45<00:00,  1.53s/trial, best loss: -0.8107380819617527]`}
 </CellOutput>
 
-Use params from `XParamOptimiser()` to fit the xplainable classifier
+## 3. Model Training
+
+Train the XClassifier with optimized parameters on the full training dataset.
 
 
 ```python
@@ -1352,16 +1374,17 @@ model.fit(X_train, y_train)
 {`<xplainable.core.ml.classification.XClassifier at 0x2a426f760>`}
 </CellOutput>
 
-## Model Explanations for Item Recommender
+## 4. Model Interpretability and Explainability
 
-Plot model explanations using the `.explain()` method
+Analyze feature importance and model decision-making for the product reorder
+predictions.
 
 
 ```python
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_1fcc2103-5456-4f72-a3b8-0a1ed90b008d.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_a6c950bf-12dd-4b67-acb8-e2a394b37f46.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 In the Feature Importances section, we see a list of features with corresponding
 importance values. The feature `uxp_reorder_ratio` has the highest importance,
@@ -1374,8 +1397,45 @@ again not directly visible, but the length and color of the bars suggest that
 `uxp_reorder_ratio` has a strong positive influence on the model's predictions.
 
 
-Create model predictions using threshold cutoff **NOTE:** Adjust the threshold cutoff to
-see the impact on the result
+## 5. Model Persisting (Optional)
+
+Save the trained model to the Xplainable platform for future use and deployment.
+
+
+```python
+# Uncomment the following lines to save the model to Xplainable platform
+# model_id = client.create_model(
+#     model=model,
+#     model_name="Instacart Product Reorder Prediction",
+#     model_description="Binary classification model predicting whether a customer will reorder products in their next order using the Instacart Market Basket Analysis dataset",
+#     x=X_train,
+#     y=y_train
+# )
+# print(f"Model saved with ID: {model_id}")
+
+print("Model persistence step skipped - uncomment above code to save model")
+```
+
+## 6. Model Deployment (Optional)
+
+Deploy the model to the Xplainable platform for real-time predictions.
+
+
+```python
+# Uncomment the following lines to deploy the model
+# deployment = client.deploy(
+#     model_version_id=model_id["version_id"]
+# )
+# print(f"Model deployed: {deployment}")
+
+print("Model deployment step skipped - uncomment above code to deploy model")
+```
+
+## 7. Model Testing
+
+Create model predictions using threshold cutoff.
+
+**NOTE:** Adjust the threshold cutoff to see the impact on the result
 
 
 ```python

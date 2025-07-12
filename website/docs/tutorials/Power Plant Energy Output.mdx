@@ -1,0 +1,326 @@
+---
+title: Power Plant Energy Output
+sidebar_label: Power Plant Energy Output
+path: website/docs/tutorials
+nb_path: website/docs/tutorials/Power_Plant_Energy_Output.ipynb
+github: https://github.com/xplainable/xplainable/blob/main/examples/Power_Plant_Energy_Output.ipynb
+colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Power_Plant_Energy_Output.ipynb
+---
+import LinkButtons from "@site/src/components/LinkButtons.jsx";
+import CellOutput from "@site/src/components/CellOutput.jsx";
+
+<LinkButtons
+  githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Power_Plant_Energy_Output.ipynb"
+  colabUrl="https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Power_Plant_Energy_Output.ipynb"
+/>
+
+# Regression - Combined Cycle Power Plant Energy Output
+
+Predicting electrical power output from a combined cycle power plant based on ambient
+conditions.
+
+**Dataset Source**:
+[UCI ML Repository - Combined Cycle Power Plant](https://archive.ics.uci.edu/ml/datasets/Combined+Cycle+Power+Plant)
+**Problem Type**: Regression **Target Variable**: Electrical energy output (MW) **Use
+Case**: Energy production optimization, power grid planning, efficiency analysis
+
+## Package Imports
+
+
+```python
+import pandas as pd
+import xplainable as xp
+from xplainable.core.models import XRegressor
+from xplainable.core.optimisation.genetic import XEvolutionaryNetwork
+from xplainable.core.optimisation.layers import Evolve, Tighten
+from xplainable.preprocessing.pipeline import XPipeline
+from xplainable.preprocessing import transformers as xtf
+from sklearn.model_selection import train_test_split
+import requests
+import json
+
+# Additional imports specific to this example
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from ucimlrepo import fetch_ucirepo
+
+import xplainable_client
+```
+
+```python
+!pip install xplainable
+!pip install xplainable-client
+```
+
+## Xplainable Cloud Setup
+
+
+```python
+# Initialize Xplainable Cloud client
+client = xplainable_client.Client(
+    api_key="83b8d99c-ca2c-4132-b1e9-ed86db83f306",
+    hostname="https://xplainable-api-uat-itdcj.ondigitalocean.app/"
+)
+```
+
+## Data Loading and Exploration
+
+Load the Combined Cycle Power Plant dataset from UCI ML Repository.
+
+
+```python
+# Load dataset using ucimlrepo
+try:
+    # Fetch dataset
+    power_plant = fetch_ucirepo(id=294)
+    
+    # Data (as pandas dataframes)
+    X = power_plant.data.features
+    y = power_plant.data.targets
+    
+    # Combine features and target
+    df = pd.concat([X, y], axis=1)
+    
+    # Display basic information
+    print(f"Dataset shape: {df.shape}")
+    print(f"\\nFeatures:")
+    print("- AT: Ambient Temperature (°C)")
+    print("- V: Exhaust Vacuum (cm Hg)")
+    print("- AP: Ambient Pressure (millibar)")
+    print("- RH: Relative Humidity (%)")
+    print(f"\\nTarget: Energy output (MW)")
+    print(f"\\nTarget variable statistics:")
+    print(y.describe())
+    
+    df.head()
+    
+except Exception as e:
+    print(f"Error loading dataset: {e}")
+    print("Install ucimlrepo: pip install ucimlrepo")
+    print("\\nCreating synthetic dataset for testing...")
+    
+    # Create synthetic power plant dataset
+    import numpy as np
+    np.random.seed(42)
+    
+    n_samples = 5000
+    df = pd.DataFrame({
+        'AT': np.random.normal(20, 7, n_samples),  # Ambient Temperature
+        'V': np.random.normal(50, 15, n_samples),  # Exhaust Vacuum
+        'AP': np.random.normal(1015, 20, n_samples),  # Ambient Pressure
+        'RH': np.random.normal(70, 20, n_samples),  # Relative Humidity
+    })
+    
+    # Create realistic energy output based on power plant physics
+    df['PE'] = (
+        480 - df['AT'] * 2.5 + df['V'] * 0.8 + 
+        (df['AP'] - 1000) * 0.1 - df['RH'] * 0.05 +
+        np.random.normal(0, 5, n_samples)
+    )
+    
+    print(f"Synthetic dataset created: {df.shape}")
+    print(f"Target variable statistics:")
+    print(df['PE'].describe())
+```
+
+## 1. Data Preprocessing
+
+Preprocess the power plant operational data.
+
+
+```python
+# Simple data preprocessing without complex pipeline
+# The power plant dataset is typically clean, but let's ensure no missing values
+df_processed = df.copy()
+
+# Fill any potential missing values
+df_processed = df_processed.fillna(df_processed.median(numeric_only=True))
+
+print(f"Processed dataset shape: {df_processed.shape}")
+print(f"Missing values: {df_processed.isnull().sum().sum()}")
+
+# Display correlation matrix
+plt.figure(figsize=(10, 8))
+correlation_matrix = df_processed.corr()
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
+plt.title('Correlation Matrix: Power Plant Variables')
+plt.show()
+
+df_processed.head()
+```
+
+### Create Train/Test Split
+
+
+```python
+# Assuming the target column is the last one
+target_col = df_processed.columns[-1]
+X, y = df_processed.drop(columns=[target_col]), df_processed[target_col]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+print(f"Training set: {X_train.shape[0]} samples")
+print(f"Test set: {X_test.shape[0]} samples")
+print(f"Features: {list(X.columns)}")
+```
+
+## 2. Model Optimization
+
+Optimize the model using genetic algorithms with evolutionary networks for power output
+prediction.
+
+
+```python
+# First train a base model
+model = XRegressor()
+model.fit(X_train, y_train)
+
+# Create evolutionary network for optimization
+network = XEvolutionaryNetwork(model)
+
+# Add optimization layers
+# Start with an initial Tighten layer
+network.add_layer(
+    Tighten(
+        iterations=100,
+        learning_rate=0.1,
+        early_stopping=20
+    )
+)
+
+# Add an Evolve layer with high severity for exploration
+network.add_layer(
+    Evolve(
+        mutations=100,
+        generations=50,
+        max_severity=0.5,
+        max_leaves=20,
+        early_stopping=20
+    )
+)
+
+# Add another Evolve layer with lower severity for refinement
+network.add_layer(
+    Evolve(
+        mutations=100,
+        generations=50,
+        max_severity=0.3,
+        max_leaves=15,
+        early_stopping=20
+    )
+)
+
+# Add a final Tighten layer with low learning rate for fine-tuning
+network.add_layer(
+    Tighten(
+        iterations=100,
+        learning_rate=0.025,
+        early_stopping=20
+    )
+)
+
+# Fit the network and run optimization
+network.fit(X_train, y_train)
+network.optimise()
+```
+
+## 3. Model Training
+
+The model has been trained and optimized through the evolutionary network process.
+
+
+```python
+# Model is already trained through the evolutionary network
+# Let's evaluate the optimized model performance
+train_performance = model.evaluate(X_train, y_train)
+print("Training Performance:")
+for metric, value in train_performance.items():
+    print(f"{metric}: {value:.4f}")
+```
+
+## 4. Model Interpretability and Explainability
+
+Understand which ambient conditions most influence power plant energy output.
+
+
+```python
+model.explain()
+```
+
+## 5. Model Persistence (Optional)
+
+Save the model to Xplainable Cloud.
+
+
+```python
+# Uncomment to save model to Xplainable Cloud
+# model_id = client.create_model(
+#     model=model,
+#     model_name="Power Plant Energy Output Model",
+#     model_description="Predicting electrical power output from ambient conditions",
+#     x=X_train,
+#     y=y_train
+# )
+```
+
+## 6. Model Deployment (Optional)
+
+Deploy the model for real-time power output predictions.
+
+
+```python
+# Uncomment to deploy model
+# deployment = client.deploy(
+#     model_version_id=model_id["version_id"]
+# )
+```
+
+## 7. Model Testing
+
+Evaluate model performance on power output predictions.
+
+
+```python
+# Evaluate on test set
+test_predictions = model.predict(X_test)
+test_performance = model.evaluate(X_test, y_test)
+
+print("Test Set Performance:")
+for metric, value in test_performance.items():
+    print(f"{metric}: {value:.4f}")
+
+# Plot predictions vs actual
+plt.figure(figsize=(12, 5))
+
+# Scatter plot
+plt.subplot(1, 2, 1)
+plt.scatter(y_test, test_predictions, alpha=0.6)
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+plt.xlabel('Actual Energy Output (MW)')
+plt.ylabel('Predicted Energy Output (MW)')
+plt.title('Power Plant Energy Output: Predictions vs Actual')
+plt.grid(True, alpha=0.3)
+
+# Residuals plot
+plt.subplot(1, 2, 2)
+residuals = y_test - test_predictions
+plt.scatter(test_predictions, residuals, alpha=0.6)
+plt.axhline(y=0, color='r', linestyle='--')
+plt.xlabel('Predicted Energy Output (MW)')
+plt.ylabel('Residuals (MW)')
+plt.title('Residuals Plot')
+plt.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# Feature importance insights
+print("\nExpected feature importance patterns:")
+print("- Ambient Temperature (AT): Lower temperatures typically increase power output")
+print("- Exhaust Vacuum (V): Higher vacuum usually correlates with higher output")
+print("- Ambient Pressure (AP): Higher pressure tends to improve efficiency")
+print("- Relative Humidity (RH): Generally has less impact than temperature and pressure")
+```

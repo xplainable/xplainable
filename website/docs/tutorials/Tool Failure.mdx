@@ -6,35 +6,66 @@ nb_path: website/docs/tutorials/Tool_Failure.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb
 ---
-import CellOutput from "@site/src/components/CellOutput.jsx";
 import LinkButtons from "@site/src/components/LinkButtons.jsx";
+import CellOutput from "@site/src/components/CellOutput.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb"
   colabUrl="https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb"
 />
 
+# Classification - Tool Failure Prediction
+
+Predicting machine failure using operational sensor data and machine characteristics.
+
+**Dataset Source**: Industrial Equipment Monitoring Dataset **Problem Type**: Binary
+Classification **Target Variable**: Machine failure (0 = Normal operation, 1 = Failure)
+**Use Case**: Predictive maintenance for industrial equipment to prevent unexpected
+downtime and optimize maintenance schedules
+
 ## Package Imports
 
 
 ```python
 import pandas as pd
-import requests
-import json
-from sklearn.model_selection import train_test_split
-
 import xplainable as xp
 from xplainable.core.models import XClassifier
 from xplainable.core.optimisation.bayesian import XParamOptimiser
 from xplainable.preprocessing.pipeline import XPipeline
 from xplainable.preprocessing import transformers as xtf
+from sklearn.model_selection import train_test_split
+import requests
+import json
+
+import xplainable_client
 ```
 
-## Read in the csv dataset
+```python
+!pip install xplainable
+!pip install xplainable-client
+```
+
+## Xplainable Cloud Setup
 
 
 ```python
+# Initialize Xplainable Cloud client
+client = xplainable_client.Client(
+    api_key="83b8d99c-ca2c-4132-b1e9-ed86db83f306",
+    hostname="https://xplainable-api-uat-itdcj.ondigitalocean.app/"
+)
+```
+
+## Data Loading and Exploration
+
+
+```python
+# Load dataset
 df = pd.read_csv("https://xplainable-public-storage.syd1.digitaloceanspaces.com/example_data/asset_failure.csv")
+
+# Display basic information
+print(f"Dataset shape: {df.shape}")
+print(f"Target distribution:\n{df['Machine failure'].value_counts()}")
 ```
 
 ```python
@@ -137,11 +168,7 @@ X_train, X_test, y_train, y_test = train_test_split(
      X, y, test_size=0.33, random_state=42)
 ```
 
-## 2. Model Optimisation
-
-The `XParamOptimiser` is utilised to fine-tune the hyperparameters of our model. This
-process searches for the optimal parameters that will yield the best model performance,
-balancing accuracy and computational efficiency.
+## 1. Data Preprocessing
 
 
 ```python
@@ -153,11 +180,10 @@ params = opt.optimise(X_train, y_train)
 {`100%|██████████| 30/30 [00:01<00:00, 15.52trial/s, best loss: -0.9315957452699021]`}
 </CellOutput>
 
-## 3. Model Training
+## 2. Model Optimization
 
-With the optimised parameters obtained, the `XClassifier` is trained on the dataset.
-This classifier undergoes a fitting process with the training data, ensuring that it
-learns the underlying patterns and can make accurate predictions.
+
+## 3. Model Training
 
 
 ```python
@@ -171,17 +197,12 @@ model.fit(X_train, y_train)
 
 ## 4. Model Interpretability and Explainability
 
-Following training, the `model.explain()` method is called to generate insights into the
-model's decision-making process. This step is crucial for understanding the factors that
-influence the model's predictions and ensuring that the model's behaviour is transparent
-and explainable.
-
 
 ```python
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_549a6fa8-cb61-4cdb-93d1-b5613ea5c0a7.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_183aa0a4-f86a-476a-927a-95b27f612ebe.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ```python
 params = {
@@ -200,7 +221,7 @@ model.update_feature_params(features=['Rotational speed [rpm]', 'Tool wear [min]
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_4d87ee99-ed6f-4b97-bd84-cc4c88099e2b.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_2d8a23f9-20f2-4a4d-91fc-e201480faa0f.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 In this snapshot, we demonstrate the impact of hyperparameter tuning on model
 interpretability. By adjusting max_depth and min_info_gain, we refine the feature wise
@@ -212,35 +233,14 @@ enhancing transparency and aids in pinpointing influential features, fostering t
 development of interpretable and trustworthy machine learning models.
 
 
-# Persisting to Xplainable Cloud
-
-
-## Instantiate Xplainable Cloud
-
-Initialise the xplainable cloud using an API key from: https://beta.xplainable.io/
-
-This allows you to save and collaborate on models, create deployments, create shareable
-reports.
-
-
 ```python
 client = xplainable_client.Client(
-    api_key="",#<- Add your own token here
+    api_key="83b8d99c-ca2c-4132-b1e9-ed86db83f306",
+    hostname="https://xplainable-api-uat-itdcj.ondigitalocean.app/"
 )
-
-
-
 ```
 
-## 5. Model Persisting
-
-In this step, we first create a unique identifier for our churn prediction model using
-`client.create_model_id`. This identifier, shown as `model_id`, represents the newly
-instantiated model which predicts the likelihood of customers leaving within the next
-month. Following this, we generate a specific version of the model with
-`xp.client.create_model_version`, passing in our training data. The output `version_id`
-represents this particular iteration of our model, allowing us to track and manage
-different versions systematically.
+## 5. Model Persistence
 
 
 ```python
