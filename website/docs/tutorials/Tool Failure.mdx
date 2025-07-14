@@ -6,8 +6,8 @@ nb_path: website/docs/tutorials/Tool_Failure.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb
 ---
-import CellOutput from "@site/src/components/CellOutput.jsx";
 import LinkButtons from "@site/src/components/LinkButtons.jsx";
+import CellOutput from "@site/src/components/CellOutput.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb"
@@ -51,8 +51,7 @@ import xplainable_client
 ```python
 # Initialize Xplainable Cloud client
 client = xplainable_client.Client(
-    api_key="83b8d99c-ca2c-4132-b1e9-ed86db83f306",
-    hostname="https://xplainable-api-uat-itdcj.ondigitalocean.app/"
+    api_key="", #Create api key in xplainable cloud - https://platform.xplainable.io/
 )
 ```
 
@@ -202,7 +201,7 @@ model.fit(X_train, y_train)
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_3e60d86a-d103-4e8c-8e56-10fbf65b33c3.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_53e59a9a-f355-4a75-8167-ad5185b9a03a.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ```python
 params = {
@@ -221,7 +220,7 @@ model.update_feature_params(features=['Rotational speed [rpm]', 'Tool wear [min]
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_2d3e23d5-82f5-4881-a72c-68bdfe34ef07.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_c87f6a22-1b8c-44e2-94eb-97208483255b.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 In this snapshot, we demonstrate the impact of hyperparameter tuning on model
 interpretability. By adjusting max_depth and min_info_gain, we refine the feature wise

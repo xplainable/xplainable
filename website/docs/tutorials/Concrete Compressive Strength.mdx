@@ -6,8 +6,8 @@ nb_path: website/docs/tutorials/Concrete_Compressive_Strength.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Concrete_Compressive_Strength.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Concrete_Compressive_Strength.ipynb
 ---
-import CellOutput from "@site/src/components/CellOutput.jsx";
 import LinkButtons from "@site/src/components/LinkButtons.jsx";
+import CellOutput from "@site/src/components/CellOutput.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Concrete_Compressive_Strength.ipynb"
@@ -58,8 +58,7 @@ import xplainable_client
 ```python
 # Initialize Xplainable Cloud client
 client = xplainable_client.Client(
-    api_key="83b8d99c-ca2c-4132-b1e9-ed86db83f306",
-    hostname="https://xplainable-api-uat-itdcj.ondigitalocean.app/"
+    api_key="", #Create api key in xplainable cloud - https://platform.xplainable.io/
 )
 ```
 
@@ -249,7 +248,7 @@ Understand which concrete mixture components most influence compressive strength
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_a929d193-f36e-4099-b57a-3a1039c706b3.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_addc81c2-c01d-495a-975d-f276b51eab4a.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ## 5. Model Persistence (Optional)
 

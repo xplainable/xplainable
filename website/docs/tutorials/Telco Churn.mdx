@@ -6,8 +6,8 @@ nb_path: website/docs/tutorials/Telco_Churn.ipynb
 github: https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb
 colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb
 ---
-import CellOutput from "@site/src/components/CellOutput.jsx";
 import LinkButtons from "@site/src/components/LinkButtons.jsx";
+import CellOutput from "@site/src/components/CellOutput.jsx";
 
 <LinkButtons
   githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb"
@@ -56,9 +56,9 @@ reports.
 
 
 ```python
+# Initialize Xplainable Cloud client
 client = xplainable_client.Client(
-    api_key="83b8d99c-ca2c-4132-b1e9-ed86db83f306",
-    hostname="https://xplainable-api-uat-itdcj.ondigitalocean.app/"
+    api_key="", #Create api key in xplainable cloud - https://platform.xplainable.io/
 )
 ```
 
@@ -259,7 +259,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_a6a35a3a-9cdf-4fab-b594-436b8d659c64.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_0d1af72c-dc01-46e4-b7ad-8c11ee159fa1.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 The image displays two graphs related to a churn prediction model.
 
