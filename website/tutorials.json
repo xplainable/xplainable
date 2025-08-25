@@ -1,20 +1,4 @@
 {
-    "heloc_credit_risk": {
-        "title": "Heloc Credit Risk",
-        "sidebar_label": "Heloc Credit Risk",
-        "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/HELOC_Credit_Risk.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb"
-    },
-    "dozer_price_prediction": {
-        "title": "Dozer Price Prediction",
-        "sidebar_label": "Dozer Price Prediction",
-        "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/Dozer_Price_Prediction.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Dozer_Price_Prediction.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Dozer_Price_Prediction.ipynb"
-    },
     "telco_churn": {
         "title": "Telco Churn",
         "sidebar_label": "Telco Churn",
@@ -31,13 +15,13 @@
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Power_Plant_Energy_Output.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Power_Plant_Energy_Output.ipynb"
     },
-    "house_prices_regression": {
-        "title": "House Prices Regression",
-        "sidebar_label": "House Prices Regression",
+    "concrete_compressive_strength": {
+        "title": "Concrete Compressive Strength",
+        "sidebar_label": "Concrete Compressive Strength",
         "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/House_Prices_Regression.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb"
+        "nb_path": "website/docs/tutorials/Concrete_Compressive_Strength.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Concrete_Compressive_Strength.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Concrete_Compressive_Strength.ipynb"
     },
     "repurchase_window_prediction": {
         "title": "Repurchase Window Prediction",
@@ -46,22 +30,6 @@
         "nb_path": "website/docs/tutorials/Repurchase_Window_Prediction.ipynb",
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Repurchase_Window_Prediction.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Repurchase_Window_Prediction.ipynb"
-    },
-    "tool_failure": {
-        "title": "Tool Failure",
-        "sidebar_label": "Tool Failure",
-        "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/Tool_Failure.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb"
-    },
-    "concrete_compressive_strength": {
-        "title": "Concrete Compressive Strength",
-        "sidebar_label": "Concrete Compressive Strength",
-        "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/Concrete_Compressive_Strength.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Concrete_Compressive_Strength.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Concrete_Compressive_Strength.ipynb"
     },
     "instacart_product_reorder_prediction": {
         "title": "Instacart Product Reorder Prediction",
@@ -78,5 +46,37 @@
         "nb_path": "website/docs/tutorials/Lead_Scoring_Prediction.ipynb",
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Lead_Scoring_Prediction.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Lead_Scoring_Prediction.ipynb"
+    },
+    "dozer_price_prediction": {
+        "title": "Dozer Price Prediction",
+        "sidebar_label": "Dozer Price Prediction",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Dozer_Price_Prediction.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Dozer_Price_Prediction.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Dozer_Price_Prediction.ipynb"
+    },
+    "tool_failure": {
+        "title": "Tool Failure",
+        "sidebar_label": "Tool Failure",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Tool_Failure.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb"
+    },
+    "heloc_credit_risk": {
+        "title": "Heloc Credit Risk",
+        "sidebar_label": "Heloc Credit Risk",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/HELOC_Credit_Risk.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb"
+    },
+    "house_prices_regression": {
+        "title": "House Prices Regression",
+        "sidebar_label": "House Prices Regression",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/House_Prices_Regression.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb"
     }
 }
