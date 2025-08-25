@@ -47,7 +47,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
 
-import xplainable_client
+# New refactored client import
+from xplainable_client.client.client import XplainableClient
+from xplainable_client.client.base import XplainableAPIError
 ```
 
 ```python
@@ -59,9 +61,10 @@ import xplainable_client
 
 
 ```python
-# Initialize Xplainable Cloud client
-client = xplainable_client.Client(
+# Initialize Xplainable Cloud client using new refactored client
+client = XplainableClient(
     api_key="",  # Add your API key from https://platform.xplainable.io/
+    hostname="https://platform.xplainable.io"  # Optional, defaults to production
 )
 ```
 
@@ -121,7 +124,7 @@ stepping through these tracks makes it clear how the dataset converts raw transa
 into a binary outcome that the model can learn to predict.
 
 
-<iframe src='/plot_data/D3Visualization_0d4f376d.html' width='100%' height='400' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/D3Visualization_823c1e46.html' width='100%' height='400' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ```python
 # --- 1. LOAD & CLEAN -------------------------------------------------
@@ -328,7 +331,7 @@ model.fit(X_train, y_train)
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_5b4dcb27-101a-4500-9be7-47a182a17fa0.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_ae0d20bb-eda5-4682-bb9f-96c8326a39df.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ## 7. Model Testing
 
@@ -368,30 +371,59 @@ model.evaluate(X_test, y_test)
 
 
 ```python
-model_id = client.create_model(
-    model=model,
-    model_name = "Customer Repurchase - 30 Day Forecast",
-    model_description = "Predicts whether a customer will make another purchase within 30 days based on their recent order behaviour and RFM features.",
-    x=X_train,
-    y=y_train
-)
+# Create model using the new client's models service
+try:
+    model_id, version_id = client.models.create_model(
+        model=model,
+        model_name="Customer Repurchase - 30 Day Forecast",
+        model_description="Predicts whether a customer will make another purchase within 30 days based on their recent order behaviour and RFM features.",
+        x=X_train,
+        y=y_train
+    )
+    print(f"Model created successfully!")
+    print(f"Model ID: {model_id}")
+    print(f"Version ID: {version_id}")
+except XplainableAPIError as e:
+    print(f"Error creating model: {e.message}")
+    model_id, version_id = None, None
 ```
 
 ## 6. Model Deployment
 
 
 ```python
-deployment = client.deploy(
-    model_version_id=model_id["version_id"] #<- Use version id produced above
-)
+# Deploy model using the new client's deployments service
+try:
+    deployment_response = client.deployments.deploy(model_version_id=version_id)
+    deployment_id = deployment_response.deployment_id
+    print(f"Model deployed successfully!")
+    print(f"Deployment ID: {deployment_id}")
+except XplainableAPIError as e:
+    print(f"Error deploying model: {e.message}")
+    deployment_id = None
 ```
 
 ```python
-client.activate_deployment(deployment['deployment_id'])
+# Activate deployment using the new client
+try:
+    client.deployments.activate_deployment(deployment_id)
+    print("Deployment activated successfully!")
+except XplainableAPIError as e:
+    print(f"Error activating deployment: {e.message}")
 ```
 
 ```python
-deploy_key = client.generate_deploy_key(deployment['deployment_id'], 'Deployment API for Purchase Prediction', 7)
+# Generate deployment key using the new client
+try:
+    deploy_key = client.deployments.generate_deploy_key(
+        deployment_id=deployment_id,
+        description='Deployment API for Purchase Prediction',
+        days_until_expiry=7
+    )
+    print(f"Deployment key generated: {str(deploy_key)[:20]}...")
+except XplainableAPIError as e:
+    print(f"Error generating deploy key: {e.message}")
+    deploy_key = None
 ```
 
 ### Generate Example Payload
@@ -404,7 +436,11 @@ option = 2
 
 ```python
 if option == 1:
-    body = client.generate_example_deployment_payload(deployment['deployment_id'])
+    # Generate example payload using the new client
+    try:
+        body = client.deployments.generate_example_deployment_payload(deployment_id)
+    except:
+        body = json.loads(train.drop(columns=[label_col, "InvoiceMonth", "Date", "MonthEnd", "Customer ID"]).sample(1).to_json(orient="records"))
 else:
     body = json.loads(train.drop(columns=[label_col, "InvoiceMonth", "Date", "MonthEnd", "Customer ID"]).sample(1).to_json(orient="records"))
 ```
@@ -417,12 +453,17 @@ body
 
 
 ```python
-response = requests.post(
-    url="https://inference.xplainable.io/v1/predict",
-    headers={'api_key': deploy_key['deploy_key']},
-    json=body
-)
+# Make prediction request
+if deploy_key:
+    response = requests.post(
+        url="https://inference.xplainable.io/v1/predict",
+        headers={'api_key': str(deploy_key)},  # Convert deploy_key to string
+        json=body
+    )
 
-value = response.json()
-value
+    value = response.json()
+    print("Prediction response:")
+    print(value)
+else:
+    print("Deploy key not available, skipping prediction test")
 ```

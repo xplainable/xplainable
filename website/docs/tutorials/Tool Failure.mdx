@@ -27,6 +27,11 @@ downtime and optimize maintenance schedules
 
 
 ```python
+!pip install xplainable
+!pip install xplainable-client
+```
+
+```python
 import pandas as pd
 import xplainable as xp
 from xplainable.core.models import XClassifier
@@ -37,12 +42,8 @@ from sklearn.model_selection import train_test_split
 import requests
 import json
 
-import xplainable_client
-```
-
-```python
-!pip install xplainable
-!pip install xplainable-client
+from xplainable_client.client.client import XplainableClient
+from xplainable_client.client.base import XplainableAPIError
 ```
 
 ## Xplainable Cloud Setup
@@ -50,8 +51,9 @@ import xplainable_client
 
 ```python
 # Initialize Xplainable Cloud client
-client = xplainable_client.Client(
+client = XplainableClient(
     api_key="", #Create api key in xplainable cloud - https://platform.xplainable.io/
+    hostname="https://platform.xplainable.io"
 )
 ```
 
@@ -66,6 +68,15 @@ df = pd.read_csv("https://xplainable-public-storage.syd1.digitaloceanspaces.com/
 print(f"Dataset shape: {df.shape}")
 print(f"Target distribution:\n{df['Machine failure'].value_counts()}")
 ```
+
+<CellOutput>
+{`Dataset shape: (10000, 14)
+Target distribution:
+Machine failure
+0    9661
+1     339
+Name: count, dtype: int64`}
+</CellOutput>
 
 ```python
 df.head()
@@ -155,9 +166,10 @@ df["Machine failure"].value_counts()
 ```
 
 <CellOutput>
-{`0    9661
+{`Machine failure
+0    9661
 1     339
-Name: Machine failure, dtype: int64`}
+Name: count, dtype: int64`}
 </CellOutput>
 
 ```python
@@ -176,7 +188,7 @@ params = opt.optimise(X_train, y_train)
 ```
 
 <CellOutput>
-{`100%|██████████| 30/30 [00:01<00:00, 15.52trial/s, best loss: -0.9315957452699021]`}
+{`100%|██████████| 30/30 [00:02<00:00, 14.47trial/s, best loss: -0.9315957452699021]`}
 </CellOutput>
 
 ## 2. Model Optimization
@@ -191,7 +203,7 @@ model.fit(X_train, y_train)
 ```
 
 <CellOutput>
-{`<xplainable.core.ml.classification.XClassifier at 0x29581d420>`}
+{`<xplainable.core.ml.classification.XClassifier at 0x2a0d61de0>`}
 </CellOutput>
 
 ## 4. Model Interpretability and Explainability
@@ -201,7 +213,7 @@ model.fit(X_train, y_train)
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_f94d6355-0312-489c-affd-0a1ed27fcbc2.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_7ad4c71a-256f-48a9-b814-695a6f9bdda6.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ```python
 params = {
@@ -213,14 +225,14 @@ model.update_feature_params(features=['Rotational speed [rpm]', 'Tool wear [min]
 ```
 
 <CellOutput>
-{`<xplainable.core.ml.classification.XClassifier at 0x28fe17940>`}
+{`<xplainable.core.ml.classification.XClassifier at 0x2a0d61de0>`}
 </CellOutput>
 
 ```python
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_9288c829-9929-4dda-9a21-f63dd538b12c.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_cebbbc7b-e113-4379-96b5-ce30fbefffc3.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 In this snapshot, we demonstrate the impact of hyperparameter tuning on model
 interpretability. By adjusting max_depth and min_info_gain, we refine the feature wise
@@ -232,30 +244,25 @@ enhancing transparency and aids in pinpointing influential features, fostering t
 development of interpretable and trustworthy machine learning models.
 
 
-```python
-client = xplainable_client.Client(
-    api_key="83b8d99c-ca2c-4132-b1e9-ed86db83f306",
-    hostname="https://xplainable-api-uat-itdcj.ondigitalocean.app/"
-)
-```
-
 ## 5. Model Persistence
 
 
 ```python
 # Create a model
-model_id = client.create_model(
-    model=model,
-    model_name="Asset Failure Prediction",
-    model_description="Using machine metadata to predict asset failures",
-    x=X_train,
-    y=y_train
-)
+try:
+    model_id, version_id = client.models.create_model(
+        model=model,
+        model_name="Asset Failure Prediction",
+        model_description="Using machine metadata to predict asset failures",
+        x=X_train,
+        y=y_train
+    )
+except XplainableAPIError as e:
+    print(f"Error creating model: {e}")
 ```
 
 <CellOutput>
-{`  0%|          | 0/6 [00:00<?, ?it/s]
-<Response [200]>`}
+{`  0%|          | 0/6 [00:00<?, ?it/s]`}
 </CellOutput>
 
 ## 6. Model Deployment
@@ -272,14 +279,14 @@ xplainable deployments.
 
 
 ```python
-deployment = client.deploy(
-    model_version_id=model_id["version_id"], #<- Use model id produced above
-)
+try:
+    deployment_response = client.deployments.deploy(
+        model_version_id=version_id #<- Use version id produced above
+    )
+    deployment_id = deployment_response.deployment_id
+except XplainableAPIError as e:
+    print(f"Error deploying model: {e}")
 ```
-
-<CellOutput>
-{`<Response [200]>`}
-</CellOutput>
 
 ### Testing the Deployment programatically
 
@@ -294,12 +301,11 @@ ready to process incoming prediction requests.
 
 
 ```python
-client.activate_deployment(deployment['deployment_id'])
+try:
+    client.deployments.activate_deployment(deployment_id=deployment_id)
+except XplainableAPIError as e:
+    print(f"Error activating deployment: {e}")
 ```
-
-<CellOutput>
-{`{'message': 'activated deployment'}`}
-</CellOutput>
 
 2. **Creating a Deployment Key:** A deployment key is generated with
    `xp.client.generate_deploy_key`. This key is required to authenticate and make secure
@@ -307,11 +313,19 @@ client.activate_deployment(deployment['deployment_id'])
 
 
 ```python
-deploy_key = client.generate_deploy_key(deployment['deployment_id'],'API key for Tool Failure Prediction', 7)
+try:
+    deploy_key = client.deployments.generate_deploy_key(
+        deployment_id=deployment_id,
+        description='API key for Tool Failure Prediction',
+        days_until_expiry=7
+    )
+    print(f"Deploy key created: {str(deploy_key)}")
+except XplainableAPIError as e:
+    print(f"Error generating deploy key: {e}")
 ```
 
 <CellOutput>
-{`<Response [200]>`}
+{`Deploy key created: 76a66348-5af7-471e-9b4a-b18233ce4325`}
 </CellOutput>
 
 3. **Generating Example Payload:** An example payload for a deployment request is
@@ -326,7 +340,13 @@ option = 2
 
 ```python
 if option == 1:
-    body = xp.client.generate_example_deployment_payload(deployment['deployment_id'])
+    try:
+        body = client.deployments.generate_example_deployment_payload(
+            model_version_id=version_id
+        )
+    except XplainableAPIError as e:
+        print(f"Error generating example payload: {e}")
+        body = []
 else:
     body = json.loads(df.drop(columns=["Machine failure"]).sample(1).to_json(orient="records"))
 ```
@@ -336,12 +356,12 @@ body
 ```
 
 <CellOutput>
-{`[{'Type': 'M',
-  'Air temperature [K]': 298.8,
-  'Process temperature [K]': 308.8,
-  'Rotational speed [rpm]': 1497,
-  'Torque [Nm]': 46.8,
-  'Tool wear [min]': 72}]`}
+{`[{'Type': 'L',
+  'Air temperature [K]': 300.8,
+  'Process temperature [K]': 312.0,
+  'Rotational speed [rpm]': 1374,
+  'Torque [Nm]': 50.2,
+  'Tool wear [min]': 154}]`}
 </CellOutput>
 
 4. **Making a Prediction Request:** A POST request is made to the model's prediction
@@ -353,7 +373,7 @@ body
 ```python
 response = requests.post(
     url="https://inference.xplainable.io/v1/predict",
-    headers={'api_key': deploy_key['deploy_key']},
+    headers={'api_key': str(deploy_key)},
     json=body
 )
 
@@ -365,21 +385,21 @@ value
 {`[{'index': 0,
   'id': None,
   'partition': '__dataset__',
-  'score': 0.0,
-  'proba': None,
+  'score': 0.2271685523961836,
+  'proba': 0.06946049314245507,
   'pred': 0,
-  'support': None,
+  'support': 331,
   'breakdown': [{'feature': 'base_value',
     'value': None,
     'score': 0.035522388059701496},
-   {'feature': 'Type', 'value': 'M', 'score': 0.0},
-   {'feature': 'Air temperature [K]', 'value': '298.8', 'score': 0.0},
-   {'feature': 'Process temperature [K]', 'value': '308.8', 'score': 0.0},
+   {'feature': 'Type', 'value': 'L', 'score': 0.024408834293742288},
+   {'feature': 'Air temperature [K]', 'value': '300.8', 'score': 0.0},
+   {'feature': 'Process temperature [K]', 'value': '312', 'score': 0.0},
    {'feature': 'Rotational speed [rpm]',
-    'value': '1497',
-    'score': -0.01567956188032209},
-   {'feature': 'Torque [Nm]', 'value': '46.8', 'score': -0.012698151637327479},
+    'value': '1374',
+    'score': 0.18484190508536333},
+   {'feature': 'Torque [Nm]', 'value': '50.2', 'score': -0.011265812711409608},
    {'feature': 'Tool wear [min]',
-    'value': '72',
-    'score': -0.007144674542051926}]}]`}
+    'value': '154',
+    'score': -0.0063387623312138736}]}]`}
 </CellOutput>

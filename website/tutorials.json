@@ -47,6 +47,14 @@
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Lead_Scoring_Prediction.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Lead_Scoring_Prediction.ipynb"
     },
+    "telco_churn_updated_client": {
+        "title": "Telco Churn Updated Client",
+        "sidebar_label": "Telco Churn Updated Client",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Telco_Churn_Updated_Client.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn_Updated_Client.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Telco_Churn_Updated_Client.ipynb"
+    },
     "dozer_price_prediction": {
         "title": "Dozer Price Prediction",
         "sidebar_label": "Dozer Price Prediction",

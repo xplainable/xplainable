@@ -1,0 +1,857 @@
+---
+title: Telco Churn Updated Client
+sidebar_label: Telco Churn Updated Client
+path: website/docs/tutorials
+nb_path: website/docs/tutorials/Telco_Churn_Updated_Client.ipynb
+github: https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn_Updated_Client.ipynb
+colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Telco_Churn_Updated_Client.ipynb
+---
+import LinkButtons from "@site/src/components/LinkButtons.jsx";
+import CellOutput from "@site/src/components/CellOutput.jsx";
+
+<LinkButtons
+  githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn_Updated_Client.ipynb"
+  colabUrl="https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Telco_Churn_Updated_Client.ipynb"
+/>
+
+# Telco Churn Prediction with Refactored Xplainable Client
+
+This notebook demonstrates the **complete ML workflow** using the new refactored
+Xplainable client with:
+
+- **Type-safe Pydantic models**
+- **Comprehensive error handling**
+- **Service-oriented architecture**
+- **All new client endpoints**
+- **Robust production patterns**
+
+We'll predict customer churn using the IBM Telco dataset while showcasing:
+
+- **Models Service**: Type-safe model creation and management
+- **Deployments Service**: Model deployment with proper error handling
+- **Preprocessing Service**: Pipeline management and data transformation
+- **Autotrain Service**: AI-powered automated training workflows
+- **Inference Service**: Predictions and explanations
+- **GPT Service**: AI-generated insights and reports
+- **Datasets Service**: Data management and loading
+- **Misc Service**: Health checks and utilities
+
+
+## Package Installation and Imports
+
+
+```python
+# Install required packages
+!pip install xplainable pandas scikit-learn requests
+# Note: Install the refactored xplainable-client locally
+```
+
+```python
+# Standard imports
+import pandas as pd
+import numpy as np
+import json
+import warnings
+from typing import Optional, Dict, Any, List
+from datetime import datetime
+
+# Xplainable core imports
+import xplainable as xp
+from xplainable.core.models import XClassifier
+from xplainable.core.optimisation.bayesian import XParamOptimiser
+from xplainable.preprocessing.pipeline import XPipeline
+from xplainable.preprocessing import transformers as xtf
+
+# Sklearn imports
+from sklearn.model_selection import train_test_split
+
+# Refactored Xplainable Client imports (NEW!)
+from xplainable_client.client.client import XplainableClient
+from xplainable_client.client.base import XplainableAPIError
+from xplainable_client.client.py_models.models import CreateModelResponse
+from xplainable_client.client.py_models.deployments import CreateDeploymentResponse
+from xplainable_client.client.py_models.preprocessing import CreatePreprocessorResponse
+from xplainable_client.client.py_models.autotrain import DatasetSummary, TextGenConfig
+from xplainable_client.client.py_models.inference import PredictionResponse
+
+# Suppress warnings for cleaner output
+warnings.filterwarnings('ignore')
+
+print(f"Xplainable version: {xp.__version__}")
+print(f"All imports successful!")
+```
+
+<CellOutput>
+{`Xplainable version: 1.3.0
+All imports successful!`}
+</CellOutput>
+
+## Initialize Refactored Xplainable Client
+
+The new client provides:
+
+- **Service separation**: `client.models`, `client.deployments`, etc.
+- **Type safety**: Full Pydantic model validation
+- **Error handling**: Detailed `XplainableAPIError` exceptions
+- **IDE support**: Complete autocompletion and type hints
+
+
+```python
+# Replace with your actual API key
+API_KEY = ""  # Get from https://platform.xplainable.io/
+HOSTNAME = "https://platform.xplainable.io"
+
+try:
+    # Initialize the refactored client
+    client = XplainableClient(
+        api_key=API_KEY,
+        hostname=HOSTNAME
+    )
+    
+    # Display connection info
+    info = client.connection_info
+    print(f"Connected successfully!")
+    print(f"User: {info['username']}")
+    print(f"Hostname: {info['hostname']}")
+    print(f"Xplainable Version: {info['xplainable_version']}")
+    print(f"Python Version: {info['python_version']}")
+    
+    # Test service availability
+    services = ['models', 'deployments', 'preprocessing', 'collections', 
+               'datasets', 'inference', 'gpt', 'autotrain', 'misc']
+    
+    print(f"\nAvailable services:")
+    for service in services:
+        if hasattr(client, service):
+            print(f"  ✓ {service}")
+        else:
+            print(f"  ✗ {service}")
+            
+except XplainableAPIError as e:
+    print(f"API Error: {e.message}")
+    if e.status_code == 401:
+        print("Please check your API key")
+    elif e.status_code == 403:
+        print("Check your permissions")
+except Exception as e:
+    print(f"Connection failed: {str(e)}")
+    print("Make sure to replace 'your-api-key-here' with your actual API key")
+```
+
+## System Health Check
+
+Using the **Misc Service** to verify system connectivity and performance.
+
+
+```python
+try:
+    # Test server connectivity
+    print("Testing server connectivity...")
+    
+    # Ping gateway
+    gateway_ping = client.misc.ping_gateway()
+    print(f"Gateway ping: {'✓' if gateway_ping.success else '✗'} ({gateway_ping.response_time:.3f}s)")
+    
+    # Try server ping (may not be available in all environments)
+    try:
+        server_ping = client.misc.ping_server()
+        print(f"Server ping: {'✓' if server_ping.success else '✗'} ({server_ping.response_time:.3f}s)")
+    except XplainableAPIError as e:
+        print(f"Server ping: Not available ({e.status_code})")
+    
+    # Get version information
+    version_info = client.misc.get_version_info()
+    print(f"\nVersion Information:")
+    print(f"  • Xplainable: {version_info.xplainable_version}")
+    print(f"  • Python: {version_info.python_version}")
+    
+except XplainableAPIError as e:
+    print(f"Health check warning: {e.message}")
+except Exception as e:
+    print(f"Health check failed: {str(e)}")
+```
+
+## Load Telco Churn Dataset
+
+Using the **Datasets Service** to explore available datasets and load the Telco data.
+
+
+```python
+try:
+    # Try to list available public datasets
+    print("Checking available public datasets...")
+    datasets = client.datasets.list_datasets()
+    print(f"Found {len(datasets)} public datasets:")
+    
+    # Show first few datasets
+    for i, dataset in enumerate(datasets[:5]):
+        print(f"  {i+1}. {dataset}")
+    
+    if len(datasets) > 5:
+        print(f"  ... and {len(datasets) - 5} more")
+        
+except XplainableAPIError as e:
+    print(f"Dataset service warning: {e.message}")
+except Exception as e:
+    print(f"Dataset service info: {str(e)}")
+
+# Load the Telco dataset directly (primary method)
+print("\nLoading IBM Telco Customer Churn dataset...")
+try:
+    df = pd.read_csv('https://xplainable-public-storage.syd1.digitaloceanspaces.com/example_data/telco_customer_churn.csv')
+    print(f"Successfully loaded dataset with shape: {df.shape}")
+    print(f"Columns: {list(df.columns[:5])}{'...' if len(df.columns) > 5 else ''}")
+    
+    # Display sample
+    print("\nSample data:")
+    display(df.head())
+    
+except Exception as e:
+    print(f"Failed to load dataset: {str(e)}")
+    # Create sample data for demonstration
+    print("Creating sample data for demonstration...")
+    df = pd.DataFrame({
+        'CustomerID': [f'C{i:04d}' for i in range(100)],
+        'Gender': np.random.choice(['Male', 'Female'], 100),
+        'Tenure Months': np.random.randint(1, 72, 100),
+        'Monthly Charges': np.random.uniform(20, 120, 100),
+        'Churn Label': np.random.choice(['Yes', 'No'], 100)
+    })
+    print(f"Created sample dataset with shape: {df.shape}")
+```
+
+## AI-Powered Dataset Analysis with Autotrain
+
+Using the **Autotrain Service** to get AI-powered insights about our dataset.
+
+
+```python
+# Prepare data for autotrain analysis
+print("Starting AI-powered dataset analysis...")
+
+try:
+    # Save a sample of the dataset for analysis
+    sample_df = df.sample(min(1000, len(df)))  # Use sample for faster processing
+    temp_file = "/tmp/telco_sample.csv"
+    sample_df.to_csv(temp_file, index=False)
+    
+    # Configure AI text generation
+    textgen_config = TextGenConfig(
+        model="gpt-4o-mini",
+        temperature=0.7,
+        max_tokens=1000
+    )
+    
+    print(f"Analyzing dataset sample ({len(sample_df)} rows)...")
+    
+    # Get AI-powered dataset summary
+    try:
+        summary = client.autotrain.summarize_dataset(
+            file_path=temp_file,
+            textgen_config=textgen_config
+        )
+        
+        print(f"Dataset Analysis Complete!")
+        print(f"Columns: {len(summary.columns)}")
+        print(f"Rows: {summary.rows:,}")
+        print(f"Data Types: {len(set(summary.dtypes.values()))} unique types")
+        
+        # Show missing values
+        missing_data = {k: v for k, v in summary.missing_values.items() if v > 0}
+        if missing_data:
+            print(f"Missing Values: {missing_data}")
+        else:
+            print(f"No missing values detected")
+            
+    except XplainableAPIError as e:
+        print(f"Autotrain analysis not available: {e.message}")
+        print(f"Status: {e.status_code} - This is expected if autotrain endpoints are not fully implemented")
+        
+        # Create manual summary for continuation
+        summary = DatasetSummary(
+            columns=list(df.columns),
+            rows=len(df),
+            dtypes=df.dtypes.astype(str).to_dict(),
+            missing_values=df.isnull().sum().to_dict()
+        )
+        print(f"Manual summary created for continuation")
+        
+except Exception as e:
+    print(f"Autotrain service info: {str(e)}")
+    # Continue with manual analysis
+    summary = DatasetSummary(
+        columns=list(df.columns),
+        rows=len(df),
+        dtypes=df.dtypes.astype(str).to_dict(),
+        missing_values=df.isnull().sum().to_dict()
+    )
+
+print(f"\nProceeding with data preprocessing...")
+```
+
+## Data Preprocessing Pipeline
+
+Creating and managing preprocessing pipelines with the **Preprocessing Service**.
+
+
+```python
+# Prepare the data
+print("Setting up data preprocessing pipeline...")
+
+# Convert target to binary
+df["Churn Label"] = df["Churn Label"].map({"Yes": 1, "No": 0})
+print(f"Target variable converted to binary: {df['Churn Label'].value_counts().to_dict()}")
+
+# Create preprocessing pipeline
+pipeline = XPipeline()
+
+# Add preprocessing stages
+pipeline.add_stages([
+    # Standardize text cases
+    {"transformer": xtf.ChangeCases(
+        columns=['City', 'Gender', 'Senior Citizen', 'Partner', 'Dependents',
+                'Phone Service', 'Multiple Lines', 'Internet Service',
+                'Online Security', 'Online Backup', 'Device Protection', 'Tech Support',
+                'Streaming TV', 'Streaming Movies', 'Contract', 'Paperless Billing',
+                'Payment Method'], 
+        case="lower"
+    )},
+    
+    # Condense low-frequency categories
+    {"feature": "City", "transformer": xtf.Condense(pct=0.25)},
+    
+    # Ensure proper data types
+    {"feature": "Monthly Charges", "transformer": xtf.SetDType(to_type="float")},
+    
+    # Remove unnecessary columns
+    {"transformer": xtf.DropCols(
+        columns=[
+            'CustomerID',      # High cardinality
+            "Total Charges",   # Multicollinearity with Tenure
+            'Count',           # Single value
+            "Country",         # Single value  
+            "State",           # Single value
+            "Zip Code",        # High cardinality
+            "Lat Long",        # High cardinality
+            "Latitude",        # High cardinality
+            "Longitude",       # High cardinality
+            "Churn Value",     # Data leakage
+            "Churn Score",     # Data leakage
+            "CLTV",            # Data leakage
+            "Churn Reason",    # Data leakage
+        ]
+    )},
+])
+
+print(f"Pipeline created with {len(pipeline.stages)} stages")
+
+# Apply preprocessing
+print("Applying preprocessing pipeline...")
+df_transformed = pipeline.fit_transform(df)
+print(f"Preprocessing complete!")
+print(f"Original shape: {df.shape} → Processed shape: {df_transformed.shape}")
+
+# Display processed data sample
+print("\nProcessed data sample:")
+display(df_transformed.head())
+```
+
+### Save Preprocessing Pipeline to Cloud
+
+Using the **Preprocessing Service** with proper error handling.
+
+
+```python
+try:
+    print("Saving preprocessing pipeline to Xplainable Cloud...")
+    
+    # Create preprocessor with type-safe response
+    preprocessor_id, version_id = client.preprocessing.create_preprocessor(
+        preprocessor_name=f"Telco Churn Preprocessing - v{xp.__version__} - New Client 2",
+        preprocessor_description="Complete preprocessing pipeline for IBM Telco Churn Dataset with refactored client",
+        pipeline=pipeline,
+        df=df
+    )
+    
+    print(f"Preprocessor saved successfully!")
+    print(f"Preprocessor ID: {preprocessor_id}")
+    print(f"Version ID: {version_id}")
+    
+    # Test loading the preprocessor back
+    print("\nTesting preprocessor reload...")
+    try:
+        loaded_pipeline = client.preprocessing.load_preprocessor(
+            preprocessor_id=preprocessor_id,
+            version_id=version_id
+        )
+        print(f"Preprocessor reloaded successfully!")
+        print(f"Stages: {len(loaded_pipeline.stages)}")
+        
+    except XplainableAPIError as e:
+        print(f"Preprocessor reload warning: {e.message} (Status: {e.status_code})")
+        
+except XplainableAPIError as e:
+    print(f"Preprocessor save warning: {e.message}")
+    print(f"Status: {e.status_code} - Continuing with local pipeline")
+    preprocessor_id, version_id = "local-pipeline", "local-version"
+    
+except Exception as e:
+    print(f"Preprocessing service info: {str(e)}")
+    preprocessor_id, version_id = "local-pipeline", "local-version"
+```
+
+## Model Training and Optimization
+
+Training an XClassifier with hyperparameter optimization.
+
+
+```python
+# Prepare training data
+print("Preparing training data...")
+
+X = df_transformed.drop(columns=['Churn Label'])
+y = df_transformed['Churn Label']
+
+# Train/test split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.33, random_state=42, stratify=y
+)
+
+print(f"Data split complete:")
+print(f"  Training: {X_train.shape[0]:,} samples")
+print(f"  Testing: {X_test.shape[0]:,} samples")
+print(f"  Features: {X_train.shape[1]}")
+print(f"  Class balance: {dict(y_train.value_counts())}")
+
+# Hyperparameter optimization
+print("\nStarting hyperparameter optimization...")
+try:
+    opt = XParamOptimiser()
+    params = opt.optimise(X_train, y_train)
+    print(f"Optimization complete!")
+    print(f"Best parameters: {list(params.keys())}")
+    
+except Exception as e:
+    print(f"Optimization failed, using defaults: {str(e)}")
+    params = {}
+
+# Train the model
+print("\nTraining XClassifier...")
+model = XClassifier(**params)
+model.fit(X_train, y_train)
+
+print(f"Model training complete!")
+print(f"Model type: {type(model).__name__}")
+```
+
+## Model Explainability
+
+Generate model explanations and insights.
+
+
+```python
+# Generate model explanations
+print("Generating model explanations...")
+
+try:
+    # Generate explanation visualization
+    explanation = model.explain()
+    print(f"Model explanation generated successfully!")
+    
+    # Display explanation (this will show the interactive chart)
+    display(explanation)
+    
+    # Get feature importances for analysis
+    if hasattr(model, 'feature_importances'):
+        importances = model.feature_importances
+        print(f"\nTop 5 Most Important Features:")
+        for i, (feature, importance) in enumerate(sorted(importances.items(), key=lambda x: x[1], reverse=True)[:5]):
+            print(f"  {i+1}. {feature}: {importance:.4f}")
+    
+except Exception as e:
+    print(f"Explanation generation failed: {str(e)}")
+    print(f"Model still trained successfully and ready for deployment")
+```
+
+## Save Model to Cloud
+
+Using the **Models Service** with type-safe operations and error handling.
+
+
+```python
+try:
+    print("Saving model to Xplainable Cloud...")
+    
+    # Create model with type-safe response
+    model_id, model_version_id = client.models.create_model(
+        model=model,
+        model_name=f"Telco Churn Classifier - v{xp.__version__}",
+        model_description="Advanced churn prediction model using XClassifier with the refactored client",
+        x=X_train,
+        y=y_train
+    )
+    
+    print(f"Model saved successfully!")
+    print(f"Model ID: {model_id}")
+    print(f"Version ID: {model_version_id}")
+    
+    # Test model information retrieval
+    try:
+        print("\nRetrieving model information...")
+        model_info = client.models.get_model(model_id)
+        print(f"Model info retrieved:")
+        print(f"  Name: {model_info.model_name}")
+        print(f"  Description: {model_info.model_description}")
+        
+    except XplainableAPIError as e:
+        print(f"Model info retrieval warning: {e.message} (Status: {e.status_code})")
+        
+except XplainableAPIError as e:
+    print(f"Model save warning: {e.message}")
+    print(f"Status: {e.status_code} - Continuing with local model")
+    model_id, model_version_id = "local-model", "local-version"
+    
+except Exception as e:
+    print(f"Models service info: {str(e)}")
+    model_id, model_version_id = "local-model", "local-version"
+```
+
+## Model Deployment
+
+Using the **Deployments Service** with comprehensive error handling.
+
+
+```python
+try:
+    print("Deploying model...")
+    
+    # Deploy the model with type-safe response
+    deployment_response: CreateDeploymentResponse = client.deployments.deploy(model_version_id)
+    deployment_id = deployment_response.deployment_id
+    
+    print(f"Model deployed successfully!")
+    print(f"Deployment ID: {deployment_id}")
+    
+    # Generate deployment key
+    try:
+        print("\nGenerating deployment key...")
+        deploy_key = client.deployments.generate_deploy_key(
+            deployment_id=deployment_id,
+            description="Telco Churn Prediction API - Refactored Client Demo",
+            days_until_expiry=30
+        )
+        
+        print(f"Deployment key generated!")
+        print(f"Key: {str(deploy_key)[:16]}...[truncated]")
+        print(f"Expires in: 30 days")
+        
+    except XplainableAPIError as e:
+        print(f"Deploy key generation warning: {e.message} (Status: {e.status_code})")
+        deploy_key = None
+    
+    # List deployments
+    try:
+        print("\nListing team deployments...")
+        deployments = client.deployments.list_deployments()
+        print(f"Found {len(deployments)} deployment(s):")
+        
+        for i, dep in enumerate(deployments[:3]):  # Show first 3
+            print(f"  {i+1}. {dep.deployment_id} (Active: {dep.active})")
+            
+    except XplainableAPIError as e:
+        print(f"Deployment listing warning: {e.message} (Status: {e.status_code})")
+        
+except XplainableAPIError as e:
+    print(f"Deployment warning: {e.message}")
+    print(f"Status: {e.status_code}")
+    
+    if e.status_code == 403:
+        print(f"This might be due to deployment quota limits")
+    elif e.status_code == 404:
+        print(f"Model version might not exist on the server")
+    
+    deployment_id = None
+    deploy_key = None
+except Exception as e:
+    print(f"Deployment service info: {str(e)}")
+    deployment_id = None
+    deploy_key = None
+```
+
+## Model Inference and Predictions
+
+Using the **Inference Service** for predictions and explanations.
+
+
+```python
+try:
+    print("Testing model inference...")
+    
+    # Prepare test data
+    test_sample = X_test.sample(3)  # Get 3 random samples
+    print(f"Testing with {len(test_sample)} samples")
+    
+    # Method 1: Local predictions (always available)
+    print("\nLocal Inference:")
+    local_predictions = model.predict(test_sample)
+    local_probabilities = model.predict_proba(test_sample)
+    
+    print(f"Local predictions: {local_predictions.tolist()}")
+    print(f"Churn probabilities: {[f'{p:.3f}' for p in local_probabilities[:, 1]]}")
+    
+    # Method 2: File-based API inference (using the refactored client)
+    if model_id and model_version_id:
+        try:
+            print("\nFile-based API Inference:")
+            
+            # Save test sample to CSV file for API prediction
+            temp_file = "/tmp/test_sample.csv"
+            test_sample.to_csv(temp_file, index=False)
+            
+            # Make predictions via API using the predict method
+            api_predictions = client.inference.predict(
+                filename=temp_file,
+                model_id=model_id,
+                version_id=model_version_id,
+                threshold=0.5,
+                delimiter=","
+            )
+            
+            print(f"API predictions successful!")
+            print(f"API response type: {type(api_predictions)}")
+            
+            # Clean up temp file
+            import os
+            try:
+                os.remove(temp_file)
+            except:
+                pass
+                
+        except Exception as e:
+            print(f"API inference warning: {str(e)}")
+            
+    else:
+        print("\nAPI inference skipped (no model ID available)")
+    
+    # Display prediction results
+    print("\nPrediction Summary:")
+    for i, (idx, row) in enumerate(test_sample.iterrows()):
+        local_pred = local_predictions[i]
+        local_prob = local_probabilities[i, 1]
+        
+        print(f"  Sample {i+1}:")
+        print(f"    Prediction: {'Churn' if local_pred == 1 else 'No Churn'}")
+        print(f"    Probability: {local_prob:.3f}")
+        print(f"    Monthly Charges: ${row['Monthly Charges']:.2f}")
+        print(f"    Tenure: {row['Tenure Months']} months")
+        
+except Exception as e:
+    print(f"Inference service info: {str(e)}")
+```
+
+## AI-Powered Insights with GPT Service
+
+Using the **GPT Service** to generate intelligent reports and insights.
+
+
+```python
+try:
+    print("Generating AI-powered insights...")
+    
+    # Generate model report
+    try:
+        print("Creating model report...")
+        report = client.gpt.generate_report(
+            model_id=model_id,
+            version_id=model_version_id,
+            target_description="Customer churn likelihood (1 = will churn, 0 = will stay)",
+            project_objective="Identify customers at risk of leaving to improve retention strategies",
+            max_features=10,
+            temperature=0.7
+        )
+        
+        print(f"AI report generated!")
+        print(f"Report length: {len(report.report):,} characters")
+        
+        if report.key_insights:
+            print(f"Key insights: {len(report.key_insights)}")
+        
+        # Display report (truncated)
+        print(f"\nReport Preview:")
+        print(f"{report.report[:500]}...")
+        
+    except XplainableAPIError as e:
+        print(f"GPT report warning: {e.message} (Status: {e.status_code})")
+    
+    # Generate model explanation
+    try:
+        print("\nCreating natural language explanation...")
+        explanation = client.gpt.explain_model(
+            model_id=model_id,
+            version_id=model_version_id,
+            language="en",
+            detail_level="medium"
+        )
+        
+        print(f"AI explanation generated!")
+        print(f"\nModel Explanation:")
+        print(f"{explanation.explanation[:400]}...")
+        
+    except XplainableAPIError as e:
+        print(f"GPT explanation warning: {e.message} (Status: {e.status_code})")
+    
+    # Manual insights (always available)
+    print(f"\nManual Model Analysis:")
+    print(f"  Training Data: {len(X_train):,} samples")
+    print(f"  Features Used: {X_train.shape[1]}")
+    print(f"  Class Distribution: {dict(y_train.value_counts())}")
+    
+    if hasattr(model, 'feature_importances'):
+        top_feature = max(model.feature_importances.items(), key=lambda x: x[1])
+        print(f"  Most Important Feature: {top_feature[0]} ({top_feature[1]:.3f})")
+        
+except Exception as e:
+    print(f"GPT service info: {str(e)}")
+    print(f"Manual analysis available above")
+```
+
+## Collections and Organization
+
+Using the **Collections Service** to organize models.
+
+
+```python
+try:
+    print("Creating model collection...")
+    
+    # Create a collection for churn models
+    try:
+        collection_response = client.collections.create_collection(
+            model_id=model_id,
+            name="Churn Prediction Models",
+            description="Collection of customer churn prediction models for retention strategies"
+        )
+        
+        collection_id = collection_response.collection_id
+        print(f"Collection created!")
+        print(f"Collection ID: {collection_id}")
+        
+        # Create scenarios using sample data
+        try:
+            print("\nCreating prediction scenarios...")
+            
+            # First, get the model partitions to get a valid partition_id
+            try:
+                partitions = client.models.list_model_version_partitions(model_version_id)
+                if partitions and len(partitions.get('partitions', [])) > 0:
+                    partition_id = partitions['partitions'][0]['partition_id']
+                    print(f"  Using partition ID: {partition_id}")
+                else:
+                    print("  No partitions found, skipping scenario creation")
+                    raise Exception("No valid partition found")
+            except Exception as e:
+                print(f"  Could not get partitions: {str(e)}")
+                raise
+            
+            # Take 5 random samples from test data for scenarios
+            sample_scenarios = X_test.sample(5)
+            
+            # Create scenario data with predictions (one by one to match API structure)
+            created_scenarios = []
+            for idx, (_, row) in enumerate(sample_scenarios.iterrows()):
+                try:
+                    # Get prediction for this sample - convert to DataFrame for consistency
+                    sample_df = row.to_frame().T  # Convert Series to single-row DataFrame
+                    sample_prediction = model.predict(sample_df)
+                    sample_probability = model.predict_proba(sample_df)
+                    
+                    # Handle both scalar and array predictions
+                    if hasattr(sample_prediction, '__len__') and len(sample_prediction) > 0:
+                        pred_value = float(sample_prediction[0])
+                    else:
+                        pred_value = float(sample_prediction)
+                    
+                    # Handle probability array
+                    if hasattr(sample_probability, '__len__') and len(sample_probability) > 0:
+                        if hasattr(sample_probability[0], '__len__') and len(sample_probability[0]) > 1:
+                            prob_value = float(sample_probability[0][1])  # Churn probability
+                        else:
+                            prob_value = float(sample_probability[0])
+                    else:
+                        prob_value = float(sample_probability)
+                    
+                    # Determine risk level
+                    risk_level = "High" if prob_value > 0.7 else "Medium" if prob_value > 0.3 else "Low"
+                    
+                    # Create individual scenario matching API structure
+                    scenario_data = {
+                        "version_id": model_version_id,
+                        "partition_id": partition_id,  # Use the actual partition ID
+                        "scenario": row.to_dict(),  # The actual feature data
+                        "score": pred_value,
+                        "proba": prob_value,
+                        "multiplier": 1.0,  # Default multiplier value
+                        "support": 0,  # Default support value
+                        "notes": f"Customer Scenario {idx + 1}: {row['Contract']} contract, ${row['Monthly Charges']:.2f}/month, Risk: {risk_level}"
+                    }
+                    
+                except Exception as pred_error:
+                    print(f"  Prediction error for scenario {idx + 1}: {str(pred_error)}")
+                    # Create a basic scenario without predictions
+                    scenario_data = {
+                        "version_id": model_version_id,
+                        "partition_id": partition_id,  # Use the actual partition ID
+                        "scenario": row.to_dict(),
+                        "score": 0.0,
+                        "proba": 0.5,  # Default neutral probability
+                        "multiplier": 1.0,  # Default multiplier value
+                        "support": 0,  # Default support value
+                        "notes": f"Customer Scenario {idx + 1}: {row['Contract']} contract, ${row['Monthly Charges']:.2f}/month (prediction failed)"
+                    }
+                
+                # Create single scenario (since API expects individual scenarios)
+                try:
+                    created_scenario = client.collections.create_scenarios(
+                        collection_id=collection_id,
+                        scenarios=[scenario_data]  # Single scenario in list
+                    )
+                    created_scenarios.extend(created_scenario)
+                    print(f"  Created scenario {idx + 1}: Risk Level {risk_level}")
+                except Exception as e:
+                    print(f"  Failed to create scenario {idx + 1}: {str(e)}")
+                    continue
+            
+            print(f"Created {len(created_scenarios)} scenarios total!")
+                
+        except XplainableAPIError as e:
+            print(f"Scenario creation warning: {e.message} (Status: {e.status_code})")
+        
+        # List team collections
+        try:
+            print(f"\nListing team collections...")
+            collections = client.collections.get_team_collections()
+            print(f"Found {len(collections)} team collection(s)")
+            
+            for collection in collections[-3:]:  # Show last 3
+                print(f"  {collection.get('name', 'Unnamed')} (ID: {collection.get('id', 'unknown')})")
+                
+        except XplainableAPIError as e:
+            print(f"Collection listing warning: {e.message} (Status: {e.status_code})")
+        
+        # Get collection scenarios
+        try:
+            print(f"\nRetrieving collection scenarios...")
+            scenarios = client.collections.get_collection_scenarios(collection_id)
+            print(f"Found {len(scenarios)} scenario(s) in collection")
+            
+        except XplainableAPIError as e:
+            print(f"Scenario retrieval warning: {e.message} (Status: {e.status_code})")
+            
+    except XplainableAPIError as e:
+        print(f"Collection creation warning: {e.message} (Status: {e.status_code})")
+        collection_id = None
+        
+except Exception as e:
+    print(f"Collections service info: {str(e)}")
+    collection_id = None
+```

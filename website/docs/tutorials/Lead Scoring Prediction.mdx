@@ -69,30 +69,33 @@ https://www.kaggle.com/datasets/amritachatterjee09/lead-scoring-dataset/data
 ```
 
 <CellOutput>
-{`Requirement already satisfied: xplainable in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (1.2.3)
+{`Requirement already satisfied: xplainable in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (1.3.0)
+Requirement already satisfied: xplainable-client>=1.0.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (1.2.8.post3)
 Requirement already satisfied: hyperopt>=0.2.7 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (0.2.7)
-Requirement already satisfied: numba>=0.56.4 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (0.60.0)
-Requirement already satisfied: numpy<=1.23.5,>=1.20.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (1.23.5)
-Requirement already satisfied: pandas<=1.9.0,>=1.5.2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (1.5.3)
+Requirement already satisfied: numba>=0.57.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (0.60.0)
+Requirement already satisfied: numpy>=2.0.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (2.0.2)
+Requirement already satisfied: pandas>=2.2.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (2.3.0)
 Requirement already satisfied: pyperclip>=1.8.2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (1.9.0)
-Requirement already satisfied: scikit-learn>=1.2.2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (1.6.1)
+Requirement already satisfied: scikit-learn>=1.3.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (1.6.1)
 Requirement already satisfied: scipy>=1.6.2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (1.15.3)
 Requirement already satisfied: urllib3>=1.26.5 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (2.4.0)
 Requirement already satisfied: psutil>=5.9.4 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (7.0.0)
 Requirement already satisfied: joblib>=1.2.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (1.5.1)
-Requirement already satisfied: networkx>=2.6.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (3.4.2)
+Requirement already satisfied: networkx>=2.8.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (3.4.2)
 Requirement already satisfied: tqdm>=4.62.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (4.67.1)
 Requirement already satisfied: ipython in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (8.36.0)
 Requirement already satisfied: packaging in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (25.0)
 Requirement already satisfied: requests in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable) (2.32.3)
-Requirement already satisfied: python-dateutil>=2.8.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pandas<=1.9.0,>=1.5.2->xplainable) (2.9.0.post0)
-Requirement already satisfied: pytz>=2020.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pandas<=1.9.0,>=1.5.2->xplainable) (2025.2)
 Requirement already satisfied: six in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable) (1.17.0)
 Requirement already satisfied: future in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable) (1.0.0)
 Requirement already satisfied: cloudpickle in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable) (3.1.1)
 Requirement already satisfied: py4j in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable) (0.10.9.9)
-Requirement already satisfied: llvmlite<0.44,>=0.43.0dev0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from numba>=0.56.4->xplainable) (0.43.0)
-Requirement already satisfied: threadpoolctl>=3.1.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from scikit-learn>=1.2.2->xplainable) (3.6.0)
+Requirement already satisfied: llvmlite<0.44,>=0.43.0dev0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from numba>=0.57.0->xplainable) (0.43.0)
+Requirement already satisfied: python-dateutil>=2.8.2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pandas>=2.2.3->xplainable) (2.9.0.post0)
+Requirement already satisfied: pytz>=2020.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pandas>=2.2.3->xplainable) (2025.2)
+Requirement already satisfied: tzdata>=2022.7 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pandas>=2.2.3->xplainable) (2025.2)
+Requirement already satisfied: threadpoolctl>=3.1.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from scikit-learn>=1.3.0->xplainable) (3.6.0)
+Requirement already satisfied: setuptools>=65.5.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client>=1.0.0->xplainable) (80.8.0)
 Requirement already satisfied: decorator in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable) (5.2.1)
 Requirement already satisfied: exceptiongroup in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable) (1.3.0)
 Requirement already satisfied: jedi>=0.16 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable) (0.19.2)
@@ -123,81 +126,67 @@ Requirement already satisfied: jsonschema-specifications>=2023.03.6 in /Users/jt
 Requirement already satisfied: referencing>=0.28.4 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from jsonschema>=3.0->altair==5.4.1) (0.36.2)
 Requirement already satisfied: rpds-py>=0.7.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from jsonschema>=3.0->altair==5.4.1) (0.25.1)
 Requirement already satisfied: MarkupSafe>=2.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from jinja2->altair==5.4.1) (3.0.2)
-Requirement already satisfied: xplainable-client in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (1.2.6)
-Requirement already satisfied: ipywidgets in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (8.1.7)
-Requirement already satisfied: numpy in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (1.23.5)
-Requirement already satisfied: pandas>=1.5.2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (1.5.3)
+Requirement already satisfied: xplainable-client in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (1.2.8.post3)
+Requirement already satisfied: numpy>=2.0.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (2.0.2)
+Requirement already satisfied: pandas>=2.2.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (2.3.0)
 Requirement already satisfied: pyperclip in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (1.9.0)
 Requirement already satisfied: Requests in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (2.32.3)
 Requirement already satisfied: scikit_learn in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (1.6.1)
 Requirement already satisfied: setuptools>=65.5.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (80.8.0)
 Requirement already satisfied: urllib3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (2.4.0)
-Requirement already satisfied: xplainable==1.2.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (1.2.3)
-Requirement already satisfied: hyperopt>=0.2.7 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (0.2.7)
-Requirement already satisfied: numba>=0.56.4 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (0.60.0)
-Requirement already satisfied: scipy>=1.6.2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (1.15.3)
-Requirement already satisfied: psutil>=5.9.4 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (7.0.0)
-Requirement already satisfied: joblib>=1.2.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (1.5.1)
-Requirement already satisfied: networkx>=2.6.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (3.4.2)
-Requirement already satisfied: tqdm>=4.62.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (4.67.1)
-Requirement already satisfied: ipython in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (8.36.0)
-Requirement already satisfied: packaging in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable==1.2.3->xplainable-client) (25.0)
-Requirement already satisfied: python-dateutil>=2.8.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pandas>=1.5.2->xplainable-client) (2.9.0.post0)
-Requirement already satisfied: pytz>=2020.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pandas>=1.5.2->xplainable-client) (2025.2)
-Requirement already satisfied: six in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable==1.2.3->xplainable-client) (1.17.0)
-Requirement already satisfied: future in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable==1.2.3->xplainable-client) (1.0.0)
-Requirement already satisfied: cloudpickle in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable==1.2.3->xplainable-client) (3.1.1)
-Requirement already satisfied: py4j in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable==1.2.3->xplainable-client) (0.10.9.9)
-Requirement already satisfied: llvmlite<0.44,>=0.43.0dev0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from numba>=0.56.4->xplainable==1.2.3->xplainable-client) (0.43.0)
-Requirement already satisfied: threadpoolctl>=3.1.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from scikit_learn->xplainable-client) (3.6.0)
-Requirement already satisfied: decorator in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (5.2.1)
-Requirement already satisfied: exceptiongroup in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (1.3.0)
-Requirement already satisfied: jedi>=0.16 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (0.19.2)
-Requirement already satisfied: matplotlib-inline in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (0.1.7)
-Requirement already satisfied: pexpect>4.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (4.9.0)
-Requirement already satisfied: prompt_toolkit<3.1.0,>=3.0.41 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (3.0.51)
-Requirement already satisfied: pygments>=2.4.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (2.19.1)
-Requirement already satisfied: stack_data in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (0.6.3)
-Requirement already satisfied: traitlets>=5.13.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (5.14.3)
-Requirement already satisfied: typing_extensions>=4.6 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable==1.2.3->xplainable-client) (4.13.2)
-Requirement already satisfied: wcwidth in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from prompt_toolkit<3.1.0,>=3.0.41->ipython->xplainable==1.2.3->xplainable-client) (0.2.13)
-Requirement already satisfied: parso<0.9.0,>=0.8.4 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from jedi>=0.16->ipython->xplainable==1.2.3->xplainable-client) (0.8.4)
-Requirement already satisfied: ptyprocess>=0.5 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pexpect>4.3->ipython->xplainable==1.2.3->xplainable-client) (0.7.0)
-Requirement already satisfied: comm>=0.1.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipywidgets->xplainable-client) (0.2.2)
-Requirement already satisfied: widgetsnbextension~=4.0.14 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipywidgets->xplainable-client) (4.0.14)
-Requirement already satisfied: jupyterlab_widgets~=3.0.15 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipywidgets->xplainable-client) (3.0.15)
+Requirement already satisfied: xplainable in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable-client) (1.3.0)
+Requirement already satisfied: python-dateutil>=2.8.2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pandas>=2.2.3->xplainable-client) (2.9.0.post0)
+Requirement already satisfied: pytz>=2020.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pandas>=2.2.3->xplainable-client) (2025.2)
+Requirement already satisfied: tzdata>=2022.7 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pandas>=2.2.3->xplainable-client) (2025.2)
+Requirement already satisfied: six>=1.5 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from python-dateutil>=2.8.2->pandas>=2.2.3->xplainable-client) (1.17.0)
 Requirement already satisfied: charset-normalizer<4,>=2 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from Requests->xplainable-client) (3.4.2)
 Requirement already satisfied: idna<4,>=2.5 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from Requests->xplainable-client) (3.10)
 Requirement already satisfied: certifi>=2017.4.17 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from Requests->xplainable-client) (2025.4.26)
-Requirement already satisfied: executing>=1.2.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from stack_data->ipython->xplainable==1.2.3->xplainable-client) (2.2.0)
-Requirement already satisfied: asttokens>=2.1.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from stack_data->ipython->xplainable==1.2.3->xplainable-client) (3.0.0)
-Requirement already satisfied: pure_eval in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from stack_data->ipython->xplainable==1.2.3->xplainable-client) (0.2.3)
-Collecting kaggle
-  Using cached kaggle-1.7.4.5-py3-none-any.whl.metadata (16 kB)
+Requirement already satisfied: scipy>=1.6.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from scikit_learn->xplainable-client) (1.15.3)
+Requirement already satisfied: joblib>=1.2.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from scikit_learn->xplainable-client) (1.5.1)
+Requirement already satisfied: threadpoolctl>=3.1.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from scikit_learn->xplainable-client) (3.6.0)
+Requirement already satisfied: hyperopt>=0.2.7 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable->xplainable-client) (0.2.7)
+Requirement already satisfied: numba>=0.57.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable->xplainable-client) (0.60.0)
+Requirement already satisfied: psutil>=5.9.4 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable->xplainable-client) (7.0.0)
+Requirement already satisfied: networkx>=2.8.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable->xplainable-client) (3.4.2)
+Requirement already satisfied: tqdm>=4.62.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable->xplainable-client) (4.67.1)
+Requirement already satisfied: ipython in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable->xplainable-client) (8.36.0)
+Requirement already satisfied: packaging in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from xplainable->xplainable-client) (25.0)
+Requirement already satisfied: future in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable->xplainable-client) (1.0.0)
+Requirement already satisfied: cloudpickle in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable->xplainable-client) (3.1.1)
+Requirement already satisfied: py4j in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from hyperopt>=0.2.7->xplainable->xplainable-client) (0.10.9.9)
+Requirement already satisfied: llvmlite<0.44,>=0.43.0dev0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from numba>=0.57.0->xplainable->xplainable-client) (0.43.0)
+Requirement already satisfied: decorator in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable->xplainable-client) (5.2.1)
+Requirement already satisfied: exceptiongroup in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable->xplainable-client) (1.3.0)
+Requirement already satisfied: jedi>=0.16 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable->xplainable-client) (0.19.2)
+Requirement already satisfied: matplotlib-inline in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable->xplainable-client) (0.1.7)
+Requirement already satisfied: pexpect>4.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable->xplainable-client) (4.9.0)
+Requirement already satisfied: prompt_toolkit<3.1.0,>=3.0.41 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable->xplainable-client) (3.0.51)
+Requirement already satisfied: pygments>=2.4.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable->xplainable-client) (2.19.1)
+Requirement already satisfied: stack_data in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable->xplainable-client) (0.6.3)
+Requirement already satisfied: traitlets>=5.13.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable->xplainable-client) (5.14.3)
+Requirement already satisfied: typing_extensions>=4.6 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from ipython->xplainable->xplainable-client) (4.13.2)
+Requirement already satisfied: wcwidth in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from prompt_toolkit<3.1.0,>=3.0.41->ipython->xplainable->xplainable-client) (0.2.13)
+Requirement already satisfied: parso<0.9.0,>=0.8.4 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from jedi>=0.16->ipython->xplainable->xplainable-client) (0.8.4)
+Requirement already satisfied: ptyprocess>=0.5 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from pexpect>4.3->ipython->xplainable->xplainable-client) (0.7.0)
+Requirement already satisfied: executing>=1.2.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from stack_data->ipython->xplainable->xplainable-client) (2.2.0)
+Requirement already satisfied: asttokens>=2.1.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from stack_data->ipython->xplainable->xplainable-client) (3.0.0)
+Requirement already satisfied: pure_eval in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from stack_data->ipython->xplainable->xplainable-client) (0.2.3)
+Requirement already satisfied: kaggle in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (1.7.4.5)
 Requirement already satisfied: bleach in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (6.2.0)
 Requirement already satisfied: certifi>=14.05.14 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (2025.4.26)
 Requirement already satisfied: charset-normalizer in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (3.4.2)
 Requirement already satisfied: idna in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (3.10)
-Collecting protobuf (from kaggle)
-  Downloading protobuf-6.31.1-cp39-abi3-macosx_10_9_universal2.whl.metadata (593 bytes)
+Requirement already satisfied: protobuf in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (6.31.1)
 Requirement already satisfied: python-dateutil>=2.5.3 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (2.9.0.post0)
-Collecting python-slugify (from kaggle)
-  Using cached python_slugify-8.0.4-py2.py3-none-any.whl.metadata (8.5 kB)
+Requirement already satisfied: python-slugify in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (8.0.4)
 Requirement already satisfied: requests in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (2.32.3)
 Requirement already satisfied: setuptools>=21.0.0 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (80.8.0)
 Requirement already satisfied: six>=1.10 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (1.17.0)
-Collecting text-unidecode (from kaggle)
-  Using cached text_unidecode-1.3-py2.py3-none-any.whl.metadata (2.4 kB)
+Requirement already satisfied: text-unidecode in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (1.3)
 Requirement already satisfied: tqdm in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (4.67.1)
 Requirement already satisfied: urllib3>=1.15.1 in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (2.4.0)
-Requirement already satisfied: webencodings in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (0.5.1)
-Downloading kaggle-1.7.4.5-py3-none-any.whl (181 kB)
-Downloading protobuf-6.31.1-cp39-abi3-macosx_10_9_universal2.whl (425 kB)
-Using cached python_slugify-8.0.4-py2.py3-none-any.whl (10 kB)
-Using cached text_unidecode-1.3-py2.py3-none-any.whl (78 kB)
-Installing collected packages: text-unidecode, python-slugify, protobuf, kaggle
-[2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m4/4[0m [kaggle]2m3/4[0m [kaggle]
-[1A[2KSuccessfully installed kaggle-1.7.4.5 protobuf-6.31.1 python-slugify-8.0.4 text-unidecode-1.3`}
+Requirement already satisfied: webencodings in /Users/jtuppack/miniforge3/envs/xplainable-api/lib/python3.10/site-packages (from kaggle) (0.5.1)`}
 </CellOutput>
 
 ## Package Imports
@@ -215,7 +204,8 @@ from xplainable.core.optimisation.bayesian import XParamOptimiser
 from xplainable.preprocessing.pipeline import XPipeline
 from xplainable.preprocessing import transformers as xtf
 
-import xplainable_client
+from xplainable_client.client.client import XplainableClient
+from xplainable_client.client.base import XplainableAPIError
 ```
 
 ## Instantiate Xplainable Cloud
@@ -228,10 +218,20 @@ reports with a free trial of 14 days.
 
 ```python
 # Initialize Xplainable Cloud client
-client = xplainable_client.Client(
+client = XplainableClient(
     api_key="", #Create api key in xplainable cloud - https://platform.xplainable.io/
+    hostname="https://platform.xplainable.io"
 )
 ```
+
+<CellOutput>
+{`Connected to Xplainable Cloud
+   User: jtuppa
+   Hostname: http://localhost:8000
+   API Key Expires: 2025-09-04T10:30:18.154043
+   Python Version: 3.10.17
+   Xplainable Version: 1.3.0`}
+</CellOutput>
 
 ## Read Lead Scoring Dataset
 
@@ -241,7 +241,7 @@ https://www.kaggle.com/datasets/amritachatterjee09/lead-scoring-dataset.
 
 
 ```python
-df = pd.read_csv('https://xplainable-public-storage.syd1.digitaloceanspaces.com/example_data/TrainAndValid.csv')
+df = pd.read_csv('https://xplainable-public-storage.syd1.digitaloceanspaces.com/example_data/lead_scoring.csv')
 ```
 
 ### Sample of the Lead Scoring Dataset
@@ -269,7 +269,6 @@ pipeline = XPipeline()
 
 # Add stages for specific features
 pipeline.add_stages([
-    {"feature":"Country","transformer": xtf.Condense(pct=0.5)}, #-> Automatically condense extremely long tail values, to check if latent information
     {"transformer": xtf.DropCols(
         columns=['Prospect ID', #-> Highly Cardinal, 
                  "Lead Number", #-> Reduce Multicollinearity between Tenure and Monthly Costs
@@ -279,7 +278,7 @@ pipeline.add_stages([
 ```
 
 <CellOutput>
-{`<xplainable.preprocessing.pipeline.XPipeline at 0x28bd758d0>`}
+{`<xplainable.preprocessing.pipeline.XPipeline at 0x16fc452d0>`}
 </CellOutput>
 
 ### Preprocessed data
@@ -291,36 +290,33 @@ df_transformed.head()
 ```
 
 
-|    | Lead Origin             | Lead Source    | Do Not Email   | Do Not Call   |   Converted |   TotalVisits |   Total Time Spent on Website |   Page Views Per Visit | Last Activity           | Country   | ...   | Get updates on DM Content   | Lead Profile   | City   | Asymmetrique Activity Index   | Asymmetrique Profile Index   |   Asymmetrique Activity Score |   Asymmetrique Profile Score | I agree to pay the amount through cheque   | A free copy of Mastering The Interview   | Last Notable Activity   |
-|---:|:------------------------|:---------------|:---------------|:--------------|------------:|--------------:|------------------------------:|-----------------------:|:------------------------|:----------|:------|:----------------------------|:---------------|:-------|:------------------------------|:-----------------------------|------------------------------:|-----------------------------:|:-------------------------------------------|:-----------------------------------------|:------------------------|
-|  0 | API                     | Olark Chat     | No             | No            |           0 |             0 |                             0 |                    0   | Page Visited on Website | nan       | ...   | No                          | Select         | Select | 02.Medium                     | 02.Medium                    |                            15 |                           15 | No                                         | No                                       | Modified                |
-|  1 | API                     | Organic Search | No             | No            |           0 |             5 |                           674 |                    2.5 | Email Opened            | India     | ...   | No                          | Select         | Select | 02.Medium                     | 02.Medium                    |                            15 |                           15 | No                                         | No                                       | Email Opened            |
-|  2 | Landing Page Submission | Direct Traffic | No             | No            |           1 |             2 |                          1532 |                    2   | Email Opened            | India     | ...   | No                          | Potential Lead | Mumbai | 02.Medium                     | 01.High                      |                            14 |                           20 | No                                         | Yes                                      | Email Opened            |
-|  3 | Landing Page Submission | Direct Traffic | No             | No            |           0 |             1 |                           305 |                    1   | Unreachable             | India     | ...   | No                          | Select         | Mumbai | 02.Medium                     | 01.High                      |                            13 |                           17 | No                                         | No                                       | Modified                |
-|  4 | Landing Page Submission | Google         | No             | No            |           1 |             2 |                          1428 |                    1   | Converted to Lead       | India     | ...   | No                          | Select         | Mumbai | 02.Medium                     | 01.High                      |                            15 |                           18 | No                                         | No                                       | Modified                |
+|    | Lead Origin             | Lead Source    | Do Not Email   | Do Not Call   |   Converted |   TotalVisits |   Total Time Spent on Website |   Page Views Per Visit | Last Activity           | Specialization          | ...   | Get updates on DM Content   | Lead Profile   | City   | Asymmetrique Activity Index   | Asymmetrique Profile Index   |   Asymmetrique Activity Score |   Asymmetrique Profile Score | I agree to pay the amount through cheque   | A free copy of Mastering The Interview   | Last Notable Activity   |
+|---:|:------------------------|:---------------|:---------------|:--------------|------------:|--------------:|------------------------------:|-----------------------:|:------------------------|:------------------------|:------|:----------------------------|:---------------|:-------|:------------------------------|:-----------------------------|------------------------------:|-----------------------------:|:-------------------------------------------|:-----------------------------------------|:------------------------|
+|  0 | API                     | Olark Chat     | No             | No            |           0 |             0 |                             0 |                    0   | Page Visited on Website | Select                  | ...   | No                          | Select         | Select | 02.Medium                     | 02.Medium                    |                            15 |                           15 | No                                         | No                                       | Modified                |
+|  1 | API                     | Organic Search | No             | No            |           0 |             5 |                           674 |                    2.5 | Email Opened            | Select                  | ...   | No                          | Select         | Select | 02.Medium                     | 02.Medium                    |                            15 |                           15 | No                                         | No                                       | Email Opened            |
+|  2 | Landing Page Submission | Direct Traffic | No             | No            |           1 |             2 |                          1532 |                    2   | Email Opened            | Business Administration | ...   | No                          | Potential Lead | Mumbai | 02.Medium                     | 01.High                      |                            14 |                           20 | No                                         | Yes                                      | Email Opened            |
+|  3 | Landing Page Submission | Direct Traffic | No             | No            |           0 |             1 |                           305 |                    1   | Unreachable             | Media and Advertising   | ...   | No                          | Select         | Mumbai | 02.Medium                     | 01.High                      |                            13 |                           17 | No                                         | No                                       | Modified                |
+|  4 | Landing Page Submission | Google         | No             | No            |           1 |             2 |                          1428 |                    1   | Converted to Lead       | Select                  | ...   | No                          | Select         | Mumbai | 02.Medium                     | 01.High                      |                            15 |                           18 | No                                         | No                                       | Modified                |
 
 ### Create Preprocessor ID to persist to Xplainable Cloud
 
 
 ```python
-preprocessor_id, version_id = client.create_preprocessor(
-    preprocessor_name="Lead Scoring Preprocessing 4",
+
+preprocessor_id, version_id = client.preprocessing.create_preprocessor(
+    preprocessor_name="Lead Scoring Preprocessing",
     preprocessor_description="Predicting the Likelihood of a Lead Converting",
     pipeline=pipeline,
     df=df
 )
 ```
 
-<CellOutput>
-{`<Response [200]>`}
-</CellOutput>
-
 ```python
 preprocessor_id, version_id
 ```
 
 <CellOutput>
-{`('ltFoyTkHympieMLs', 'RHVxWMtBMpG8Vmvd')`}
+{`('1IkLdZXzAEZfPJpE', '2yDjTGvCgVk0kmhE')`}
 </CellOutput>
 
 ### Loading the Preprocessor steps
@@ -330,31 +326,26 @@ transform data inplace.
 
 
 ```python
-pp_cloud = client.load_preprocessor(
+
+pp_cloud = client.preprocessing.load_preprocessor(
+    version_id,
     preprocessor_id,
-    version_id
 )
 ```
-
-<CellOutput>
-{`<Response [200]>`}
-</CellOutput>
 
 ```python
 pp_cloud.stages
 ```
 
 <CellOutput>
-{`[{'feature': 'Country',
-  'name': 'Condense',
-  'transformer': <xplainable.preprocessing.transformers.categorical.Condense at 0x28bd75870>},
- {'feature': '__dataset__',
+{`[{'feature': '__dataset__',
   'name': 'DropCols',
-  'transformer': <xplainable.preprocessing.transformers.dataset.DropCols at 0x28bd75990>}]`}
+  'transformer': <xplainable.preprocessing.transformers.dataset.DropCols at 0x16fbe7e80>}]`}
 </CellOutput>
 
 ```python
 df_transformed_cloud = pp_cloud.transform(df)
+
 ```
 
 ```python
@@ -362,19 +353,19 @@ df_transformed_cloud
 ```
 
 
-|      | Lead Origin             | Lead Source    | Do Not Email   | Do Not Call   | Converted   | TotalVisits   | Total Time Spent on Website   | Page Views Per Visit   | Last Activity           | Country   | ...   | Get updates on DM Content   | Lead Profile   | City               | Asymmetrique Activity Index   | Asymmetrique Profile Index   | Asymmetrique Activity Score   | Asymmetrique Profile Score   | I agree to pay the amount through cheque   | A free copy of Mastering The Interview   | Last Notable Activity   |
-|:-----|:------------------------|:---------------|:---------------|:--------------|:------------|:--------------|:------------------------------|:-----------------------|:------------------------|:----------|:------|:----------------------------|:---------------|:-------------------|:------------------------------|:-----------------------------|:------------------------------|:-----------------------------|:-------------------------------------------|:-----------------------------------------|:------------------------|
-| 0    | API                     | Olark Chat     | No             | No            | 0           | 0.0           | 0                             | 0.00                   | Page Visited on Website | nan       | ...   | No                          | Select         | Select             | 02.Medium                     | 02.Medium                    | 15.0                          | 15.0                         | No                                         | No                                       | Modified                |
-| 1    | API                     | Organic Search | No             | No            | 0           | 5.0           | 674                           | 2.50                   | Email Opened            | India     | ...   | No                          | Select         | Select             | 02.Medium                     | 02.Medium                    | 15.0                          | 15.0                         | No                                         | No                                       | Email Opened            |
-| 2    | Landing Page Submission | Direct Traffic | No             | No            | 1           | 2.0           | 1532                          | 2.00                   | Email Opened            | India     | ...   | No                          | Potential Lead | Mumbai             | 02.Medium                     | 01.High                      | 14.0                          | 20.0                         | No                                         | Yes                                      | Email Opened            |
-| 3    | Landing Page Submission | Direct Traffic | No             | No            | 0           | 1.0           | 305                           | 1.00                   | Unreachable             | India     | ...   | No                          | Select         | Mumbai             | 02.Medium                     | 01.High                      | 13.0                          | 17.0                         | No                                         | No                                       | Modified                |
-| 4    | Landing Page Submission | Google         | No             | No            | 1           | 2.0           | 1428                          | 1.00                   | Converted to Lead       | India     | ...   | No                          | Select         | Mumbai             | 02.Medium                     | 01.High                      | 15.0                          | 18.0                         | No                                         | No                                       | Modified                |
-| ...  | ...                     | ...            | ...            | ...           | ...         | ...           | ...                           | ...                    | ...                     | ...       | ...   | ...                         | ...            | ...                | ...                           | ...                          | ...                           | ...                          | ...                                        | ...                                      | ...                     |
-| 9235 | Landing Page Submission | Direct Traffic | Yes            | No            | 1           | 8.0           | 1845                          | 2.67                   | Email Marked Spam       | other     | ...   | No                          | Potential Lead | Mumbai             | 02.Medium                     | 01.High                      | 15.0                          | 17.0                         | No                                         | No                                       | Email Marked Spam       |
-| 9236 | Landing Page Submission | Direct Traffic | No             | No            | 0           | 2.0           | 238                           | 2.00                   | SMS Sent                | India     | ...   | No                          | Potential Lead | Mumbai             | 02.Medium                     | 01.High                      | 14.0                          | 19.0                         | No                                         | Yes                                      | SMS Sent                |
-| 9237 | Landing Page Submission | Direct Traffic | Yes            | No            | 0           | 2.0           | 199                           | 2.00                   | SMS Sent                | India     | ...   | No                          | Potential Lead | Mumbai             | 02.Medium                     | 01.High                      | 13.0                          | 20.0                         | No                                         | Yes                                      | SMS Sent                |
-| 9238 | Landing Page Submission | Google         | No             | No            | 1           | 3.0           | 499                           | 3.00                   | SMS Sent                | India     | ...   | No                          | nan            | Other Metro Cities | 02.Medium                     | 02.Medium                    | 15.0                          | 16.0                         | No                                         | No                                       | SMS Sent                |
-| 9239 | Landing Page Submission | Direct Traffic | No             | No            | 1           | 6.0           | 1279                          | 3.00                   | SMS Sent                | other     | ...   | No                          | Potential Lead | Other Cities       | 02.Medium                     | 01.High                      | 15.0                          | 18.0                         | No                                         | Yes                                      | Modified                |
+|      | Lead Origin             | Lead Source    | Do Not Email   | Do Not Call   | Converted   | TotalVisits   | Total Time Spent on Website   | Page Views Per Visit   | Last Activity           | Specialization            | ...   | Get updates on DM Content   | Lead Profile   | City               | Asymmetrique Activity Index   | Asymmetrique Profile Index   | Asymmetrique Activity Score   | Asymmetrique Profile Score   | I agree to pay the amount through cheque   | A free copy of Mastering The Interview   | Last Notable Activity   |
+|:-----|:------------------------|:---------------|:---------------|:--------------|:------------|:--------------|:------------------------------|:-----------------------|:------------------------|:--------------------------|:------|:----------------------------|:---------------|:-------------------|:------------------------------|:-----------------------------|:------------------------------|:-----------------------------|:-------------------------------------------|:-----------------------------------------|:------------------------|
+| 0    | API                     | Olark Chat     | No             | No            | 0           | 0.0           | 0                             | 0.00                   | Page Visited on Website | Select                    | ...   | No                          | Select         | Select             | 02.Medium                     | 02.Medium                    | 15.0                          | 15.0                         | No                                         | No                                       | Modified                |
+| 1    | API                     | Organic Search | No             | No            | 0           | 5.0           | 674                           | 2.50                   | Email Opened            | Select                    | ...   | No                          | Select         | Select             | 02.Medium                     | 02.Medium                    | 15.0                          | 15.0                         | No                                         | No                                       | Email Opened            |
+| 2    | Landing Page Submission | Direct Traffic | No             | No            | 1           | 2.0           | 1532                          | 2.00                   | Email Opened            | Business Administration   | ...   | No                          | Potential Lead | Mumbai             | 02.Medium                     | 01.High                      | 14.0                          | 20.0                         | No                                         | Yes                                      | Email Opened            |
+| 3    | Landing Page Submission | Direct Traffic | No             | No            | 0           | 1.0           | 305                           | 1.00                   | Unreachable             | Media and Advertising     | ...   | No                          | Select         | Mumbai             | 02.Medium                     | 01.High                      | 13.0                          | 17.0                         | No                                         | No                                       | Modified                |
+| 4    | Landing Page Submission | Google         | No             | No            | 1           | 2.0           | 1428                          | 1.00                   | Converted to Lead       | Select                    | ...   | No                          | Select         | Mumbai             | 02.Medium                     | 01.High                      | 15.0                          | 18.0                         | No                                         | No                                       | Modified                |
+| ...  | ...                     | ...            | ...            | ...           | ...         | ...           | ...                           | ...                    | ...                     | ...                       | ...   | ...                         | ...            | ...                | ...                           | ...                          | ...                           | ...                          | ...                                        | ...                                      | ...                     |
+| 9132 | Landing Page Submission | Direct Traffic | Yes            | No            | 1           | 8.0           | 1845                          | 2.67                   | Email Marked Spam       | IT Projects Management    | ...   | No                          | Potential Lead | Mumbai             | 02.Medium                     | 01.High                      | 15.0                          | 17.0                         | No                                         | No                                       | Email Marked Spam       |
+| 9133 | Landing Page Submission | Direct Traffic | No             | No            | 0           | 2.0           | 238                           | 2.00                   | SMS Sent                | Media and Advertising     | ...   | No                          | Potential Lead | Mumbai             | 02.Medium                     | 01.High                      | 14.0                          | 19.0                         | No                                         | Yes                                      | SMS Sent                |
+| 9134 | Landing Page Submission | Direct Traffic | Yes            | No            | 0           | 2.0           | 199                           | 2.00                   | SMS Sent                | Business Administration   | ...   | No                          | Potential Lead | Mumbai             | 02.Medium                     | 01.High                      | 13.0                          | 20.0                         | No                                         | Yes                                      | SMS Sent                |
+| 9135 | Landing Page Submission | Google         | No             | No            | 1           | 3.0           | 499                           | 3.00                   | SMS Sent                | Human Resource Management | ...   | No                          | nan            | Other Metro Cities | 02.Medium                     | 02.Medium                    | 15.0                          | 16.0                         | No                                         | No                                       | SMS Sent                |
+| 9136 | Landing Page Submission | Direct Traffic | No             | No            | 1           | 6.0           | 1279                          | 3.00                   | SMS Sent                | Supply Chain Management   | ...   | No                          | Potential Lead | Other Cities       | 02.Medium                     | 01.High                      | 15.0                          | 18.0                         | No                                         | Yes                                      | Modified                |
 
 ### Create Train/Test split for model training validation
 
@@ -402,7 +393,7 @@ params = opt.optimise(X_train, y_train)
 ```
 
 <CellOutput>
-{`100%|██████████| 30/30 [00:04<00:00,  7.11trial/s, best loss: -0.8900913015726906]`}
+{`100%|██████████| 30/30 [00:03<00:00,  8.59trial/s, best loss: -0.8594330347239172]`}
 </CellOutput>
 
 ## 3. Model Training
@@ -418,7 +409,7 @@ model.fit(X_train, y_train)
 ```
 
 <CellOutput>
-{`<xplainable.core.ml.classification.XClassifier at 0x28d890e80>`}
+{`<xplainable.core.ml.classification.XClassifier at 0x28fd6aef0>`}
 </CellOutput>
 
 ## 4. Model Interpretability and Explainability
@@ -433,7 +424,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_bdfa60a6-218f-48f0-ab3f-e76c0414d97b.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_a734684d-7839-485e-ac4f-2f9bcfbfc307.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 The visualization displays feature importance and contribution analysis for the lead
 scoring prediction model.
@@ -461,7 +452,7 @@ different versions systematically.
 
 ```python
 # Create a model
-model_id = client.create_model(
+model_id, version_id = client.models.create_model(
     model=model,
     model_name="Lead Scoring",
     model_description="Predicting the likelihood of a lead converting",
@@ -471,21 +462,8 @@ model_id = client.create_model(
 ```
 
 <CellOutput>
-{`  0%|          | 0/34 [00:00<?, ?it/s]
-<Response [200]>`}
+{`  0%|          | 0/32 [00:00<?, ?it/s]`}
 </CellOutput>
-
-### SaaS Models View
-
-
-![Model Image](https://xplainable-public-storage.syd1.digitaloceanspaces.com/documentation_content/models.png)
-
-
-### SaaS Explainer View
-
-
-![Model Image](https://xplainable-public-storage.syd1.digitaloceanspaces.com/documentation_content/model_explainer.png)
-
 
 ## 6. Model Deployment
 
@@ -501,20 +479,18 @@ xplainable deployments.
 
 
 ```python
-deployment = client.deploy(
-    model_version_id=model_id["version_id"] #<- Use version id produced above
-)
+if model_id and version_id:
+    try:
+        deployment_response = client.deployments.deploy(
+            model_version_id=version_id #<- Use version id produced above
+        )
+        deployment_id = deployment_response.deployment_id
+    except XplainableAPIError as e:
+        print(f"Error deploying model: {e}")
+        deployment_id = None
+else:
+    deployment_id = None
 ```
-
-<CellOutput>
-{`<Response [200]>`}
-</CellOutput>
-
-### SaaS Deployment View
-
-
-![Model Image](https://xplainable-public-storage.syd1.digitaloceanspaces.com/documentation_content/deployments.png)
-
 
 ### Testing the Deployment programatically
 
@@ -529,12 +505,14 @@ ready to process incoming prediction requests.
 
 
 ```python
-client.activate_deployment(deployment['deployment_id'])
+if deployment_id:
+    try:
+        client.deployments.activate_deployment(deployment_id=deployment_id)
+    except XplainableAPIError as e:
+        print(f"Error activating deployment: {e}")
+else:
+    print("Deployment ID not available")
 ```
-
-<CellOutput>
-{`{'message': 'activated deployment'}`}
-</CellOutput>
 
 2. **Creating a Deployment Key:** A deployment key is generated with
    `xp.client.generate_deploy_key`. This key is required to authenticate and make secure
@@ -542,8 +520,24 @@ client.activate_deployment(deployment['deployment_id'])
 
 
 ```python
-deploy_key = client.generate_deploy_key(deployment['deployment_id'], 'Lead Scoring API Key', 7)
+if deployment_id:
+    try:
+        deploy_key = client.deployments.generate_deploy_key(
+            deployment_id=deployment_id, 
+            description='API key for Lead Scoring Prediction',
+            days_until_expiry=30
+        )
+        print(f"Deploy key created: {str(deploy_key)}")
+    except XplainableAPIError as e:
+        print(f"Error generating deploy key: {e}")
+        deploy_key = None
+else:
+    deploy_key = None
 ```
+
+<CellOutput>
+{`Deploy key created: 3272a7e2-9c28-4c8d-a3b8-cc70d2168619`}
+</CellOutput>
 
 3. **Generating Example Payload:** An example payload for a deployment request is
    generated by `client.generate_example_deployment_payload`. This payload mimics the
@@ -562,12 +556,12 @@ df_transformed.columns
 <CellOutput>
 {`Index(['Lead Origin', 'Lead Source', 'Do Not Email', 'Do Not Call',
        'Converted', 'TotalVisits', 'Total Time Spent on Website',
-       'Page Views Per Visit', 'Last Activity', 'Country', 'Specialization',
+       'Page Views Per Visit', 'Last Activity', 'Specialization',
        'How did you hear about X Education', 'What is your current occupation',
        'What matters most to you in choosing a course', 'Search', 'Magazine',
        'Newspaper Article', 'X Education Forums', 'Newspaper',
        'Digital Advertisement', 'Through Recommendations',
-       'Receive More Updates About Our Courses', 'Tags', 'Lead Quality',
+       'Receive More Updates About Our Courses', 'Lead Quality',
        'Update me on Supply Chain Content', 'Get updates on DM Content',
        'Lead Profile', 'City', 'Asymmetrique Activity Index',
        'Asymmetrique Profile Index', 'Asymmetrique Activity Score',
@@ -578,8 +572,14 @@ df_transformed.columns
 </CellOutput>
 
 ```python
-if option == 1:
-    body = client.generate_example_deployment_payload(deployment['deployment_id'])
+if option == 1 and version_id:
+    try:
+        body = client.deployments.generate_example_deployment_payload(
+            model_version_id=version_id
+        )
+    except XplainableAPIError as e:
+        print(f"Error generating example payload: {e}")
+        body = []
 else:
     body = json.loads(df_transformed.drop(columns=["Converted"]).sample(1).to_json(orient="records"))
     body[0]["Gender"] = None #<- Won't require this line the next release of xplainable
@@ -590,17 +590,16 @@ body
 ```
 
 <CellOutput>
-{`[{'Lead Origin': 'Landing Page Submission',
-  'Lead Source': 'Google',
+{`[{'Lead Origin': 'API',
+  'Lead Source': 'Olark Chat',
   'Do Not Email': 'No',
   'Do Not Call': 'No',
-  'TotalVisits': 2.0,
-  'Total Time Spent on Website': 164,
-  'Page Views Per Visit': 2.0,
-  'Last Activity': 'Converted to Lead',
-  'Country': 'India',
-  'Specialization': 'Banking, Investment And Insurance',
-  'How did you hear about X Education': 'Online Search',
+  'TotalVisits': 0.0,
+  'Total Time Spent on Website': 0,
+  'Page Views Per Visit': 0.0,
+  'Last Activity': 'SMS Sent',
+  'Specialization': 'Select',
+  'How did you hear about X Education': 'Select',
   'What is your current occupation': 'Unemployed',
   'What matters most to you in choosing a course': 'Better Career Prospects',
   'Search': 'No',
@@ -611,19 +610,18 @@ body
   'Digital Advertisement': 'No',
   'Through Recommendations': 'No',
   'Receive More Updates About Our Courses': 'No',
-  'Tags': 'Ringing',
-  'Lead Quality': 'Not Sure',
+  'Lead Quality': None,
   'Update me on Supply Chain Content': 'No',
   'Get updates on DM Content': 'No',
-  'Lead Profile': 'Other Leads',
-  'City': 'Mumbai',
-  'Asymmetrique Activity Index': '02.Medium',
-  'Asymmetrique Profile Index': '01.High',
-  'Asymmetrique Activity Score': 14.0,
-  'Asymmetrique Profile Score': 18.0,
+  'Lead Profile': 'Select',
+  'City': 'Select',
+  'Asymmetrique Activity Index': None,
+  'Asymmetrique Profile Index': None,
+  'Asymmetrique Activity Score': None,
+  'Asymmetrique Profile Score': None,
   'I agree to pay the amount through cheque': 'No',
   'A free copy of Mastering The Interview': 'No',
-  'Last Notable Activity': 'Modified',
+  'Last Notable Activity': 'SMS Sent',
   'Gender': None}]`}
 </CellOutput>
 
@@ -634,58 +632,19 @@ body
 
 
 ```python
-response = requests.post(
-    url="https://inference.xplainable.io/v1/predict",
-    headers={'api_key': deploy_key['deploy_key']},
-    json=body
-)
+if deploy_key and body:
+    response = requests.post(
+        url="https://inference.xplainable.io/v1/predict",
+        headers={'api_key': str(deploy_key)},
+        json=body
+    )
 
-value = response.json()
-value
+    value = response.json()
+    print("Prediction result:", value)
+else:
+    print("Deploy key or body not available for prediction")
 ```
 
-## SaaS Deployment Info
-
-The SaaS application interface displayed above mirrors the operations performed
-programmatically in the earlier steps. It displays a dashboard for managing the 'Lead
-Scoring Prediction' model, facilitating a range of actions from deployment to testing,
-all within a user-friendly web interface. This makes it accessible even to non-technical
-users who prefer to manage model deployments and monitor performance through a graphical
-interface rather than code. Features like the deployment checklist, example payload, and
-prediction response are all integrated into the application, ensuring that users have
-full control and visibility over the deployment lifecycle and model interactions.
-
-
-![Model Image](https://xplainable-public-storage.syd1.digitaloceanspaces.com/documentation_content/deployment_info.png)
-
-
-## 7. Batch Optimisation (Beta)
-
-The concept of Batch Optimization within the Xplainable platform represents a
-significant leap forward from traditional machine learning approaches. Moving away from
-the prediction -> monitor model approach, this feature offers a dynamic and
-cost-effective utilisation of model insights.
-
-This optimisation approach allows for the association of monetary costs with various
-predictive scores. It provides a detailed understanding of the financial impact of
-different predictive outcomes. For example, within our Telco model, the choice to
-provide tech support carries a different cost implication than opting against it,
-influencing the decision-making process.
-
-Features may be fixed or adjustable to align with business requirements. Certain
-attributes like 'Senior Citizen', 'Tenure', and 'Monthly Charges' may be set due to
-regulatory standards or business limitations, ensuring that optimisation adheres to
-these rules.
-
-Conversely, features such as 'Streaming Movies' or 'Device Protection' are modifiable,
-enabling the exploration of various combinations to discover the most cost-effective
-approach. The model could assess if altering the contract type for specific customer
-segments improves retention without markedly raising costs.
-
-Employing the Xplainable model's output in this manner allows organisations to extend
-past simple predictions to genuine cost optimisation, facilitating strategic
-decision-making that evaluates each recommended action not only for its impact on
-outcomes like churn but also for cost-efficiency. Thus, Xplainable's strategy provides
-businesses the capability to optimise their resources with foresight rarely seen in
-traditional machine learning.
-
+<CellOutput>
+{`Prediction result: [{'index': 0, 'id': None, 'partition': '__dataset__', 'score': 0.5138461113290878, 'proba': 0.5402210582390248, 'pred': 1, 'support': 735, 'breakdown': [{'feature': 'base_value', 'value': None, 'score': 0.3806567554321189}, {'feature': 'Lead Origin', 'value': 'API', 'score': -0.010196328908133758}, {'feature': 'Lead Source', 'value': 'Olark Chat', 'score': -0.013443347877402288}, {'feature': 'Do Not Email', 'value': 'No', 'score': 0.004493683317418156}, {'feature': 'Do Not Call', 'value': 'No', 'score': -4.199526127277487e-05}, {'feature': 'TotalVisits', 'value': '0', 'score': 0.0058464572979032665}, {'feature': 'Total Time Spent on Website', 'value': '0', 'score': 0.005248030353684144}, {'feature': 'Page Views Per Visit', 'value': '0', 'score': 0.0058464572979032665}, {'feature': 'Last Activity', 'value': 'SMS Sent', 'score': 0.038624526799564095}, {'feature': 'Specialization', 'value': 'Select', 'score': 0.005284430725558849}, {'feature': 'How did you hear about X Education', 'value': 'Select', 'score': 0.01746576765048122}, {'feature': 'What is your current occupation', 'value': 'Unemployed', 'score': 0.010223832257095545}, {'feature': 'What matters most to you in choosing a course', 'value': 'Better Career Prospects', 'score': 0.02192016350910929}, {'feature': 'Search', 'value': 'No', 'score': 1.6986291775947786e-05}, {'feature': 'Magazine', 'value': 'No', 'score': 0.0}, {'feature': 'Newspaper Article', 'value': 'No', 'score': -8.092202152401614e-06}, {'feature': 'X Education Forums', 'value': 'No', 'score': 1.516954741157725e-05}, {'feature': 'Newspaper', 'value': 'No', 'score': 1.516954741157725e-05}, {'feature': 'Digital Advertisement', 'value': 'No', 'score': 5.658764870614314e-06}, {'feature': 'Through Recommendations', 'value': 'No', 'score': -1.6187579066188435e-05}, {'feature': 'Receive More Updates About Our Courses', 'value': 'No', 'score': 0.0}, {'feature': 'Lead Quality', 'value': 'nan', 'score': -0.026869076106841798}, {'feature': 'Update me on Supply Chain Content', 'value': 'No', 'score': 0.0}, {'feature': 'Get updates on DM Content', 'value': 'No', 'score': 0.0}, {'feature': 'Lead Profile', 'value': 'Select', 'score': 0.004735065585861729}, {'feature': 'City', 'value': 'Select', 'score': 0.014418320832047972}, {'feature': 'Asymmetrique Activity Index', 'value': 'nan', 'score': 0.000925234101816118}, {'feature': 'Asymmetrique Profile Index', 'value': 'nan', 'score': 0.000925234101816118}, {'feature': 'Asymmetrique Activity Score', 'value': 'nan', 'score': 0.000925234101816118}, {'feature': 'Asymmetrique Profile Score', 'value': 'nan', 'score': 0.000925234101816118}, {'feature': 'I agree to pay the amount through cheque', 'value': 'No', 'score': 0.0}, {'feature': 'A free copy of Mastering The Interview', 'value': 'No', 'score': 0.002540621639964162}, {'feature': 'Last Notable Activity', 'value': 'SMS Sent', 'score': 0.043363106006512095}]}]`}
+</CellOutput>

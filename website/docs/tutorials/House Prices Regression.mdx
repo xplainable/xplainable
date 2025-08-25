@@ -45,7 +45,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-import xplainable_client
+from xplainable_client.client.client import XplainableClient
+from xplainable_client.client.base import XplainableAPIError
 ```
 
 ```python
@@ -58,8 +59,9 @@ import xplainable_client
 
 ```python
 # Initialize Xplainable Cloud client
-client = xplainable_client.Client(
+client = XplainableClient(
     api_key="", #Create api key in xplainable cloud - https://platform.xplainable.io/
+    hostname="https://platform.xplainable.io"
 )
 ```
 
@@ -245,14 +247,17 @@ Save the model to Xplainable Cloud for collaboration and deployment.
 
 
 ```python
-# Uncomment to save model to Xplainable Cloud
-# model_id = client.create_model(
-#     model=model,
-#     model_name="House Prices Regression Model",
-#     model_description="Predicting house sale prices using property characteristics",
-#     x=X_train,
-#     y=y_train
-# )
+Uncomment to save model to Xplainable Cloud
+try:
+    model_id, version_id = client.models.create_model(
+        model=model,
+        model_name="House Prices Regression Model",
+        model_description="Predicting house sale prices using property characteristics",
+        x=X_train,
+        y=y_train
+    )
+except XplainableAPIError as e:
+    print(f"Error creating model: {e}")
 ```
 
 ## 6. Model Deployment (Optional)
@@ -261,10 +266,39 @@ Deploy the model for real-time predictions.
 
 
 ```python
-# Uncomment to deploy model
-# deployment = client.deploy(
-#     model_version_id=model_id["version_id"]
-# )
+Uncomment to deploy model
+try:
+    deployment_response = client.deployments.deploy(
+        model_version_id=version_id
+    )
+    deployment_id = deployment_response.deployment_id
+except XplainableAPIError as e:
+    print(f"Error deploying model: {e}")
+
+# Activate deployment
+try:
+    client.deployments.activate_deployment(deployment_id=deployment_id)
+except XplainableAPIError as e:
+    print(f"Error activating deployment: {e}")
+
+# Generate deploy key for inference
+try:
+    deploy_key = client.deployments.generate_deploy_key(
+        deployment_id=deployment_id,
+        name="House Prices Deployment Key"
+    )
+    print(f"Deploy key created: {str(deploy_key)}")
+except XplainableAPIError as e:
+    print(f"Error generating deploy key: {e}")
+
+# Generate example deployment payload
+try:
+    example_payload = client.deployments.generate_example_deployment_payload(
+        model_version_id=version_id
+    )
+    print("Example payload:", example_payload)
+except XplainableAPIError as e:
+    print(f"Error generating example payload: {e}")
 ```
 
 ## 7. Model Testing
