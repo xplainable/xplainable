@@ -22,7 +22,7 @@ client = Client(api_key=os.environ['XP_API_KEY'])
 # Optional parameters
 client = Client(
     api_key=os.environ['XP_API_KEY'],
-    hostname='https://api.xplainable.io',  # Default
+    hostname='https://platform.xplainable.io',  # Default
     org_id=None,  # Optional organization ID
     team_id=None  # Optional team ID
 )
