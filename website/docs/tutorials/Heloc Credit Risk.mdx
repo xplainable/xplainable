@@ -16,6 +16,7 @@ import LinkButtons from "@site/src/components/LinkButtons.jsx";
 
 # Classification - HELOC Credit Risk
 
+
 Predicting credit risk for Home Equity Line of Credit applications using the FICO HELOC
 dataset.
 
@@ -152,7 +153,7 @@ importance.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_785c0672-ceed-46a7-a58c-9d13fbe88f22.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_6edae155-6c61-460f-8f3e-a806a00a65ca.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ## Analysing Feature Importances and Contributions
 
@@ -225,14 +226,12 @@ except XplainableAPIError as e:
 Deploy the model for real-time predictions.
 
 
-The code block illustrates the deployment of our churn prediction model using the
-xp.client.deploy function. The deployment process involves specifying the hostname of
-the server where the model will be hosted, as well as the unique model_id and version_id
-that we obtained in the previous steps. This step effectively activates the model's
-endpoint, allowing it to receive and process prediction requests. The output confirms
-the deployment with a deployment_id, indicating the model's current status as
-'inactive', its location, and the endpoint URL where it can be accessed for xplainable
-deployments.
+The code block illustrates the deployment of our credit risk prediction model using the
+`client.deployments.deploy` function. The deployment process involves specifying the
+unique `model_version_id` that we obtained in the previous steps. This step effectively
+activates the model's endpoint, allowing it to receive and process prediction requests.
+The deployment response confirms the successful deployment with a `deployment_id` and
+other relevant information.
 
 
 ```python
@@ -269,43 +268,35 @@ print(f"Deployment ID: \{deployment_id}")
 
 
 ```python
-client.activate_deployment(deployment['deployment_id'])
+# Activate deployment using the new client
+try:
+    client.deployments.activate_deployment(deployment_id)
+    print("Deployment activated successfully!")
+except XplainableAPIError as e:
+    print(f"Error activating deployment: {e.message}")
 ```
 
 <CellOutput>
 {`{'message': 'activated deployment'}`}
 </CellOutput>
 
-# Activate deployment using the new client
-
-try: client.deployments.activate_deployment(deployment_id) print("Deployment activated
-successfully!") except XplainableAPIError as e: print(f"Error activating deployment:
-{e.message}")
-
-
 ```python
+# Generate deployment key using the new client
 try:
     deploy_key = client.deployments.generate_deploy_key(
         deployment_id=deployment_id,
-        description='API key for HELOC Credit Risk',
+        description='HELOC Deploy Key',
         days_until_expiry=7
     )
-    print(f"Deploy key created: {str(deploy_key)}")
+    print(f"Deployment key generated: {str(deploy_key)[:20]}...")
 except XplainableAPIError as e:
-    print(f"Error generating deploy key: {e}")
+    print(f"Error generating deploy key: {e.message}")
+    deploy_key = None
 ```
 
 <CellOutput>
 {`<Response [200]>`}
 </CellOutput>
-
-# Generate deployment key using the new client
-
-try: deploy_key = client.deployments.generate_deploy_key( deployment_id=deployment_id,
-description='HELOC Deploy Key', days_until_expiry=7 ) print(f"Deployment key generated:
-{str(deploy_key)[:20]}...") except XplainableAPIError as e: print(f"Error generating
-deploy key: {e.message}") deploy_key = None
-
 
 ```python
 #Set the option to highlight multiple ways of creating data

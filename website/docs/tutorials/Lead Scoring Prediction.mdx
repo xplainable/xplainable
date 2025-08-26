@@ -424,7 +424,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_2a7a23ae-4800-4e15-ab55-6c6559f948f8.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_edd7659d-a722-446c-a166-bf57f51921f9.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 The visualization displays feature importance and contribution analysis for the lead
 scoring prediction model.
@@ -469,13 +469,13 @@ model_id, version_id = client.models.create_model(
 
 
 The code block illustrates the deployment of our churn prediction model using the
-`client.deploy` function. The deployment process involves specifying the `hostname` of
-the server where the model will be hosted, as well as the unique `model_id` and
-`version_id` that we obtained in the previous steps. This step effectively activates the
-model's endpoint, allowing it to receive and process prediction requests. The output
-confirms the deployment with a `deployment_id`, indicating the model's current `status`
-as 'inactive', its `location`, and the `endpoint` URL where it can be accessed for
-xplainable deployments.
+`client.deployments.deploy` function. The deployment process involves specifying the
+`hostname` of the server where the model will be hosted, as well as the unique
+`model_id` and `version_id` that we obtained in the previous steps. This step
+effectively activates the model's endpoint, allowing it to receive and process
+prediction requests. The output confirms the deployment with a `deployment_id`,
+indicating the model's current `status` as 'inactive', its `location`, and the
+`endpoint` URL where it can be accessed for xplainable deployments.
 
 
 ```python
@@ -515,8 +515,8 @@ else:
 ```
 
 2. **Creating a Deployment Key:** A deployment key is generated with
-   `xp.client.generate_deploy_key`. This key is required to authenticate and make secure
-   requests to the deployed model.
+   `client.deployments.generate_deploy_key`. This key is required to authenticate and
+   make secure requests to the deployed model.
 
 
 ```python
