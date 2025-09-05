@@ -9,6 +9,13 @@ from ...utils.encoders import NpEncoder
 import json
 import os
 
+# Optional imports for enhanced activation
+try:
+    from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+
 # Handle numba compilation issues in Jupyter notebooks
 try:
     # Test if we can get the current working directory
@@ -46,6 +53,9 @@ class XConstructor:
 
         self._nodes = None
         self.fit_range = [0, 0, 0]
+        
+        # Feature statistics for adaptive activation
+        self.feature_stats = None
 
     @property
     def params(self):
@@ -80,19 +90,117 @@ class XConstructor:
         cats = numpy.delete(cats, (numpy.where(np.isnan(cats))))  # Remove nan
         return cats
 
-    def _activation(self, v):
-        """ Activation function for frequency weighting """
-
+    def _activation(self, v, feature_stats=None):
+        """ Enhanced adaptive activation function for frequency weighting 
+        
+        Args:
+            v: The frequency value to activate (0-100)
+            feature_stats: Optional dict with feature statistics for adaptive behavior
+                          {'variance': float, 'entropy': float, 'sparsity': float}
+        """
         _w, _pd, _sig = self.params.weight, self.params.power_degree, self.params.sigmoid_exponent
-
+        
+        # Adaptive activation based on feature characteristics
+        if feature_stats is not None:
+            # Adjust parameters based on feature properties
+            variance = feature_stats.get('variance', 1.0)
+            entropy = feature_stats.get('entropy', 1.0)  
+            sparsity = feature_stats.get('sparsity', 0.0)
+            
+            # For sparse features (many zeros), use more aggressive activation
+            if sparsity > 0.7:
+                _w = _w * 1.2  # Increase weight sensitivity
+                _sig = max(_sig * 0.8, 0.5)  # Softer sigmoid for rare events
+            
+            # For high variance features, use smoother activation
+            if variance > 10:
+                _pd = _pd * 0.9  # Smoother power curve
+                _sig = _sig * 1.1  # Steeper sigmoid
+            
+            # For low entropy (few unique values), use sharper boundaries
+            if entropy < 0.5:
+                _pd = _pd * 1.15  # Sharper power curve
+                _sig = _sig * 1.2  # Steeper sigmoid for clearer decisions
+        
+        # Original activation logic with adaptive parameters
+        # Ensure numerical stability
         _nval = (v**_w) / (10**(_w*2))
-
-        _dval = (((_nval*100 - 50) ** _pd) + (50 ** _pd)) / (2 * (50 ** _pd))
-
-        if _sig < 1:
-            return _dval
+        
+        # Handle edge cases for power operation
+        base_val = _nval*100 - 50
+        if base_val < 0 and _pd != int(_pd):
+            # Negative base with fractional exponent can cause NaN
+            # Use absolute value and restore sign
+            _dval = (((abs(base_val) ** _pd) * np.sign(base_val)) + (50 ** _pd)) / (2 * (50 ** _pd))
         else:
-            return 1 / (1 + np.exp(-((_dval-0.5) * (10 ** _sig))))
+            _dval = ((base_val ** _pd) + (50 ** _pd)) / (2 * (50 ** _pd))
+        
+        # Enhanced activation options
+        if _sig < 1:
+            # Linear/polynomial activation
+            activation = _dval
+        else:
+            # Sigmoid activation
+            activation = 1 / (1 + np.exp(-((_dval-0.5) * (10 ** _sig))))
+        
+        # Add ReLU-style clipping for extremely rare events (optional)
+        if feature_stats and feature_stats.get('use_relu', False):
+            if v < 1.0:  # Less than 1% frequency
+                activation = max(0, activation - 0.1)  # ReLU with small negative slope
+        
+        return activation
+    
+    def _compute_feature_stats(self, X, y=None):
+        """ Compute feature statistics for adaptive activation 
+        
+        Args:
+            X: Feature values array
+            y: Target values (optional, for supervised metrics)
+            
+        Returns:
+            dict: Feature statistics including variance, entropy, sparsity
+        """
+        # Remove NaN values for statistics
+        X_clean = X[~np.isnan(X)]
+        
+        if len(X_clean) == 0:
+            return {'variance': 1.0, 'entropy': 1.0, 'sparsity': 0.0}
+        
+        # Variance (normalized)
+        variance = np.var(X_clean)
+        
+        # Entropy (Shannon entropy of value distribution)
+        unique_vals, counts = np.unique(X_clean, return_counts=True)
+        probs = counts / len(X_clean)
+        entropy = -np.sum(probs * np.log2(probs + 1e-10))
+        
+        # Sparsity (proportion of zeros or near-zeros)
+        sparsity = np.sum(np.abs(X_clean) < 1e-6) / len(X_clean)
+        
+        # Mutual information with target (if provided)
+        mutual_info = 0.0
+        if y is not None and SKLEARN_AVAILABLE:
+            # Simple mutual information approximation
+            try:
+                X_reshaped = X_clean.reshape(-1, 1)
+                y_clean = y[:len(X_clean)]
+                if self.regressor:
+                    mutual_info = mutual_info_regression(X_reshaped, y_clean, random_state=42)[0]
+                else:
+                    mutual_info = mutual_info_classif(X_reshaped, y_clean, random_state=42)[0]
+            except Exception:
+                pass  # Fallback if computation fails
+        
+        # Determine if ReLU-style activation would help
+        use_relu = sparsity > 0.8 and entropy < 1.0
+        
+        return {
+            'variance': variance,
+            'entropy': entropy,
+            'sparsity': sparsity,
+            'mutual_info': mutual_info,
+            'use_relu': use_relu
+        }
         
     def normalise_scores(self, min, max, base_value, min_seen=0, max_seen=1):
         """ Normalise the scores to fit between 0 - 1 relative to base value.
@@ -223,6 +331,9 @@ class XConstructor:
         self.base_value = np.mean(y)
         self.base_partition = self._get_base_partition(X, alpha)
         
+        # Compute feature statistics for adaptive activation
+        self.feature_stats = self._compute_feature_stats(X, y)
+        
         # Try to use numba-compiled version, fall back to pure Python if it fails
         try:
             self.base_meta = self._get_base_meta(self.base_partition, X, y)
@@ -324,7 +435,7 @@ class XCatConstructor(XConstructor):
             if self.regressor:
                 score = (abs(diff) ** self.params.tail_sensitivity) * np.sign(diff)
             else:
-                score = self._activation(_freq*100) * diff
+                score = self._activation(_freq*100, self.feature_stats) * diff
 
             _nodes.append(
                 [
@@ -346,7 +457,7 @@ class XCatConstructor(XConstructor):
             if self.regressor:
                 score = (abs(diff) ** self.params.tail_sensitivity) * np.sign(diff)
             else:
-                score = self._activation(_freq*100) * diff
+                score = self._activation(_freq*100, self.feature_stats) * diff
 
         _nodes.append(
             [
@@ -495,7 +606,7 @@ class XNumConstructor(XConstructor):
                 if self.regressor:
                     score = (abs(diff) ** self.params.tail_sensitivity) * np.sign(diff)
                 else:
-                    score = self._activation(_freq*100) * diff
+                    score = self._activation(_freq*100, self.feature_stats) * diff
 
                 _upper = np.inf
                 _lower = -np.inf
@@ -581,7 +692,7 @@ class XNumConstructor(XConstructor):
             if self.regressor:
                 score = (abs(diff) ** self.params.tail_sensitivity) * np.sign(diff)
             else:
-                score = self._activation(_freq * 100) * diff
+                score = self._activation(_freq * 100, self.feature_stats) * diff
 
         _nodes.append(
             [
@@ -606,6 +717,9 @@ class XNumConstructor(XConstructor):
 
         self.base_value = np.mean(y)
         self.base_partition = self._get_base_partition(X, alpha)
+        
+        # Compute feature statistics for adaptive activation
+        self.feature_stats = self._compute_feature_stats(X, y)
         
         # Try to use numba-compiled version, fall back to pure Python if it fails
         try:

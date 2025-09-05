@@ -54,13 +54,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Target map handling for custom `TargetMap` class
 - Partitioned models requiring `add_partition()` method
 
-### Performance Baseline (v1.2.9) - Updated 2025-07-03
+### Performance Baseline (v1.2.9) - Updated 2025-09-05
 
 **Classification Tasks:**
 | Dataset | Accuracy | F1-Weighted | Samples | Features | Additional |
 |---------|----------|-------------|---------|----------|------------|
 | Iris Dataset | 0.5667 | 0.4765 | 150 | 4 |  |
-| Breast Cancer Dataset | 0.9600 | 0.9595 | 300 | 30 |  |
+| Breast Cancer Dataset | 0.9533 | 0.9526 | 300 | 30 |  |
 | Partitioned Classifier | 0.5667 | N/A | 150 | 4 | 3 partitions |
 | Model Evaluation | 0.5667 | N/A | N/A | N/A | CM: ✓, Kappa: ✓ |
 

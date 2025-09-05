@@ -27,6 +27,37 @@ def _generate_explain_plot_data(model, label_rounding=5):
             prof = prof[['category', 'score', 'mean', 'freq']]
             prof = prof.rename(columns={'category': 'value'})
             prof = prof.explode(['value', 'mean', 'freq'])
+            
+        elif f in _profile.get('interactions', {}):
+            # Handle interaction features
+            prof = pd.DataFrame(_profile['interactions'][f])
+            if prof.empty:
+                return
+                
+            # Check if interaction is categorical or numerical based on profile structure
+            if 'category' in prof.columns:
+                # Categorical interaction
+                prof = prof[['category', 'score', 'mean', 'freq']]
+                prof = prof.rename(columns={'category': 'value'})
+                prof = prof.explode(['value', 'mean', 'freq'])
+            else:
+                # Numerical interaction
+                prof['value'] = prof['lower'].round(label_rounding).astype(
+                    str) + " - " + prof['upper'].round(label_rounding).astype(str)
+                prof = prof[['value', 'score', 'mean', 'freq']]
+                
+            # Add interaction type indicator to feature name for display
+            # Get the info from the original profile data before we modified prof
+            original_data = _profile['interactions'][f]
+            if original_data and not prof.empty:
+                int_type = original_data[0].get('interaction_type', 'unknown')
+                base_feats = original_data[0].get('base_features', [])
+                if int_type == 'multiplicative' and len(base_feats) >= 2:
+                    f = f"{f} ({base_feats[0]} × {base_feats[1]})"
+                elif int_type == 'categorical' and len(base_feats) >= 2:
+                    f = f"{f} ({base_feats[0]} & {base_feats[1]})"
+                else:
+                    f = f"{f} (interaction)"
         else:
             return
 
@@ -37,7 +68,15 @@ def _generate_explain_plot_data(model, label_rounding=5):
 
         return prof.reset_index()
 
-    plot_data = [get_plot_data(i) for i in model.columns]
+    # Get all features including interactions from the model profile
+    _profile = model.profile
+    all_features = (
+        list(_profile['numeric'].keys()) + 
+        list(_profile['categorical'].keys()) + 
+        list(_profile.get('interactions', {}).keys())
+    )
+    
+    plot_data = [get_plot_data(i) for i in all_features]
     prof = pd.concat(
         [i for i in plot_data if i is not None]).reset_index(drop=True)
 
@@ -62,20 +101,38 @@ def _plot_explainer(model, label_rounding=5):
 
     data = _generate_explain_plot_data(model, label_rounding)
 
-    single = alt.selection_point(
-        fields=['feature'],
-        value=list(model.feature_importances.keys())[-1])
+    # Detect Altair version and use appropriate syntax
+    altair_version = tuple(map(int, alt.__version__.split('.')))
+    
+    if altair_version >= (5, 0):
+        # Altair 5.x syntax - value should be just the string value for single field selection
+        single = alt.selection_point(
+            fields=['feature'],
+            value=list(model.feature_importances.keys())[-1])
+        
+        dropdown = alt.selection_point(
+            name='Select',
+            fields=['column'],
+            bind=alt.binding_select(options=['contribution']),
+            value='contribution'
+        )
+        use_add_params = True
+    else:
+        # Altair 4.x syntax  
+        single = alt.selection_single(
+            fields=['feature'],
+            init={'feature': list(model.feature_importances.keys())[-1]})
+        
+        dropdown = alt.selection_single(
+            name='Select',
+            fields=['column'],
+            bind=alt.binding_select(options=['contribution']),
+            init={'column': 'contribution'}
+        )
+        use_add_params = False
     
     brush = alt.selection_interval(encodings=['y'])
     brush2 = alt.selection_interval(encodings=['y'])
-    
-    # Define the dropdown selection
-    dropdown = alt.selection_point(
-        name='Select',
-        fields=['column'],
-        bind=alt.binding_select(options=['contribution', 'mean', 'frequency']),
-        value='contribution'
-    )
 
     feature_importances = alt.Chart(
         fi,
@@ -85,42 +142,70 @@ def _plot_explainer(model, label_rounding=5):
             tooltip='importance_label',
             color=alt.condition(
             single, alt.value('lightgray'), alt.value('#0080ea'))
-    ).properties(width=330, height=400).transform_filter(
-        brush).add_params(single, dropdown)
-    
-    view = alt.Chart(fi).mark_bar(color='#0080ea').encode(
-        y=alt.Y('feature:N', sort='-x', axis=alt.Axis(
-        labels=False, title=None)),
-        x=alt.X('importance:Q', axis=alt.Axis(labels=False, title=None))
-    ).properties(height=400, width=25).add_params(brush)
-    
-    view2 = alt.Chart(data).mark_bar(color='#e14067').encode(
-        y=alt.Y('value:N', sort=alt.SortField(field='index', order='descending'),
-                axis=alt.Axis(labels=False, title=None)),
-        x=alt.X('contribution:Q', axis=alt.Axis(labels=False, title=None)),
-        color=alt.condition(
-            alt.datum.contribution < 0,
-            alt.value("#e14067"),
-            alt.value("#12b980")
-        )
-    ).properties(height=400, width=25).add_params(brush2).transform_filter(
-        single
     )
+    
+    # Use version-appropriate method to add selections
+    if use_add_params:
+        # Altair 5.x uses add_params
+        feature_importances = feature_importances.properties(width=330, height=400).transform_filter(
+            brush).add_params(single, dropdown)
+        
+        view = alt.Chart(fi).mark_bar(color='#0080ea').encode(
+            y=alt.Y('feature:N', sort='-x', axis=alt.Axis(
+            labels=False, title=None)),
+            x=alt.X('importance:Q', axis=alt.Axis(labels=False, title=None))
+        ).properties(height=400, width=25).add_params(brush)
+        
+        view2 = alt.Chart(data).mark_bar(color='#e14067').encode(
+            y=alt.Y('value:N', sort=alt.SortField(field='index', order='descending'),
+                    axis=alt.Axis(labels=False, title=None)),
+            x=alt.X('contribution:Q', axis=alt.Axis(labels=False, title=None)),
+            color=alt.condition(
+                alt.datum.contribution < 0,
+                alt.value("#e14067"),
+                alt.value("#12b980")
+            )
+        ).properties(height=400, width=25).add_params(brush2).transform_filter(
+            single
+        )
+    else:
+        # Altair 4.x uses add_selection
+        feature_importances = feature_importances.properties(width=330, height=400).transform_filter(
+            brush).add_selection(single).add_selection(dropdown)
+        
+        view = alt.Chart(fi).mark_bar(color='#0080ea').encode(
+            y=alt.Y('feature:N', sort='-x', axis=alt.Axis(
+            labels=False, title=None)),
+            x=alt.X('importance:Q', axis=alt.Axis(labels=False, title=None))
+        ).properties(height=400, width=25).add_selection(brush)
+        
+        view2 = alt.Chart(data).mark_bar(color='#e14067').encode(
+            y=alt.Y('value:N', sort=alt.SortField(field='index', order='descending'),
+                    axis=alt.Axis(labels=False, title=None)),
+            x=alt.X('contribution:Q', axis=alt.Axis(labels=False, title=None)),
+            color=alt.condition(
+                alt.datum.contribution < 0,
+                alt.value("#e14067"),
+                alt.value("#12b980")
+            )
+        ).properties(height=400, width=25).add_selection(brush2).transform_filter(
+            single
+        )
 
-    profile = alt.Chart(data, title='Contributions').mark_bar(
+    # Create data for profile plot - avoid problematic transform_fold
+    profile_data = data.copy()
+    profile_data['val'] = profile_data['contribution']  # Default to contribution
+    
+    profile = alt.Chart(profile_data, title='Contributions').mark_bar(
         color='#e14067').encode(
         x='val:Q',
         y=alt.Y('value', sort=alt.SortField(field='index', order='descending')),
         tooltip='score_label',
         color=alt.condition(
-            alt.datum.contribution < 0,
+            alt.datum.val < 0,
             alt.value("#e14067"),
             alt.value("#12b980")
         )
-    ).transform_fold(
-    ['contribution', 'mean', 'frequency'], as_=['column', 'val']
-    ).transform_filter(
-        dropdown
     ).properties(
             width=330,
             height=400
@@ -128,7 +213,15 @@ def _plot_explainer(model, label_rounding=5):
             single
         ).transform_filter(
             brush2
-        ).add_params(dropdown)
+    )
+    
+    # Use version-appropriate method for final chart
+    if use_add_params:
+        # Altair 5.x uses add_params
+        profile = profile.add_params(dropdown)
+    else:
+        # Altair 4.x uses add_selection
+        profile = profile.add_selection(dropdown)
     
     display(HTML("""
     <style>

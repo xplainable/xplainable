@@ -61,11 +61,22 @@ class BaseModel:
         profile = {
             'base_value': self.base_value,
             'numeric': {c: [] for c in self.numeric_columns},
-            'categorical': {c: [] for c in self.categorical_columns}
+            'categorical': {c: [] for c in self.categorical_columns},
+            'interactions': {}
         }
         for c, p in zip(self.columns, self._profile):
             p = np.array(p)
-            _key = "numeric" if c in self.numeric_columns else "categorical"
+            
+            # Detect interaction features by their names
+            is_interaction = self._is_interaction_feature(c)
+            
+            if is_interaction:
+                _key = "interactions"
+                # Initialize interaction in profile if not present
+                if c not in profile[_key]:
+                    profile[_key][c] = []
+            else:
+                _key = "numeric" if c in self.numeric_columns else "categorical"
 
             if len(p) < 2:
                 profile[_key][c] = []
@@ -73,7 +84,29 @@ class BaseModel:
 
             leaf_nodes = []
             for v in p:
-                if _key == "categorical":
+                if is_interaction:
+                    # Interaction features - determine their type based on name
+                    int_type = self._get_interaction_type(c)
+                    if int_type == 'categorical' or c in self.categorical_columns:
+                        _prof = {
+                            'category': self.feature_map[c].get_item_directional(v[0], reverse=True),
+                            'score': v[1],
+                            'mean': v[2],
+                            'freq': v[3],
+                            'interaction_type': int_type,
+                            'base_features': self._parse_interaction_features(c)
+                        }
+                    else:
+                        _prof = {
+                            'lower': v[0],
+                            'upper': v[1],
+                            'score': v[2],
+                            'mean': v[3],
+                            'freq': v[4],
+                            'interaction_type': int_type,
+                            'base_features': self._parse_interaction_features(c)
+                        }
+                elif _key == "categorical":
                     _prof = {
                         'category': self.feature_map[c].get_item_directional(v[0], reverse=True),
                         'score': v[1],
@@ -94,6 +127,36 @@ class BaseModel:
             profile[_key][c] = leaf_nodes
 
         return profile
+
+    def _is_interaction_feature(self, feature_name: str) -> bool:
+        """Check if a feature is an interaction feature based on naming conventions."""
+        interaction_markers = ['*', '&', '_when_', '|']
+        return any(marker in feature_name for marker in interaction_markers)
+    
+    def _get_interaction_type(self, feature_name: str) -> str:
+        """Determine the interaction type from feature name."""
+        if '*' in feature_name:
+            return 'multiplicative'
+        elif '&' in feature_name:
+            return 'categorical'
+        elif '_when_' in feature_name:
+            return 'conditional'
+        else:
+            return 'unknown'
+    
+    def _parse_interaction_features(self, feature_name: str) -> list:
+        """Parse interaction feature name to extract base features."""
+        if '*' in feature_name:
+            return feature_name.split('*')
+        elif '&' in feature_name:
+            return feature_name.split('&')
+        elif '_when_' in feature_name:
+            # Format: feature2_when_feature1=value
+            parts = feature_name.split('_when_')
+            if len(parts) == 2:
+                return [parts[1].split('=')[0], parts[0]]
+        
+        return [feature_name]  # Fallback
 
     @property
     def params(self) -> ConstructorParams:
@@ -278,8 +341,9 @@ class BaseModel:
     def _fetch_meta(self, x, y):
         # Assign target variable
         self.target = y.name
-        # Store numeric column names
-        self.numeric_columns = list(x.select_dtypes('number'))
+        # Store numeric column names, excluding interaction features
+        all_numeric = list(x.select_dtypes('number'))
+        self.numeric_columns = [col for col in all_numeric if not self._is_interaction_feature(col)]
         # Store categorical column names
         self.categorical_columns = list(x.select_dtypes('object'))
         self.columns = list(x.columns)
@@ -454,8 +518,14 @@ class BaseModel:
         def gini_impurity(freqs):
             return min(max(1 - sum(f ** 2 for f in freqs), 0), 1)
         
-        # Calculate Gini gain for categorical features
-        for feature, categories in list(self.profile["categorical"].items()) + list(self.profile["numeric"].items()):
+        # Calculate Gini gain for categorical and numeric features (including interactions)
+        all_features = (
+            list(self.profile["categorical"].items()) + 
+            list(self.profile["numeric"].items()) +
+            list(self.profile.get("interactions", {}).items())
+        )
+        
+        for feature, categories in all_features:
 
             impurity = gini_impurity(
                 [category["freq"] for category in categories]
