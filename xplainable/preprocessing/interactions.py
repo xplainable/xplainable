@@ -173,7 +173,7 @@ class InteractionGenerator:
                     candidates.append((feat1, feat2, 'categorical'))
             else:
                 candidates.append((feat1, feat2, 'mixed'))
-                
+
         return candidates
     
     def _score_interactions(
