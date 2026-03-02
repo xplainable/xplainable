@@ -121,10 +121,11 @@ class XPipeline:
                     continue
 
                 x[stage['feature']] = stage['transformer'].transform(x[stage['feature']])
-            except Exception:
+            except Exception as e:
                 tf_name = stage['transformer'].__class__.__name__
                 raise TransformerError(
-                    f"Transformer {tf_name} for feature {stage['feature']} failed. Ensure the datatypes are compatible") from None
+                    f"Transformer {tf_name} for feature {stage['feature']} failed. "
+                    f"Ensure the datatypes are compatible. Detail: {e}") from e
 
         return x
     
