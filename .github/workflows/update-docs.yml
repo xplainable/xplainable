@@ -58,9 +58,10 @@ jobs:
         cd docs_repo/website
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git pull origin docs
         git add .
+        git diff --cached --quiet && echo "No changes to commit" && exit 0
         git commit -m "Update documentation from example Jupyter notebooks"
+        git pull --rebase origin docs
         git push origin docs
   
 
