@@ -7,333 +7,238 @@
 <img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/logo/xplainable-logo.png">
 <h1 align="center">xplainable</h1>
 <h3 align="center">Real-time explainable machine learning for business optimisation</h3>
-    
+
 [![Python](https://img.shields.io/pypi/pyversions/xplainable)](https://pypi.org/project/xplainable/)
 [![PyPi](https://img.shields.io/pypi/v/xplainable?color=blue)](https://pypi.org/project/xplainable/)
 [![Downloads](https://static.pepy.tech/badge/xplainable)](https://pepy.tech/project/xplainable)
-    
+
 **Xplainable** makes tabular machine learning transparent, fair, and actionable.
 </div>
 
-## Why Was Xplainable Created?
-In machine learning, there has long been a trade-off between accuracy and 
-explainability. This drawback has led to the creation of explainable ML
-libraries such as [Shap](https://github.com/slundberg/shap) and [Lime](https://github.com/marcotcr/lime) which make estimations of model decision processes. These can be incredibly time-expensive and often present steep
-learning curves making them challenging to implement effectively in production
-environments.
+## Why Xplainable?
 
-To solve this problem, we created ``xplainable``. **xplainable** presents a
-suite of novel machine learning algorithms specifically designed to match the
-performance of popular black box models like [XGBoost](https://github.com/dmlc/xgboost) and [LightGBM](https://github.com/microsoft/LightGBM) while
-providing complete transparency, all in real-time.
+In machine learning, there has long been a trade-off between accuracy and
+explainability. Libraries like [Shap](https://github.com/slundberg/shap) and [Lime](https://github.com/marcotcr/lime) estimate model decisions after the fact, but they're slow and add complexity.
 
-## Simple Interface
-You can interface with xplainable either through a typical Pythonic API, or
-using a notebook-embedded GUI in your Jupyter Notebook.
+**xplainable** takes a different approach: models that are explainable *by design*. Our algorithms match the performance of black-box models like [XGBoost](https://github.com/dmlc/xgboost) and [LightGBM](https://github.com/microsoft/LightGBM) while providing complete transparency in real-time — no surrogate models, no approximations.
 
-## Models
-Xplainable has each of the fundamental tabular models used in data science
-teams. They are fast, accurate, and easy to use.
-
-<div align="center">
-
-| Model | Python API| Jupyter GUI |
-|:-----:|:---------:|:-----------:|
-| Regression | ✅ | ✅ |
-| Binary Classification | ✅ | ✅ |
-| Multi-Class Classification | ✅ | 🔜 |
-</div>
+Every prediction comes with per-feature contribution scores that explain *why* the model made that decision. These contributions are exact (not estimates) and can be used to drive business actions like retention campaigns, risk routing, and cost optimisation.
 
 ## Installation
 
-You can install the core features of ``xplainable`` with:
-
-```
+```bash
 pip install xplainable
 ```
 
-to use the ``xplainable`` gui in a jupyter notebook, install with:
-
-```
-pip install xplainable[gui]
-```
-
-- Visit our [General Documentation](https://docs.xplainable.io) to learn how to get the best out of xplainable
-- Vist our [API Documentation](https://xplainable.readthedocs.io) for additional support with using our API
-
-## Getting Started
-
-**Basic Example**
-
-```python
-import xplainable as xp
-from xplainable.core.models import XClassifier
-import pandas as pd
-from sklearn.model_selection import train_test_split
-
-# Load data
-data = xp.load_dataset('titanic')
-
-X, y = data.drop(columns=['Survived']), data['Survived']
-
-X_train, X_test, y_train, y_test = train_test_split(
-     X, y, test_size=0.25, random_state=42)
-
-# Train a model
-model = XClassifier()
-model.fit(X_train, y_train)
-
-# Explain the model
-model.explain()
+For preprocessing pipelines (spec-driven, JSON-serializable):
+```bash
+pip install xplainable-preprocessing
 ```
 
-
-## Features
-Xplainable helps to streamline development processes by making model tuning
-and deployment simpler than you can imagine.
-
-### Preprocessing
-We built a comprehensive suite of preprocessing transformers for rapid and
-reproducible data preprocessing.
-
-<div align="center">
-
-| Feature | Python API| Jupyter GUI |
-|:------|:------:|:------:|
-| Data Health Checks | ✅ | ✅ |
-| Transformers Library | ✅ | ✅ |
-| Preprocessing Pipelines | ✅ | ✅ |
-| Pipeline Persistance | ✅ | ✅ |
-</div>
-
-#### Using the API
-```python
-from xplainable.preprocessing.pipeline import XPipeline
-from xplainable.preprocessing import transformers as xtf
-
-pipeline = XPipeline()
-
-# Add stages for specific features
-pipeline.add_stages([
-    {"feature": "age", "transformer": xtf.Clip(lower=18, upper=99)},
-    {"feature": "balance", "transformer": xtf.LogTransform()}
-])
-
-# add stages on multiple features
-pipeline.add_stages([
-    {"transformer": xtf.FillMissing({'job': 'mode', 'age': 'mean'})},
-    {"transformer": xtf.DropCols(columns=['duration', 'campaign'])}
-])
-
-# Fit and transform the data
-train_transformed = pipeline.fit_transform(train)
-
-# Apply transformations on new data
-test_transformed = pipeline.transform(test)
-
+For cloud model management, deployment, and collaboration:
+```bash
+pip install xplainable-client
 ```
 
+## Quick Start
 
-#### Using the GUI
-
-```python
-pp = xp.Preprocessor()
-
-pp.preprocess(train)
-```
-<div align="center">
-
-<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/preprocessing.gif">
-
-</div><br>
-
-
-
-### Modelling
-
-Xplainable models can be developed, optimised, and re-optimised using Pythonic
-APIs or the embedded GUI.
-
-<div align="center">
-
-| Feature | Python API| Jupyter GUI |
-|:------|:------:|:------:|
-| Classic Vanilla Data Science APIs | ✅ | - |
-| AutoML | ✅ | ✅ |
-| Hyperparameter Optimisation | ✅ | ✅ |
-| Partitioned Models | ✅ | ✅ |
-| **Rapid Refitting** (novel to xplainable) | ✅ | ✅ |
-| Model Persistance | ✅ | ✅ |
-
-</div>
-
-#### Using the API
 ```python
 import xplainable as xp
 from xplainable.core.models import XClassifier
 from xplainable.core.optimisation.bayesian import XParamOptimiser
 from sklearn.model_selection import train_test_split
-import pandas as pd
 
-# Load your data
+# Load and split data
 data = xp.load_dataset('titanic')
+X, y = data.drop(columns=['Survived']), data['Survived']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
 
-# note: the data requires preprocessing, so results may be poor
-X, y = data.drop('Survived', axis=1), data['Survived']
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-# Optimise params
-opt = XParamOptimiser(metric='roc-auc')
+# Optimise hyperparameters
+opt = XParamOptimiser()
 params = opt.optimise(X_train, y_train)
 
-# Train your model
+# Train
 model = XClassifier(**params)
 model.fit(X_train, y_train)
 
-# Predict on the test set
+# Predict
 y_pred = model.predict(X_test)
 
-# Explain the model
+# Explain — interactive feature importances and contribution plots
 model.explain()
 ```
 
-#### Using the GUI
+## Models
+
+| Model | Class |
+|:------|:------|
+| Binary Classification | `XClassifier` |
+| Regression | `XRegressor` |
+| Partitioned Classification | `PartitionedClassifier` |
+| Partitioned Regression | `PartitionedRegressor` |
+
+## Key Features
+
+### Explainability — Built In, Not Bolted On
+
+Every xplainable model provides:
+
+- **Feature importances** — which features matter most
+- **Partition contributions** — how each feature value range shifts the prediction
+- **Per-instance explanations** — why this specific prediction was made
 
 ```python
-model = xp.classifier(train)
-```
-<div align="center">
-<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/gui_classifier.gif">
-</div><br>
+# Global explanation
+model.explain()
 
+# Per-instance contributions
+contributions = model._transform(X_test)
+
+# Model profile (all partition details)
+profile = model.profile
+```
+
+### Preprocessing with `xplainable-preprocessing`
+
+Spec-driven, JSON-serializable pipelines that can be versioned, previewed, and persisted to Xplainable Cloud.
+
+```python
+from xplainable_preprocessing import PipelineSpec, StepSpec, compile_spec
+
+spec = PipelineSpec(steps=[
+    StepSpec(
+        id="lowercase",
+        type="TextCleanTransformer",
+        columns=["country", "category"],
+        params={"operations": ["lowercase"]},
+    ),
+    StepSpec(
+        id="fill_missing",
+        type="FillMissingTransformer",
+        params={"strategy": "median"},
+    ),
+    StepSpec(
+        id="drop_ids",
+        type="DropColumnsTransformer",
+        params={"columns": ["customer_id", "order_id"]},
+    ),
+])
+
+pipeline = compile_spec(spec)
+df_transformed = pipeline.fit_transform(df)
+```
+
+Available transformers: `TextCleanTransformer`, `DropColumnsTransformer`, `FillMissingTransformer`, `TypeCastTransformer`, `CategoryCondenseTransformer`, `ExpressionTransformer`, `DateTimeExtractTransformer`, `RenameColumnsTransformer`, `GroupByAggTransformer`, `GroupedLagTransformer`, `RollingAggTransformer`, plus all standard sklearn transformers (StandardScaler, OneHotEncoder, etc.)
+
+### Hyperparameter Optimisation
+
+Bayesian optimisation finds the best parameters automatically.
+
+```python
+from xplainable.core.optimisation.bayesian import XParamOptimiser
+
+opt = XParamOptimiser(metric='roc-auc')
+params = opt.optimise(X_train, y_train)
+
+model = XClassifier(**params)
+model.fit(X_train, y_train)
+```
 
 ### Rapid Refitting
-Fine tune your models by refitting model parameters on the fly, even on
-individual features.
 
-#### Using the API
-```python
-new_params = {
-            "features": ['Age'],
-            "max_depth": 6,
-            "min_info_gain": 0.01,
-            "min_leaf_size": 0.03,
-            "weight": 0.05,
-            "power_degree": 1,
-            "sigmoid_exponent": 1,
-            "x": X_train,
-            "y": y_train
-}
-
-model.update_feature_params(**new_params)
-```
-
-#### Using the GUI
-
-<div align="center">
-<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/recalibrate.gif">
-</div><br>
-
-### Explainability
-Models are explainable and real-time, right out of the box, without having to fit
-surrogate models such as [Shap](https://github.com/slundberg/shap) or[Lime](https://github.com/marcotcr/lime).
-
-<div align="center">
-
-| Feature | Python API| Jupyter GUI |
-|:------|:------:|:------:|
-| Global Explainers | ✅ | ✅ |
-| Regional Explainers | ✅ | ✅ |
-| Local Explainers | ✅ | ✅ |
-| Real-time Explainability | ✅ | ✅ |
-
-</div>
+Fine-tune model parameters on individual features without retraining from scratch.
 
 ```python
-model.explain()
+model.update_feature_params(
+    features=['Age'],
+    max_depth=6,
+    min_info_gain=0.01,
+    min_leaf_size=0.03,
+    weight=0.05,
+    power_degree=1,
+    sigmoid_exponent=1,
+    x=X_train,
+    y=y_train
+)
 ```
 
-<div align="center">
-<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/explain.gif">
-</div><br>
+### Contribution-Driven Optimisation
 
-### Action & Optimisation
-We leverage the explainability of our models to provide real-time
-recommendations on how to optimise predicted outcomes at a local and global
-level.
+Use the model's per-feature contributions to identify controllable business levers and calculate the expected value of interventions — derived from the data, not assumed.
 
-<div align="center">
+```python
+# Get per-feature contributions
+contributions = model._transform(X_test)
 
-| Feature |  |
-|:------|:------:|
-| Automated Local Prediction Optimisation | ✅ |
-| Automated Global Decision Optimisation | 🔜 |
+# Model profile shows partition boundaries and scores
+profile = model.profile
 
-</div><br>
+# For controllable features, compute counterfactual lever effects:
+# "How much would churn drop if we moved this customer to the best partition?"
+best_score = min(p['score'] for p in profile['numeric']['orders_count'])
+lever_effect = current_contribution - best_score
+```
 
-### Deployment
-Xplainable brings transparency to API deployments, and it's easy. By the time
-your finger leaves the mouse, your model is on a secure server and ready to go.
-
-<div align="center">
-
-| Feature | Python API| Xplainable Cloud |
-|:------|:------:|:------:|
-| < 1 Second API Deployments | ✅ | ✅ |
-| Explainability-Enabled API Deployments | ✅ | ✅ |
-| A/B Testing | - | 🔜 |
-| Champion Challenger Models (MAB) | - | 🔜 |
-
-</div><br>
-
-### #FairML
-We promote fair and ethical use of technology for all machine learning tasks.
-To help encourage this, we're working on additional bias detection and fairness
-testing classes to ensure that everything you deploy is safe, fair, and
-compliant.
-
-<div align="center">
-
-| Feature | Python API| Xplainable Cloud |
-|:------|:------:|:------:|
-| Bias Identification | ✅ | ✅ |
-| Automated Bias Detection | 🔜 | 🔜 |
-| Fairness Testing | 🔜 | 🔜 |
-
-</div><br>
+See the [Shopify Customer Churn](examples/Shopify_Customer_Churn.ipynb) notebook for a complete example.
 
 ## Xplainable Cloud
-This Python package is free and open-source. To add more value to data teams
-within organisations, we also created Xplainable Cloud that brings your models
-to a collaborative environment.
+
+Deploy models, persist preprocessing pipelines, and collaborate with your team through the Xplainable Cloud platform.
 
 ```python
-import xplainable as xp
-import os
+from xplainable_client.client.client import XplainableClient
 
-xp.initialise(api_key=os.environ['XP_API_KEY'])
+client = XplainableClient(
+    api_key="your-api-key",
+    hostname="https://platform.xplainable.io"
+)
+
+# Persist preprocessing
+client.preprocessing.create_preprocessor(
+    name="My Preprocessor",
+    description="Feature transforms for churn model",
+    spec=preprocessing_spec.model_dump(),
+    sample_df=df,
+)
+
+# Persist model
+client.models.create_model(
+    model=model,
+    model_name="Churn Prediction",
+    model_description="Customer churn classifier",
+    x=X_train, y=y_train
+)
+
+# Deploy
+deployment = client.deployments.deploy(model_version_id=version_id)
 ```
 
+## Examples
+
+| Notebook | Type | Description |
+|:---------|:-----|:------------|
+| [Shopify Customer Churn](examples/Shopify_Customer_Churn.ipynb) | Classification | Churn prediction with contribution-driven retention optimisation |
+| [Shopify Order Returns](examples/Shopify_Order_Returns.ipynb) | Classification | Return prediction with intervention routing |
+| [Telco Churn](examples/Telco_Churn.ipynb) | Classification | IBM Telco customer churn |
+| [HELOC Credit Risk](examples/HELOC_Credit_Risk.ipynb) | Classification | Credit risk assessment |
+| [Lead Scoring](examples/Lead_Scoring_Prediction.ipynb) | Classification | Lead conversion prediction |
+| [House Prices](examples/House_Prices_Regression.ipynb) | Regression | Property price prediction |
+| [Concrete Strength](examples/Concrete_Compressive_Strength.ipynb) | Regression | Material strength prediction |
+| [Power Plant Output](examples/Power_Plant_Energy_Output.ipynb) | Regression | Energy output prediction |
+
+## Documentation
+
+- [General Documentation](https://docs.xplainable.io)
+- [API Documentation](https://xplainable.readthedocs.io)
+
+## Contributing
+
+We welcome contributions. If you're interested, reach out at contact@xplainable.io.
+
 <div align="center">
-<img src="https://raw.githubusercontent.com/xplainable/xplainable/main/docs/assets/gifs/initialise.gif">
-</div><br>
-
-## Contributors
-We'd love to welcome contributors to xplainable to keep driving forward more
-transparent and actionable machine learning. We're working on our contributor
-docs at the moment, but if you're interested in contributing, please send us a
-message at contact@xplainable.io.
-
-
-<div align="center">
-<br></br>
-<br></br>
-Thanks for trying xplainable!
-<br></br>
-<strong>Made with ❤️ in Australia</strong>
-<br></br>
+<br>
+<strong>Made with care in Australia</strong>
+<br>
 <hr>
-&copy; copyright xplainable pty ltd
+&copy; xplainable pty ltd
 </div>
-
