@@ -1,1 +1,0 @@
-from .scanner import XScan

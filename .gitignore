@@ -12,6 +12,7 @@ saved_models/
 *.DS_Store
 /datasets
 .vscode
+docs/plans/
 
 *.csv
 *.xlsx

@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-05-13
+
+### Removed
+- **`xplainable.preprocessing`** — The built-in preprocessing module (`XPipeline`, `XPipeline.add_stages()`, and all `transformers` including `ChangeCases`, `DropCols`, `Condense`, `SetDType`, etc.) has been removed. Use the standalone `xplainable-preprocessing` package instead, which provides a spec-driven, JSON-serializable `PipelineSpec` API.
+- **`xplainable.gui`** — The legacy ipywidgets-based GUI (`Preprocessor`, `classifier`, `regressor`, `EvaluateClassifier`, `EvaluateRegressor`, `ModelPersist`, `ScenarioClassification`, `ScenarioRegression`, `XFineTuner`) has been removed. Use the Xplainable Cloud platform for interactive model management.
+- **`xplainable.callbacks`** — The `RegressionCallback` and `OptCallback` classes (used exclusively by the removed GUI) have been removed.
+- **`xplainable._dependencies`** — The `_try_optional_dependencies_gui()` helper and related GUI dependency checks have been removed.
+- **`xplainable.utils.xwidgets`** — The ipywidgets wrapper utilities have been removed.
+- **GUI optional dependencies** — The `pip install xplainable[gui]` extra (ipywidgets, gradio, drawsvg, traitlets, jupyter-client) has been removed from `pyproject.toml`.
+
+### Changed
+- **Slimmed core dependencies** — Removed GUI-only packages from `requirements.txt`: `drawsvg`, `ipywidgets`, `traitlets`, `jupyter-client`, `seaborn`, `matplotlib`, `pyperclip`, `sphinx_rtd_theme`, `plotly`. Core install is now significantly lighter.
+- **All example notebooks** updated to use `xplainable-preprocessing` `PipelineSpec`/`StepSpec`/`compile_spec` API instead of the removed `XPipeline`/`xtf` approach.
+- **Preprocessor cloud persistence** updated across all notebooks to use `client.preprocessing.create_preprocessor(spec=..., sample_df=...)` with JSON-serializable specs.
+
+### Added
+- **New example notebooks**:
+  - `Shopify_Customer_Churn.ipynb` — Customer churn prediction from Shopify order data with contribution-driven retention optimization using model partition profiles as counterfactual lever effects.
+  - `Shopify_Order_Returns.ipynb` — Order return prediction with contribution-driven intervention routing.
+
+### Migration Guide
+
+**Before (1.3.x):**
+```python
+from xplainable.preprocessing.pipeline import XPipeline
+from xplainable.preprocessing import transformers as xtf
+
+pipeline = XPipeline()
+pipeline.add_stages([
+    {"transformer": xtf.ChangeCases(columns=[...], case="lower")},
+    {"transformer": xtf.DropCols(columns=[...])},
+])
+df_transformed = pipeline.fit_transform(df)
+```
+
+**After (1.4.0):**
+```python
+from xplainable_preprocessing import PipelineSpec, StepSpec, compile_spec
+
+spec = PipelineSpec(steps=[
+    StepSpec(id="lowercase", type="TextCleanTransformer",
+             columns=[...], params={"operations": ["lowercase"]}),
+    StepSpec(id="drop", type="DropColumnsTransformer",
+             params={"columns": [...]}),
+])
+pipeline = compile_spec(spec)
+df_transformed = pipeline.fit_transform(df)
+```
+
+Install the new preprocessing package: `pip install xplainable-preprocessing`
+
+## [1.3.1] - 2025-06-01
+
+### Changed
+- Updated client and rolled version
+- Preserve original exception in TransformerError for better debugging
+
 ## [1.2.9] - 2024-01-XX
 
 ### Changed
