@@ -1,0 +1,541 @@
+---
+title: Shopify Order Returns
+sidebar_label: Shopify Order Returns
+path: website/docs/tutorials
+nb_path: website/docs/tutorials/Shopify_Order_Returns.ipynb
+github: https://github.com/xplainable/xplainable/blob/main/examples/Shopify_Order_Returns.ipynb
+colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Shopify_Order_Returns.ipynb
+---
+import CellOutput from "@site/src/components/CellOutput.jsx";
+import LinkButtons from "@site/src/components/LinkButtons.jsx";
+
+<LinkButtons
+  githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Shopify_Order_Returns.ipynb"
+  colabUrl="https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Shopify_Order_Returns.ipynb"
+/>
+
+# Shopify Order Return Prediction
+
+Predict which orders are likely to be returned before they ship, enabling proactive
+interventions like quality checks, adjusted return policies, or targeted post-purchase
+support.
+
+**Dataset Source**:
+[Kaggle - Shopify Sales Dataset for ML & EDA](https://www.kaggle.com/datasets/aliiihussain/shopify-sales-dataset-for-ml-and-eda)
+**Problem Type**: Binary Classification (order-level) **Target Variable**: `is_returned`
+— 1 = order was returned, 0 = order kept **Return Rate**: ~14.8% (well-balanced for
+classification) **Use Case**: Flag high-risk orders at checkout for operational routing,
+fraud detection, or post-purchase follow-up
+
+
+## Package Imports
+
+
+```python
+import pandas as pd
+import numpy as np
+import xplainable as xp
+from xplainable.core.models import XClassifier
+from xplainable.core.optimisation.bayesian import XParamOptimiser
+from sklearn.model_selection import train_test_split
+import requests
+import json
+
+from xplainable_client.client.client import XplainableClient
+from xplainable_client.client.base import XplainableAPIError
+
+from xplainable_preprocessing import PipelineSpec, StepSpec, compile_spec
+```
+
+## Instantiate Xplainable Cloud
+
+Initialise the xplainable cloud using an API key from: https://platform.xplainable.io/
+
+
+```python
+# Initialize Xplainable Cloud client
+client = XplainableClient(
+    api_key="",  # Create api key in xplainable cloud - https://platform.xplainable.io/
+    hostname="https://platform.xplainable.io"
+)
+```
+
+## Load Shopify Order Data
+
+Unlike the churn notebook, this model operates at the **order level** — each row is a
+single order, no aggregation needed. This makes the preprocessing pipeline fully
+self-contained and directly deployable.
+
+
+```python
+df = pd.read_csv("shopify_sales_dataset_ml_eda.csv", parse_dates=["order_date"])
+
+print(f"Orders: {len(df):,}")
+print(f"Return rate: {df['is_returned'].mean():.1%}")
+print(f"\nReturn distribution:")
+print(df["is_returned"].value_counts())
+df.head()
+```
+
+## 1. Data Preprocessing
+
+**Columns dropped:**
+
+- `order_id`, `customer_id`, `product_id` — highly cardinal identifiers with no
+  predictive value
+- `profit`, `revenue`, `discounted_price` — derived from other columns (price, discount,
+  quantity) and would be data leakage since profit is affected by the return itself
+- `order_date` — extracted into month and day-of-week features first
+
+**Features retained:**
+
+- `product_category`, `product_price`, `discount_percent`, `quantity` — order
+  characteristics
+- `customer_country`, `traffic_source`, `payment_method` — context
+- `shipping_cost`, `rating` — potential return signals
+- `order_month`, `order_dow` — temporal patterns
+
+
+```python
+preprocessing_spec = PipelineSpec(steps=[
+    # Extract temporal features from order_date before dropping it
+    StepSpec(
+        id="extract_datetime",
+        type="DateTimeExtractTransformer",
+        columns=["order_date"],
+        params={
+            "components": ["month", "dayofweek"],
+            "drop_original": True,
+        },
+        description="Extract month and day-of-week from order date",
+    ),
+
+    # Lowercase all categorical columns
+    StepSpec(
+        id="lowercase_categoricals",
+        type="TextCleanTransformer",
+        columns=["product_category", "customer_country",
+                 "traffic_source", "payment_method"],
+        params={"operations": ["lowercase"]},
+        description="Standardize categorical values to lowercase",
+    ),
+
+    # Drop IDs and leakage columns
+    StepSpec(
+        id="drop_columns",
+        type="DropColumnsTransformer",
+        params={"columns": [
+            "order_id",          # Highly cardinal
+            "customer_id",       # Highly cardinal
+            "product_id",        # Highly cardinal
+            "discounted_price",  # Redundant with product_price + discount_percent
+            "revenue",           # Derived from discounted_price * quantity
+            "profit",            # Leakage — profit is affected by the return
+        ]},
+        description="Drop IDs, redundant, and leakage columns",
+    ),
+])
+
+pipeline = compile_spec(preprocessing_spec)
+df_transformed = pipeline.fit_transform(df)
+
+print(f"Transformed shape: {df_transformed.shape}")
+print(f"Columns: {list(df_transformed.columns)}")
+df_transformed.head()
+```
+
+### Persist Preprocessor to Xplainable Cloud
+
+Since this is an order-level model with no aggregation step, the entire preprocessing
+pipeline is self-contained and can be persisted directly.
+
+
+```python
+try:
+    preprocessor_id, preprocessor_version_id = client.preprocessing.create_preprocessor(
+        name="Shopify Returns Preprocessing",
+        description="Order-level feature transforms for return prediction. "
+                    "Extracts datetime features, lowercases categoricals, drops IDs and leakage columns.",
+        spec=preprocessing_spec.model_dump(),
+        sample_df=df,
+    )
+    print(f"Preprocessor created: {preprocessor_id} (version: {preprocessor_version_id})")
+except (XplainableAPIError, ValueError) as e:
+    print(f"Error creating preprocessor: {e}")
+    preprocessor_id, preprocessor_version_id = None, None
+```
+
+### Train/Test Split
+
+
+```python
+X, y = df_transformed.drop(columns=["is_returned"]), df_transformed["is_returned"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.33, random_state=42
+)
+
+print(f"Train: {X_train.shape[0]:,} samples | Return rate: {y_train.mean():.1%}")
+print(f"Test:  {X_test.shape[0]:,} samples | Return rate: {y_test.mean():.1%}")
+```
+
+## 2. Model Optimisation
+
+
+```python
+opt = XParamOptimiser()
+params = opt.optimise(X_train, y_train)
+```
+
+## 3. Model Training
+
+
+```python
+model = XClassifier(**params)
+model.fit(X_train, y_train)
+```
+
+## 4. Model Interpretability and Explainability
+
+Which order characteristics are most predictive of returns? The explainer reveals
+whether price, discount level, product category, or other factors drive return risk.
+
+
+```python
+model.explain()
+```
+
+## 5. Model Evaluation
+
+
+```python
+from sklearn.metrics import accuracy_score, classification_report, f1_score
+
+y_pred = model.predict(X_test)
+
+print(f"Test Accuracy: {accuracy_score(y_test, y_pred):.4f}")
+print(f"Macro F1: {f1_score(y_test, y_pred, average='macro'):.4f}")
+print()
+print(classification_report(y_test, y_pred, target_names=["Kept", "Returned"], digits=3))
+```
+
+## 6. Model Persisting
+
+
+```python
+try:
+    model_id, version_id = client.models.create_model(
+        model=model,
+        model_name="Shopify Order Return Prediction",
+        model_description="Predicting which Shopify orders are likely to be returned based on order characteristics, product details, and customer context.",
+        x=X_train,
+        y=y_train
+    )
+    print(f"Model created: {model_id} (version: {version_id})")
+except XplainableAPIError as e:
+    print(f"Error creating model: {e}")
+    model_id, version_id = None, None
+```
+
+## 7. Model Deployment
+
+
+```python
+if model_id and version_id:
+    try:
+        deployment_response = client.deployments.deploy(
+            model_version_id=version_id
+        )
+        deployment_id = deployment_response.deployment_id
+    except XplainableAPIError as e:
+        print(f"Error deploying model: {e}")
+        deployment_id = None
+else:
+    deployment_id = None
+```
+
+## 8. Testing the Deployment
+
+
+```python
+# Activate and generate key
+if deployment_id:
+    try:
+        client.deployments.activate_deployment(deployment_id=deployment_id)
+        deploy_key = client.deployments.generate_deploy_key(
+            deployment_id=deployment_id,
+            description="API key for Shopify Returns",
+            days_until_expiry=1
+        )
+        print(f"Deploy key created: {str(deploy_key)}")
+    except XplainableAPIError as e:
+        print(f"Error: {e}")
+        deploy_key = None
+else:
+    deploy_key = None
+    print("Deployment ID not available")
+```
+
+```python
+# Test prediction with a sample order
+body = json.loads(X_test.sample(1).to_json(orient="records"))
+print("Sample payload:")
+print(json.dumps(body, indent=2))
+
+if deploy_key and body:
+    response = requests.post(
+        url="https://inference.xplainable.io/v1/predict",
+        headers={"api_key": str(deploy_key)},
+        json=body
+    )
+    print(f"\nPrediction result: {response.json()}")
+else:
+    print("\nDeploy key or body not available for prediction")
+```
+
+## 9. AI-Generated Report
+
+
+```python
+if model_id and version_id:
+    report = client.gpt.generate_report(
+        model_id=model_id,
+        version_id=version_id,
+        target_description="Order return likelihood (1 = will be returned, 0 = will be kept)",
+        project_objective="Identify high-risk orders to enable proactive quality checks, adjusted return policies, and targeted post-purchase support",
+        max_features=10,
+        temperature=0.7
+    )
+
+    from IPython.display import Markdown, display
+    display(Markdown(report.body))
+else:
+    print("Model not persisted — skipping report generation")
+```
+
+## 10. Contribution-Driven Return Optimization
+
+The xplainable model's per-feature contributions explain *why* each order is at risk.
+Several features in the dataset represent **controllable business levers**:
+
+- **`shipping_cost`** — the business can offer free or subsidized shipping
+- **`discount_percent`** — the business decides whether to discount
+- **`quantity`** — bundle incentives can increase items per order
+- **`product_price`** — pricing strategy is controllable
+
+The model's partition profiles give us the **measured return rate shift** when a feature
+moves from one partition to another. We use these counterfactual shifts as lever effects
+— derived from the data, not assumed.
+
+
+### Extract Contributions and Counterfactual Lever Effects
+
+For each controllable feature, the **lever effect** = current contribution - best
+achievable partition score. This tells us how much the return probability would drop if
+we moved that order to the best partition for that feature.
+
+
+```python
+# Get per-feature contributions for every test order
+contributions = model._transform(X_test)
+contrib_df = pd.DataFrame(contributions, columns=model.columns, index=X_test.index)
+
+# Return probability = base_value + sum of contributions
+base_value = model.profile['base_value']
+contrib_df['return_probability'] = (contributions.sum(axis=1) + base_value).clip(0, 1)
+
+# Define controllable features (things the business can influence)
+controllable_features = [
+    'shipping_cost', 'discount_percent', 'quantity', 'product_price',
+    'product_category', 'traffic_source', 'payment_method',
+]
+
+# Find the best (most retention-leaning) partition score for each controllable feature
+profile = model.profile
+best_partition_scores = {}
+for feat in controllable_features:
+    scores = []
+    if feat in profile['numeric']:
+        scores = [p['score'] for p in profile['numeric'][feat]
+                  if not (isinstance(p.get('lower', 0), float) and np.isnan(p.get('lower', 0)))]
+    elif feat in profile['categorical']:
+        scores = [p['score'] for p in profile['categorical'][feat]
+                  if p.get('category') != 'Null']
+    if scores:
+        best_partition_scores[feat] = min(scores)
+
+# Compute lever effect per order per feature
+lever_effects = pd.DataFrame(index=X_test.index)
+for feat in controllable_features:
+    if feat in best_partition_scores and feat in contrib_df.columns:
+        lever_effects[feat] = contrib_df[feat] - best_partition_scores[feat]
+
+# For each order, identify the feature with the biggest improvement potential
+lever_effects['best_lever'] = lever_effects[controllable_features].idxmax(axis=1)
+lever_effects['lever_effect'] = lever_effects[controllable_features].max(axis=1)
+
+print(f"Base return rate: {base_value:.1%}")
+print(f"\nBest partition scores (most retention-leaning):")
+for feat, score in sorted(best_partition_scores.items(), key=lambda x: x[1]):
+    print(f"  {feat:25s} best={score:+.4f}")
+
+print(f"\nBest lever distribution (which feature offers most improvement per order):")
+print(lever_effects['best_lever'].value_counts().to_string())
+
+print(f"\nAverage return reduction by best lever:")
+summary = lever_effects.groupby('best_lever')['lever_effect'].agg(['count', 'mean'])
+summary.columns = ['orders', 'avg_return_reduction']
+print(summary.sort_values('avg_return_reduction', ascending=False).round(4).to_string())
+```
+
+### Map Levers to Actions and Costs
+
+Each controllable feature maps to a business action. The **lever effect is from the
+model** (data-driven), the **cost is a business input** (replace with your actuals).
+
+
+```python
+# Map controllable features to business actions
+# Lever effect = from model partitions (data-driven)
+# Cost = business input (replace with your actual costs)
+lever_actions = {
+    "shipping_cost":      {"action": "Free/subsidized shipping",       "cost": 5.00},
+    "discount_percent":   {"action": "Targeted discount offer",        "cost": 3.00},
+    "quantity":           {"action": "Bundle / packaging upgrade",     "cost": 1.00},
+    "product_price":      {"action": "Price-match guarantee",          "cost": 0.30},
+    "product_category":   {"action": "Pre-ship quality check",         "cost": 2.00},
+    "traffic_source":     {"action": "Product video / sizing info",    "cost": 0.50},
+    "payment_method":     {"action": "Post-purchase confirmation SMS", "cost": 1.50},
+}
+
+# Average cost of processing a return (shipping + restocking + CS time)
+AVG_RETURN_COST = 25.00
+
+# Build optimization DataFrame
+optimization = lever_effects[['best_lever', 'lever_effect']].copy()
+optimization['return_prob'] = contrib_df['return_probability']
+optimization['order_value'] = X_test['product_price'] * X_test['quantity']
+
+optimization['action'] = optimization['best_lever'].map(
+    lambda f: lever_actions.get(f, {}).get('action', 'General follow-up')
+)
+optimization['lever_cost'] = optimization['best_lever'].map(
+    lambda f: lever_actions.get(f, {}).get('cost', 1.00)
+)
+
+print("Action assignment:")
+print(optimization.groupby('action').agg(
+    orders=('action', 'count'),
+    avg_return_prob=('return_prob', 'mean'),
+    avg_lever_effect=('lever_effect', 'mean'),
+    avg_cost=('lever_cost', 'mean'),
+).sort_values('orders', ascending=False).round(3).to_string())
+```
+
+### Expected Value Optimization
+
+The net EV uses the **model-derived lever effect** as the return prevention rate:
+
+$$\text{Net EV} = \text{lever effect} \times \text{avg return cost} - \text{lever cost}$$
+
+Where `lever_effect` is the counterfactual return probability reduction from the model's
+partition profile — measured from the data. `avg_return_cost` is the operational cost of
+processing a return (shipping, restocking, CS time).
+
+
+```python
+# Net EV = lever_effect (from model) * avg_return_cost - lever_cost (from business)
+optimization['expected_savings'] = (optimization['lever_effect'] * AVG_RETURN_COST).round(2)
+optimization['net_ev'] = (optimization['expected_savings'] - optimization['lever_cost']).round(2)
+optimization['roi'] = np.where(
+    optimization['lever_cost'] > 0,
+    (optimization['net_ev'] / optimization['lever_cost']).round(2),
+    0
+)
+
+positive_ev = optimization[optimization['net_ev'] > 0].copy()
+negative_ev = optimization[optimization['net_ev'] <= 0].copy()
+
+print(f"Orders worth intervening on: {len(positive_ev):,} ({len(positive_ev)/len(optimization):.1%})")
+print(f"Orders to skip (negative EV):  {len(negative_ev):,} ({len(negative_ev)/len(optimization):.1%})")
+print(f"\n--- Portfolio Summary (positive-EV orders only) ---")
+print(f"Total intervention cost:   ${positive_ev['lever_cost'].sum():>10,.2f}")
+print(f"Total expected savings:    ${positive_ev['expected_savings'].sum():>10,.2f}")
+print(f"Total net EV:              ${positive_ev['net_ev'].sum():>10,.2f}")
+if positive_ev['lever_cost'].sum() > 0:
+    print(f"Portfolio ROI:             {positive_ev['net_ev'].sum() / positive_ev['lever_cost'].sum():.1f}x")
+```
+
+```python
+# Breakdown by action
+print("Net EV by action (data-driven lever effects):\n")
+action_summary = positive_ev.groupby('action').agg(
+    orders=('action', 'count'),
+    avg_lever_effect=('lever_effect', 'mean'),
+    total_cost=('lever_cost', 'sum'),
+    total_savings=('expected_savings', 'sum'),
+    total_net_ev=('net_ev', 'sum'),
+    avg_roi=('roi', 'mean'),
+).sort_values('total_net_ev', ascending=False).round(2)
+
+action_summary
+```
+
+### Budget-Constrained Allocation
+
+Rank orders by ROI and allocate a fixed budget to the highest-return interventions
+first.
+
+
+```python
+# Rank by ROI and apply budget constraints
+portfolio = positive_ev.sort_values('roi', ascending=False).copy()
+portfolio['cumulative_cost'] = portfolio['lever_cost'].cumsum()
+
+budget_levels = [100, 250, 500, 1000, 2500, 5000]
+
+budget_analysis = []
+for budget in budget_levels:
+    within = portfolio[portfolio['cumulative_cost'] <= budget]
+    if len(within) > 0:
+        total_cost = within['lever_cost'].sum()
+        budget_analysis.append({
+            'budget': f'${budget:,}',
+            'orders_covered': len(within),
+            'cost_used': round(total_cost, 2),
+            'expected_savings': round(within['expected_savings'].sum(), 2),
+            'net_ev': round(within['net_ev'].sum(), 2),
+            'roi': f"{within['net_ev'].sum() / total_cost:.1f}x",
+        })
+
+budget_df = pd.DataFrame(budget_analysis)
+print("Budget Allocation — orders ranked by ROI:\n")
+budget_df
+```
+
+```python
+# Top 10 highest-value orders
+print("Top 10 highest net-EV orders:\n")
+positive_ev.nlargest(10, 'net_ev')[
+    ['return_prob', 'best_lever', 'lever_effect', 'action',
+     'lever_cost', 'expected_savings', 'net_ev']
+].round(3)
+```
+
+### What's Data-Driven vs What's Assumed
+
+**From the model (data-driven):**
+
+- Return probability per order (base_value + contributions)
+- Per-feature contribution scores explaining *why* each order is at risk
+- Counterfactual lever effects: how much return probability changes if a feature moves
+  from its current partition to the best partition
+- Which lever offers the most improvement for each specific order
+
+**Business inputs (replace with your actuals):**
+
+- Intervention costs ($0.50 for a video, $5 for free shipping, etc.)
+- Average return processing cost (\$25 in this example)
+- The assumption that moving a feature to a better partition is achievable via the
+  mapped action
+

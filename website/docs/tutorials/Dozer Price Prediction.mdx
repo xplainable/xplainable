@@ -39,8 +39,7 @@ import xplainable as xp
 from xplainable.core.models import XRegressor
 from xplainable.core.optimisation.genetic import XEvolutionaryNetwork
 from xplainable.core.optimisation.layers import Evolve, Tighten
-from xplainable.preprocessing.pipeline import XPipeline
-from xplainable.preprocessing import transformers as xtf
+from xplainable_preprocessing import PipelineSpec, StepSpec, compile_spec
 from sklearn.model_selection import train_test_split
 import requests
 import json
@@ -211,28 +210,58 @@ df = pd.merge(df, ma[[merge_col]+ new_cols ],on='MachineID', how='left')
 
 
 ```python
-# Extract Purchase date information
+# Define preprocessing pipeline using PipelineSpec
+# Step 1: Extract date features from saledate
 df['saleyear'] = df['saledate'].dt.year
 df['salemonth'] = df['saledate'].dt.month
 df['saledayofweek'] = df['saledate'].dt.day_name()
 
-# Drop the Sale Date following extraction of features
-df.drop('saledate', inplace=True, axis=1)
-```
+# Step 2: Build and apply the PipelineSpec for remaining transformations
+spec = PipelineSpec(steps=[
+    # Drop the saledate column after feature extraction
+    StepSpec(
+        transformer="DropColumnsTransformer",
+        params={"columns": ["saledate"]}
+    ),
+    # Rename columns to remove underscores (matching original behavior)
+    StepSpec(
+        transformer="RenameColumnsTransformer",
+        params={"mapping": {col: col.replace("_", "") for col in df.columns if "_" in col}}
+    ),
+    # Cast ModelID to string so it doesn't create regression splits
+    StepSpec(
+        transformer="TypeCastTransformer",
+        params={"dtypes": {"ModelID": "str"}}
+    ),
+])
 
-```python
-#Rename columns
-df.columns = [col.replace("_","") for col in df.columns]
-```
+pipeline = compile_spec(spec)
+df = pipeline.fit_transform(df)
 
-```python
-#Filter our erroneous purchase values
+# Filter out erroneous purchase values
 df = df[df.YearMade > 1920]
+
+print(f"Processed dataset shape: {df.shape}")
+df.head()
 ```
 
+### Preprocessor Persistence
+
+Save the preprocessing pipeline spec to Xplainable Cloud for reproducibility.
+
+
 ```python
-#Turn model id into a categorical value so it doesn't create regression splits
-df["ModelID"] = df["ModelID"].astype(str) 
+# Persist the preprocessor to Xplainable Cloud
+# Uncomment to save preprocessor
+# try:
+#     preprocessor_id = client.preprocessing.create_preprocessor(
+#         spec=spec,
+#         name="Dozer Price Prediction Preprocessor",
+#         description="Drops saledate, renames columns, casts ModelID to string"
+#     )
+#     print(f"Preprocessor created with ID: {preprocessor_id}")
+# except XplainableAPIError as e:
+#     print(f"Error creating preprocessor: {e}")
 ```
 
 ```python
@@ -413,7 +442,7 @@ model.evaluate(X_train, y_train)
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_283e08e6-ca06-487d-8565-6aacd3a68c79.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_2c85ab76-491b-4d7a-af09-7510b6da39cc.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ## 3. Model Optimization
 
@@ -894,7 +923,7 @@ partitioned_model.partitions
 partitioned_model.partitions['3170'].explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_77bb7137-a9b3-4828-b682-8efccd9020c3.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_73e3dc2f-2fbb-4b5b-9ccc-13303a6332ab.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ```python
 # Create a model

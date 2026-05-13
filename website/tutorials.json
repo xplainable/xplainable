@@ -31,6 +31,14 @@
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Concrete_Compressive_Strength.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Concrete_Compressive_Strength.ipynb"
     },
+    "shopify_order_returns": {
+        "title": "Shopify Order Returns",
+        "sidebar_label": "Shopify Order Returns",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Shopify_Order_Returns.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Shopify_Order_Returns.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Shopify_Order_Returns.ipynb"
+    },
     "power_plant_energy_output": {
         "title": "Power Plant Energy Output",
         "sidebar_label": "Power Plant Energy Output",
@@ -78,6 +86,14 @@
         "nb_path": "website/docs/tutorials/House_Prices_Regression.ipynb",
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb"
+    },
+    "shopify_customer_churn": {
+        "title": "Shopify Customer Churn",
+        "sidebar_label": "Shopify Customer Churn",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Shopify_Customer_Churn.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Shopify_Customer_Churn.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Shopify_Customer_Churn.ipynb"
     },
     "instacart_product_reorder_prediction": {
         "title": "Instacart Product Reorder Prediction",

@@ -36,6 +36,7 @@ borrowers at risk of defaulting
 ```python
 !pip install xplainable
 !pip install xplainable-client
+!pip install xplainable-preprocessing
 ```
 
 ```python
@@ -47,8 +48,7 @@ import json
 import xplainable as xp
 from xplainable.core.models import XClassifier
 from xplainable.core.optimisation.bayesian import XParamOptimiser
-from xplainable.preprocessing.pipeline import XPipeline
-from xplainable.preprocessing import transformers as xtf
+from xplainable_preprocessing import PipelineSpec, StepSpec, compile_spec
 
 # New refactored client import
 from xplainable_client.client.client import XplainableClient
@@ -107,15 +107,30 @@ Where the defition of each of the fields are below:
 
 
 ```python
-y = data['RiskPerformance']
-x = data.drop('RiskPerformance',axis=1)
+# Note: This dataset requires minimal preprocessing - all features are numeric
+# and there are no ID columns to drop. The PipelineSpec is set up for completeness
+# and to provide a framework for adding future preprocessing steps.
+
+preprocessing_spec = PipelineSpec(
+    target_column="RiskPerformance",
+    steps=[
+        # No additional preprocessing steps needed for this dataset.
+        # All features are numeric credit risk indicators.
+        # Add StepSpec entries here if future preprocessing is required, e.g.:
+        # StepSpec(action="drop_columns", columns=["unwanted_column"]),
+    ]
+)
+
+# Compile and apply the preprocessing spec
+pipeline = compile_spec(preprocessing_spec)
+df_transformed = pipeline.fit_transform(data)
 ```
 
 ### Create Train/Test Split
 
 
 ```python
-X, y = data.drop(columns=['RiskPerformance']), data['RiskPerformance']
+X, y = df_transformed.drop(columns=['RiskPerformance']), df_transformed['RiskPerformance']
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
@@ -153,7 +168,7 @@ importance.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_c64e2ee0-925a-4670-a300-213c19db2f49.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_fe173a29-64ae-4446-a3fc-9926e101d3de.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ## Analysing Feature Importances and Contributions
 
@@ -216,6 +231,25 @@ try:
 except XplainableAPIError as e:
     print(f"Error creating model: {e.message}")
     model_id, version_id = None, None
+```
+
+## Preprocessor Persistence
+
+Save the preprocessing specification to Xplainable Cloud alongside the model.
+
+
+```python
+try:
+    preprocessor_id, preprocessor_version_id = client.preprocessing.create_preprocessor(
+        name="HELOC Credit Risk Preprocessing",
+        description="Preprocessing specification for the HELOC Credit Risk dataset. Minimal preprocessing as all features are numeric credit risk indicators.",
+        spec=preprocessing_spec.model_dump(),
+        sample_df=data,
+    )
+    print(f"Preprocessor created: {preprocessor_id} (version: {preprocessor_version_id})")
+except (XplainableAPIError, ValueError) as e:
+    print(f"Error creating preprocessor: {e}")
+    preprocessor_id, preprocessor_version_id = None, None
 ```
 
 ![Heloc Deployment](https://xplainable-public-storage.syd1.digitaloceanspaces.com/documentation_content/heloc_api_key.png)

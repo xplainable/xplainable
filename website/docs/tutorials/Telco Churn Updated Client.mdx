@@ -58,8 +58,7 @@ from datetime import datetime
 import xplainable as xp
 from xplainable.core.models import XClassifier
 from xplainable.core.optimisation.bayesian import XParamOptimiser
-from xplainable.preprocessing.pipeline import XPipeline
-from xplainable.preprocessing import transformers as xtf
+from xplainable_preprocessing import PipelineSpec, StepSpec, compile_spec
 
 # Sklearn imports
 from sklearn.model_selection import train_test_split
@@ -79,11 +78,6 @@ warnings.filterwarnings('ignore')
 print(f"Xplainable version: {xp.__version__}")
 print(f"All imports successful!")
 ```
-
-<CellOutput>
-{`Xplainable version: 1.3.0
-All imports successful!`}
-</CellOutput>
 
 ## Initialize Refactored Xplainable Client
 
@@ -301,34 +295,40 @@ print("Setting up data preprocessing pipeline...")
 df["Churn Label"] = df["Churn Label"].map({"Yes": 1, "No": 0})
 print(f"Target variable converted to binary: {df['Churn Label'].value_counts().to_dict()}")
 
-# Create preprocessing pipeline
-pipeline = XPipeline()
-
-# Add preprocessing stages
-pipeline.add_stages([
+# Create preprocessing pipeline spec
+preprocessing_spec = PipelineSpec(steps=[
     # Standardize text cases
-    {"transformer": xtf.ChangeCases(
+    StepSpec(
+        type="TextCleanTransformer",
         columns=['City', 'Gender', 'Senior Citizen', 'Partner', 'Dependents',
                 'Phone Service', 'Multiple Lines', 'Internet Service',
                 'Online Security', 'Online Backup', 'Device Protection', 'Tech Support',
                 'Streaming TV', 'Streaming Movies', 'Contract', 'Paperless Billing',
-                'Payment Method'], 
-        case="lower"
-    )},
-    
+                'Payment Method'],
+        params={"operations": ["lowercase"]}
+    ),
+
     # Condense low-frequency categories
-    {"feature": "City", "transformer": xtf.Condense(pct=0.25)},
-    
+    StepSpec(
+        type="CategoryCondenseTransformer",
+        columns=["City"],
+        params={"min_frequency": 0.25}
+    ),
+
     # Ensure proper data types
-    {"feature": "Monthly Charges", "transformer": xtf.SetDType(to_type="float")},
-    
+    StepSpec(
+        type="TypeCastTransformer",
+        params={"dtypes": {"Monthly Charges": "float"}}
+    ),
+
     # Remove unnecessary columns
-    {"transformer": xtf.DropCols(
-        columns=[
+    StepSpec(
+        type="DropColumnsTransformer",
+        params={"columns": [
             'CustomerID',      # High cardinality
             "Total Charges",   # Multicollinearity with Tenure
             'Count',           # Single value
-            "Country",         # Single value  
+            "Country",         # Single value
             "State",           # Single value
             "Zip Code",        # High cardinality
             "Lat Long",        # High cardinality
@@ -338,14 +338,15 @@ pipeline.add_stages([
             "Churn Score",     # Data leakage
             "CLTV",            # Data leakage
             "Churn Reason",    # Data leakage
-        ]
-    )},
+        ]}
+    ),
 ])
 
-print(f"Pipeline created with {len(pipeline.stages)} stages")
+print(f"Pipeline spec created with {len(preprocessing_spec.steps)} steps")
 
-# Apply preprocessing
-print("Applying preprocessing pipeline...")
+# Compile and apply preprocessing
+print("Compiling and applying preprocessing pipeline...")
+pipeline = compile_spec(preprocessing_spec)
 df_transformed = pipeline.fit_transform(df)
 print(f"Preprocessing complete!")
 print(f"Original shape: {df.shape} → Processed shape: {df_transformed.shape}")
@@ -364,27 +365,24 @@ Using the **Preprocessing Service** with proper error handling.
 try:
     print("Saving preprocessing pipeline to Xplainable Cloud...")
     
-    # Create preprocessor with type-safe response
-    preprocessor_id, version_id = client.preprocessing.create_preprocessor(
-        preprocessor_name=f"Telco Churn Preprocessing - v{xp.__version__} - New Client 2",
-        preprocessor_description="Complete preprocessing pipeline for IBM Telco Churn Dataset with refactored client",
-        pipeline=pipeline,
-        df=df
+    # Create preprocessor with type-safe response using PipelineSpec
+    preprocessor_id, preprocessor_version_id = client.preprocessing.create_preprocessor(
+        name=f"Telco Churn Preprocessing - v{xp.__version__} - New Client",
+        description="Complete preprocessing pipeline for IBM Telco Churn Dataset with refactored client",
+        spec=preprocessing_spec.model_dump(),
+        sample_df=df,
     )
     
     print(f"Preprocessor saved successfully!")
     print(f"Preprocessor ID: {preprocessor_id}")
-    print(f"Version ID: {version_id}")
+    print(f"Version ID: {preprocessor_version_id}")
     
     # Test loading the preprocessor back
     print("\nTesting preprocessor reload...")
     try:
-        loaded_pipeline = client.preprocessing.load_preprocessor(
-            preprocessor_id=preprocessor_id,
-            version_id=version_id
-        )
+        pp_cloud = client.preprocessing.load_pipeline(preprocessor_version_id)
         print(f"Preprocessor reloaded successfully!")
-        print(f"Stages: {len(loaded_pipeline.stages)}")
+        print(f"Pipeline: {pp_cloud}")
         
     except XplainableAPIError as e:
         print(f"Preprocessor reload warning: {e.message} (Status: {e.status_code})")
@@ -392,11 +390,11 @@ try:
 except XplainableAPIError as e:
     print(f"Preprocessor save warning: {e.message}")
     print(f"Status: {e.status_code} - Continuing with local pipeline")
-    preprocessor_id, version_id = "local-pipeline", "local-version"
+    preprocessor_id, preprocessor_version_id = "local-pipeline", "local-version"
     
 except Exception as e:
     print(f"Preprocessing service info: {str(e)}")
-    preprocessor_id, version_id = "local-pipeline", "local-version"
+    preprocessor_id, preprocessor_version_id = "local-pipeline", "local-version"
 ```
 
 ## Model Training and Optimization

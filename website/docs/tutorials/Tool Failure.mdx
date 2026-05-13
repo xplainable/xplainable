@@ -37,8 +37,7 @@ import pandas as pd
 import xplainable as xp
 from xplainable.core.models import XClassifier
 from xplainable.core.optimisation.bayesian import XParamOptimiser
-from xplainable.preprocessing.pipeline import XPipeline
-from xplainable.preprocessing import transformers as xtf
+from xplainable_preprocessing import PipelineSpec, StepSpec, compile_spec
 from sklearn.model_selection import train_test_split
 import requests
 import json
@@ -143,24 +142,43 @@ parameters.
 
 
 ```python
-df = df.drop(columns=["Product ID", "UDI", "TWF", "HDF", "PWF", "OSF", "RNF"])
+# Define the preprocessing spec
+preprocessing_spec = PipelineSpec(steps=[
+    StepSpec(
+        id="drop_columns",
+        type="DropColumnsTransformer",
+        params={"columns": [
+            "Product ID",   # Identifier - not predictive
+            "UDI",          # Unique identifier - not predictive
+            "TWF",          # Failure sub-type - data leakage
+            "HDF",          # Failure sub-type - data leakage
+            "PWF",          # Failure sub-type - data leakage
+            "OSF",          # Failure sub-type - data leakage
+            "RNF",          # Failure sub-type - data leakage
+        ]},
+        description="Drop identifier columns and failure sub-type columns (data leakage)"
+    ),
+])
+
+# Compile and apply the pipeline
+pipeline = compile_spec(preprocessing_spec)
+df = pipeline.fit_transform(df)
 df
 ```
 
-
-|      | Type   | Air temperature [K]   | Process temperature [K]   | Rotational speed [rpm]   | Torque [Nm]   | Tool wear [min]   | Machine failure   |
-|:-----|:-------|:----------------------|:--------------------------|:-------------------------|:--------------|:------------------|:------------------|
-| 0    | M      | 298.1                 | 308.6                     | 1551                     | 42.8          | 0                 | 0                 |
-| 1    | L      | 298.2                 | 308.7                     | 1408                     | 46.3          | 3                 | 0                 |
-| 2    | L      | 298.1                 | 308.5                     | 1498                     | 49.4          | 5                 | 0                 |
-| 3    | L      | 298.2                 | 308.6                     | 1433                     | 39.5          | 7                 | 0                 |
-| 4    | L      | 298.2                 | 308.7                     | 1408                     | 40.0          | 9                 | 0                 |
-| ...  | ...    | ...                   | ...                       | ...                      | ...           | ...               | ...               |
-| 9995 | M      | 298.8                 | 308.4                     | 1604                     | 29.5          | 14                | 0                 |
-| 9996 | H      | 298.9                 | 308.4                     | 1632                     | 31.8          | 17                | 0                 |
-| 9997 | M      | 299.0                 | 308.6                     | 1645                     | 33.4          | 22                | 0                 |
-| 9998 | H      | 299.0                 | 308.7                     | 1408                     | 48.5          | 25                | 0                 |
-| 9999 | M      | 299.0                 | 308.7                     | 1500                     | 40.2          | 30                | 0                 |
+```python
+try:
+    preprocessor_id, preprocessor_version_id = client.preprocessing.create_preprocessor(
+        name="Tool Failure Preprocessing",
+        description="Drop identifier and failure sub-type columns from the asset failure dataset to prevent data leakage",
+        spec=preprocessing_spec.model_dump(),
+        sample_df=df,
+    )
+    print(f"Preprocessor created: {preprocessor_id} (version: {preprocessor_version_id})")
+except (XplainableAPIError, ValueError) as e:
+    print(f"Error creating preprocessor: {e}")
+    preprocessor_id, preprocessor_version_id = None, None
+```
 
 ```python
 df["Machine failure"].value_counts()
@@ -214,7 +232,7 @@ model.fit(X_train, y_train)
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_ab7484fa-c36a-4284-b228-c7d85f59c7d7.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_b36ff4a0-d71b-4e63-ada6-625386f9bfbf.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 ```python
 params = {
@@ -233,7 +251,7 @@ model.update_feature_params(features=['Rotational speed [rpm]', 'Tool wear [min]
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_f263886f-677f-4f0c-9c44-8a599b19f30f.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_3a764d80-f1c7-4e26-911d-f55f6660d7a1.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 In this snapshot, we demonstrate the impact of hyperparameter tuning on model
 interpretability. By adjusting max_depth and min_info_gain, we refine the feature wise

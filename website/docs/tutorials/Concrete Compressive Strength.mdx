@@ -39,8 +39,7 @@ import xplainable as xp
 from xplainable.core.models import XRegressor
 from xplainable.core.optimisation.genetic import XEvolutionaryNetwork
 from xplainable.core.optimisation.layers import Evolve, Tighten
-from xplainable.preprocessing.pipeline import XPipeline
-from xplainable.preprocessing import transformers as xtf
+from xplainable_preprocessing import PipelineSpec, StepSpec, compile_spec
 from sklearn.model_selection import train_test_split
 import requests
 import json
@@ -111,21 +110,41 @@ Preprocess the concrete mixture data for optimal model performance.
 
 
 ```python
-# # Create preprocessing pipeline
-# pipeline = XPipeline()
-# pipeline.add_stages([
-#     # Check for missing values (this dataset typically has none)
-#     # {"transformer": xtf.FillMissing(method="median")},
-    
-#     # Optionally scale features if needed
-#     # {"transformer": xtf.StandardScaler()},
-# ])
+# Define preprocessing pipeline using PipelineSpec
+# Note: The Concrete Compressive Strength dataset is typically clean with no missing values.
+# This minimal pipeline ensures consistent preprocessing structure.
+spec = PipelineSpec(steps=[
+    StepSpec(
+        transformer="FillMissingTransformer",
+        params={"strategy": "median"}
+    )
+])
 
-# # Apply preprocessing
-# df_processed = pipeline.fit_transform(df)
-# print(f"Processed dataset shape: {df_processed.shape}")
-# print(f"Missing values: {df_processed.isnull().sum().sum()}")
-# df_processed.head()
+pipeline = compile_spec(spec)
+df = pipeline.fit_transform(df)
+
+print(f"Processed dataset shape: {df.shape}")
+print(f"Missing values: {df.isnull().sum().sum()}")
+df.head()
+```
+
+### Preprocessor Persistence
+
+Save the preprocessing pipeline spec to Xplainable Cloud for reproducibility.
+
+
+```python
+# Persist the preprocessor to Xplainable Cloud
+# Uncomment to save preprocessor
+# try:
+#     preprocessor_id = client.preprocessing.create_preprocessor(
+#         spec=spec,
+#         name="Concrete Compressive Strength Preprocessor",
+#         description="Fills missing values with median for concrete mixture data"
+#     )
+#     print(f"Preprocessor created with ID: {preprocessor_id}")
+# except XplainableAPIError as e:
+#     print(f"Error creating preprocessor: {e}")
 ```
 
 ### Create Train/Test Split

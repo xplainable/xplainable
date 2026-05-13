@@ -201,8 +201,7 @@ import json
 import xplainable as xp
 from xplainable.core.models import XClassifier
 from xplainable.core.optimisation.bayesian import XParamOptimiser
-from xplainable.preprocessing.pipeline import XPipeline
-from xplainable.preprocessing import transformers as xtf
+from xplainable_preprocessing import PipelineSpec, StepSpec, compile_spec
 
 from xplainable_client.client.client import XplainableClient
 from xplainable_client.client.base import XplainableAPIError
@@ -264,60 +263,46 @@ df.head()
 
 
 ```python
-#Instantiate a Pipeline
-pipeline = XPipeline()
-
-# Add stages for specific features
-pipeline.add_stages([
-    {"transformer": xtf.DropCols(
-        columns=['Prospect ID', #-> Highly Cardinal, 
-                 "Lead Number", #-> Reduce Multicollinearity between Tenure and Monthly Costs
-                ]
-    )},
+# Define preprocessing spec
+preprocessing_spec = PipelineSpec(steps=[
+    StepSpec(
+        type="DropColumnsTransformer",
+        params={
+            "columns": [
+                "Prospect ID",   # -> Highly Cardinal
+                "Lead Number",   # -> Reduce Multicollinearity between Tenure and Monthly Costs
+            ]
+        }
+    ),
 ])
-```
 
-<CellOutput>
-{`<xplainable.preprocessing.pipeline.XPipeline at 0x16fc452d0>`}
-</CellOutput>
+# Compile and apply preprocessing
+pipeline = compile_spec(preprocessing_spec)
+df_transformed = pipeline.fit_transform(df)
+```
 
 ### Preprocessed data
 
 
 ```python
-df_transformed = pipeline.fit_transform(df)
 df_transformed.head()
 ```
-
-
-|    | Lead Origin             | Lead Source    | Do Not Email   | Do Not Call   |   Converted |   TotalVisits |   Total Time Spent on Website |   Page Views Per Visit | Last Activity           | Specialization          | ...   | Get updates on DM Content   | Lead Profile   | City   | Asymmetrique Activity Index   | Asymmetrique Profile Index   |   Asymmetrique Activity Score |   Asymmetrique Profile Score | I agree to pay the amount through cheque   | A free copy of Mastering The Interview   | Last Notable Activity   |
-|---:|:------------------------|:---------------|:---------------|:--------------|------------:|--------------:|------------------------------:|-----------------------:|:------------------------|:------------------------|:------|:----------------------------|:---------------|:-------|:------------------------------|:-----------------------------|------------------------------:|-----------------------------:|:-------------------------------------------|:-----------------------------------------|:------------------------|
-|  0 | API                     | Olark Chat     | No             | No            |           0 |             0 |                             0 |                    0   | Page Visited on Website | Select                  | ...   | No                          | Select         | Select | 02.Medium                     | 02.Medium                    |                            15 |                           15 | No                                         | No                                       | Modified                |
-|  1 | API                     | Organic Search | No             | No            |           0 |             5 |                           674 |                    2.5 | Email Opened            | Select                  | ...   | No                          | Select         | Select | 02.Medium                     | 02.Medium                    |                            15 |                           15 | No                                         | No                                       | Email Opened            |
-|  2 | Landing Page Submission | Direct Traffic | No             | No            |           1 |             2 |                          1532 |                    2   | Email Opened            | Business Administration | ...   | No                          | Potential Lead | Mumbai | 02.Medium                     | 01.High                      |                            14 |                           20 | No                                         | Yes                                      | Email Opened            |
-|  3 | Landing Page Submission | Direct Traffic | No             | No            |           0 |             1 |                           305 |                    1   | Unreachable             | Media and Advertising   | ...   | No                          | Select         | Mumbai | 02.Medium                     | 01.High                      |                            13 |                           17 | No                                         | No                                       | Modified                |
-|  4 | Landing Page Submission | Google         | No             | No            |           1 |             2 |                          1428 |                    1   | Converted to Lead       | Select                  | ...   | No                          | Select         | Mumbai | 02.Medium                     | 01.High                      |                            15 |                           18 | No                                         | No                                       | Modified                |
 
 ### Create Preprocessor ID to persist to Xplainable Cloud
 
 
 ```python
-
-preprocessor_id, version_id = client.preprocessing.create_preprocessor(
-    preprocessor_name="Lead Scoring Preprocessing",
-    preprocessor_description="Predicting the Likelihood of a Lead Converting",
-    pipeline=pipeline,
-    df=df
+preprocessor_id, preprocessor_version_id = client.preprocessing.create_preprocessor(
+    name="Lead Scoring Preprocessing",
+    description="Predicting the Likelihood of a Lead Converting",
+    spec=preprocessing_spec.model_dump(),
+    sample_df=df,
 )
 ```
 
 ```python
-preprocessor_id, version_id
+preprocessor_id, preprocessor_version_id
 ```
-
-<CellOutput>
-{`('1IkLdZXzAEZfPJpE', '2yDjTGvCgVk0kmhE')`}
-</CellOutput>
 
 ### Loading the Preprocessor steps
 
@@ -328,7 +313,7 @@ transform data inplace.
 ```python
 
 pp_cloud = client.preprocessing.load_preprocessor(
-    version_id,
+    preprocessor_version_id,
     preprocessor_id,
 )
 ```
@@ -424,7 +409,7 @@ and explainable.
 model.explain()
 ```
 
-<iframe src='/plot_data/AltairPlot_4464af93-66d0-42db-8646-f4aa6375d3af.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
+<iframe src='/plot_data/AltairPlot_1b9c5750-47d3-48c5-b66f-87a1b6f178ae.html' width='100%' height='520' style={{border: '1px solid #ccc', borderRadius: '4px'}}></iframe>
 
 The visualization displays feature importance and contribution analysis for the lead
 scoring prediction model.

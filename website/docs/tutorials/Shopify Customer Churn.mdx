@@ -1,0 +1,693 @@
+---
+title: Shopify Customer Churn
+sidebar_label: Shopify Customer Churn
+path: website/docs/tutorials
+nb_path: website/docs/tutorials/Shopify_Customer_Churn.ipynb
+github: https://github.com/xplainable/xplainable/blob/main/examples/Shopify_Customer_Churn.ipynb
+colab: https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Shopify_Customer_Churn.ipynb
+---
+import CellOutput from "@site/src/components/CellOutput.jsx";
+import LinkButtons from "@site/src/components/LinkButtons.jsx";
+
+<LinkButtons
+  githubUrl="https://github.com/xplainable/xplainable/blob/main/examples/Shopify_Customer_Churn.ipynb"
+  colabUrl="https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Shopify_Customer_Churn.ipynb"
+/>
+
+# Shopify Customer Churn Prediction
+
+Predict which Shopify customers are likely to churn based on their order history and
+behavior.
+
+**Dataset Source**:
+[Kaggle - Shopify Sales Dataset for ML & EDA](https://www.kaggle.com/datasets/aliiihussain/shopify-sales-dataset-for-ml-and-eda)
+**Problem Type**: Binary Classification **Target Variable**: `churned` — 1 = customer
+has churned, 0 = active customer **Use Case**: Identify at-risk customers to enable
+proactive retention campaigns
+
+**Churn Definition**: A customer is considered churned if they have been a customer for
+180+ days AND have not placed an order in the last 90 days. This avoids mislabeling new
+customers who simply haven't had time to reorder.
+
+
+## Package Imports
+
+
+```python
+import pandas as pd
+import numpy as np
+import xplainable as xp
+from xplainable.core.models import XClassifier
+from xplainable.core.optimisation.bayesian import XParamOptimiser
+from sklearn.model_selection import train_test_split
+import requests
+import json
+
+from xplainable_client.client.client import XplainableClient
+from xplainable_client.client.base import XplainableAPIError
+
+from xplainable_preprocessing import PipelineSpec, StepSpec, compile_spec
+```
+
+## Instantiate Xplainable Cloud
+
+Initialise the xplainable cloud using an API key from: https://platform.xplainable.io/
+
+This allows you to save and collaborate on models, create deployments, create shareable
+reports.
+
+
+```python
+# Initialize Xplainable Cloud client
+client = XplainableClient(
+    api_key="",  # Create api key in xplainable cloud - https://platform.xplainable.io/
+    hostname="https://platform.xplainable.io"
+)
+```
+
+## Load Shopify Order Data
+
+This dataset contains 60,000 individual order records from a Shopify store spanning
+January 2023 to June 2025. We'll aggregate these to the customer level and engineer
+features for churn prediction.
+
+
+```python
+orders_df = pd.read_csv("shopify_sales_dataset_ml_eda.csv", parse_dates=["order_date"])
+
+print(f"Orders: {len(orders_df):,}")
+print(f"Unique customers: {orders_df['customer_id'].nunique():,}")
+print(f"Date range: {orders_df['order_date'].min().date()} to {orders_df['order_date'].max().date()}")
+orders_df.head()
+```
+
+## Feature Engineering
+
+Aggregate order-level data to customer-level features. These map to real Shopify API
+fields:
+
+- **Direct fields**: `customer_id`, `customer_country`, `orders_count`, `total_spent`
+- **Derived from orders**: recency, frequency, monetary value, discount behavior, return
+  rate
+- **Dominant category**: most frequently purchased `product_category` per customer
+
+
+```python
+reference_date = orders_df["order_date"].max()
+
+# --- Aggregate to customer level ---
+customers = orders_df.groupby("customer_id").agg(
+    # Direct Shopify fields
+    customer_country=("customer_country", "first"),
+    orders_count=("order_id", "count"),
+    total_spent=("revenue", "sum"),
+
+    # Derived: dates for tenure and recency
+    first_order_date=("order_date", "min"),
+    last_order_date=("order_date", "max"),
+
+    # Derived: monetary
+    avg_order_value=("revenue", "mean"),
+    total_discounts=("discounted_price", lambda x: (orders_df.loc[x.index, "product_price"] * orders_df.loc[x.index, "quantity"] - x * orders_df.loc[x.index, "quantity"]).sum()),
+    avg_discount_pct=("discount_percent", "mean"),
+    total_shipping=("shipping_cost", "sum"),
+    total_profit=("profit", "sum"),
+
+    # Derived: product behavior
+    avg_quantity_per_order=("quantity", "mean"),
+    unique_products=("product_id", "nunique"),
+    unique_categories=("product_category", "nunique"),
+
+    # Derived: satisfaction & returns
+    avg_rating=("rating", "mean"),
+    return_count=("is_returned", "sum"),
+
+    # Derived: channel & payment
+    primary_traffic_source=("traffic_source", lambda x: x.mode().iloc[0]),
+    primary_payment_method=("payment_method", lambda x: x.mode().iloc[0]),
+    primary_product_category=("product_category", lambda x: x.mode().iloc[0]),
+).reset_index()
+
+# Derived: tenure and recency
+customers["days_since_first_order"] = (reference_date - customers["first_order_date"]).dt.days
+customers["days_since_last_order"] = (reference_date - customers["last_order_date"]).dt.days
+
+# Derived: return rate
+customers["return_rate_pct"] = (customers["return_count"] / customers["orders_count"] * 100).round(1)
+
+# Derived: average days between orders
+customers["avg_days_between_orders"] = np.where(
+    customers["orders_count"] > 1,
+    (customers["days_since_first_order"] / (customers["orders_count"] - 1)).round(1),
+    0
+)
+
+# Derived: has used discount
+customers["has_used_discount"] = (customers["avg_discount_pct"] > 0).astype(int)
+
+# Clean up intermediate date columns
+customers.drop(columns=["first_order_date", "last_order_date"], inplace=True)
+
+# Round numeric columns
+for col in ["total_spent", "avg_order_value", "total_discounts", "total_shipping",
+            "total_profit", "avg_quantity_per_order", "avg_rating", "avg_discount_pct"]:
+    customers[col] = customers[col].round(2)
+
+print(f"Customer-level dataset: {customers.shape}")
+customers.head()
+```
+
+### Define Churn Label
+
+A customer is **churned** if:
+
+1. They have been a customer for **180+ days** (sufficient tenure to establish a
+   purchase pattern)
+1. They have **not placed an order in the last 90 days**
+
+Customers with less than 180 days tenure are excluded — they haven't been around long
+enough to reliably label.
+
+
+```python
+# Filter to customers with 180+ days tenure
+df = customers[customers["days_since_first_order"] >= 180].copy()
+
+# Define churn: no order in last 90 days
+df["churned"] = (df["days_since_last_order"] >= 90).astype(int)
+
+print(f"Customers with 180+ day tenure: {len(df):,} (excluded {len(customers) - len(df):,} new customers)")
+print(f"\nChurn distribution:")
+print(df["churned"].value_counts())
+print(f"\nChurn rate: {df['churned'].mean():.1%}")
+```
+
+## 1. Data Preprocessing
+
+The aggregation step above (orders → customers) is business logic that runs *before* the
+persistable pipeline. The pipeline below handles transforms on the already-aggregated
+customer-level data — this is what gets persisted to Xplainable Cloud and runs at
+inference time.
+
+We use the new `PipelineSpec` format, which is JSON-serializable and can be versioned,
+previewed, and recompiled independently of the fitted state.
+
+
+```python
+# Define the preprocessing spec (JSON-serializable, persistable)
+preprocessing_spec = PipelineSpec(steps=[
+    StepSpec(
+        id="lowercase_categoricals",
+        type="TextCleanTransformer",
+        columns=["customer_country", "primary_traffic_source",
+                 "primary_payment_method", "primary_product_category"],
+        params={"operations": ["lowercase"]},
+        description="Standardize categorical values to lowercase",
+    ),
+    StepSpec(
+        id="drop_leakage_columns",
+        type="DropColumnsTransformer",
+        params={"columns": [
+            "customer_id",          # Highly cardinal identifier
+            "days_since_last_order", # Data leakage — directly encodes the churn definition
+            "total_profit",         # Data leakage — derived from revenue and costs
+        ]},
+        description="Drop ID, leakage, and redundant columns",
+    ),
+])
+
+# Compile spec into an executable pipeline
+pipeline = compile_spec(preprocessing_spec)
+
+# Fit and transform
+df_transformed = pipeline.fit_transform(df)
+print(f"Transformed shape: {df_transformed.shape}")
+df_transformed.head()
+```
+
+### Persist Preprocessor to Xplainable Cloud
+
+The `PipelineSpec` is JSON-serializable, so we can persist it directly. The API stores
+both the spec and the fitted pipeline binary, allowing it to be loaded and reused for
+inference.
+
+
+```python
+# Persist the preprocessing spec to Xplainable Cloud
+try:
+    preprocessor_id, preprocessor_version_id = client.preprocessing.create_preprocessor(
+        name="Shopify Churn Preprocessing",
+        description="Customer-level feature transforms for Shopify churn prediction. "
+                    "Expects pre-aggregated customer data (not raw orders).",
+        spec=preprocessing_spec.model_dump(),
+        sample_df=df,
+    )
+    print(f"Preprocessor created: {preprocessor_id} (version: {preprocessor_version_id})")
+except (XplainableAPIError, ValueError) as e:
+    print(f"Error creating preprocessor: {e}")
+    preprocessor_id, preprocessor_version_id = None, None
+```
+
+### Train/Test Split
+
+
+```python
+X, y = df_transformed.drop(columns=["churned"]), df_transformed["churned"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.33, random_state=42
+)
+
+print(f"Train: {X_train.shape[0]:,} samples")
+print(f"Test:  {X_test.shape[0]:,} samples")
+print(f"Train churn rate: {y_train.mean():.1%}")
+print(f"Test churn rate:  {y_test.mean():.1%}")
+```
+
+## 2. Model Optimisation
+
+The `XParamOptimiser` uses Bayesian optimisation to find the best hyperparameters for
+the XClassifier, balancing accuracy and computational efficiency.
+
+
+```python
+opt = XParamOptimiser()
+params = opt.optimise(X_train, y_train)
+```
+
+## 3. Model Training
+
+
+```python
+model = XClassifier(**params)
+model.fit(X_train, y_train)
+```
+
+## 4. Model Interpretability and Explainability
+
+The `model.explain()` method generates an interactive visualisation showing:
+
+- **Feature Importances**: Which customer attributes are most predictive of churn
+- **Contributions**: How specific feature values push predictions toward churn or
+  retention
+
+
+```python
+model.explain()
+```
+
+## 5. Model Persisting
+
+Save the trained model to Xplainable Cloud for version tracking, collaboration, and
+deployment.
+
+
+```python
+# Persist the trained model
+try:
+    model_id, version_id = client.models.create_model(
+        model=model,
+        model_name="Shopify Customer Churn",
+        model_description="Predicting which Shopify customers are likely to churn based on order history, purchasing behavior, and engagement patterns.",
+        x=X_train,
+        y=y_train
+    )
+    print(f"Model created: {model_id} (version: {version_id})")
+except XplainableAPIError as e:
+    print(f"Error creating model: {e}")
+    model_id, version_id = None, None
+```
+
+## 6. Model Deployment
+
+Deploy the model to Xplainable's inference endpoint, making it available for real-time
+churn predictions via API.
+
+
+```python
+if model_id and version_id:
+    try:
+        deployment_response = client.deployments.deploy(
+            model_version_id=version_id
+        )
+        deployment_id = deployment_response.deployment_id
+    except XplainableAPIError as e:
+        print(f"Error deploying model: {e}")
+        deployment_id = None
+else:
+    deployment_id = None
+```
+
+## 7. Testing the Deployment
+
+Activate the deployment, generate an API key, and make a test prediction.
+
+
+```python
+# Activate the deployment
+if deployment_id:
+    try:
+        client.deployments.activate_deployment(deployment_id=deployment_id)
+    except XplainableAPIError as e:
+        print(f"Error activating deployment: {e}")
+else:
+    print("Deployment ID not available")
+```
+
+```python
+# Generate a deployment key
+if deployment_id:
+    try:
+        deploy_key = client.deployments.generate_deploy_key(
+            deployment_id=deployment_id,
+            description="API key for Shopify Churn",
+            days_until_expiry=1
+        )
+        print(f"Deploy key created: {str(deploy_key)}")
+    except XplainableAPIError as e:
+        print(f"Error generating deploy key: {e}")
+        deploy_key = None
+else:
+    deploy_key = None
+```
+
+```python
+# Generate a sample payload from test data
+body = json.loads(X_test.sample(1).to_json(orient="records"))
+print("Sample payload:")
+print(json.dumps(body, indent=2))
+```
+
+```python
+# Make a prediction request
+if deploy_key and body:
+    response = requests.post(
+        url="https://inference.xplainable.io/v1/predict",
+        headers={"api_key": str(deploy_key)},
+        json=body
+    )
+    print("Prediction result:", response.json())
+else:
+    print("Deploy key or body not available for prediction")
+```
+
+## 8. AI-Generated Report
+
+
+```python
+if model_id and version_id:
+    report = client.gpt.generate_report(
+        model_id=model_id,
+        version_id=version_id,
+        target_description="Customer churn likelihood (1 = will churn, 0 = will stay)",
+        project_objective="Identify at-risk Shopify customers to enable proactive retention campaigns",
+        max_features=10,
+        temperature=0.7
+    )
+
+    from IPython.display import Markdown, display
+    display(Markdown(report.body))
+else:
+    print("Model not persisted — skipping report generation")
+```
+
+## 9. Contribution-Driven Retention Optimization
+
+The xplainable model doesn't just predict *whether* a customer will churn — it explains
+*why* via per-feature contribution scores. Crucially, several of these features
+represent **controllable business levers** that exist in the dataset:
+
+- **`orders_count` / `unique_products`** — drive repeat purchases through
+  recommendations
+- **`total_shipping`** — offer free shipping to increase engagement
+- **`total_spent`** — use discounts to increase basket size
+- **`unique_categories`** — cross-category recommendations
+- **`avg_discount_pct` / `has_used_discount`** — incentivize with targeted offers
+
+The model's partition profiles tell us the **measured churn reduction** when a customer
+moves from one partition to another. For example, if `orders_count` at 1 order scores
++0.012 (toward churn) and at 3 orders scores -0.048 (toward retention), that's a **6pp
+churn reduction** — derived from the data, not assumed.
+
+We use these counterfactual partition shifts as the lever effects, then calculate the
+net expected value of each intervention per customer.
+
+
+### Extract Contributions, CLV, and Counterfactual Lever Effects
+
+For each controllable feature, the **lever effect** is the difference between a
+customer's current contribution score and the best achievable partition score. This
+tells us how much churn probability would drop if we successfully moved that customer to
+the best partition — measured from the data.
+
+
+```python
+# Get per-feature contributions for every test customer
+contributions = model._transform(X_test)
+contrib_df = pd.DataFrame(contributions, columns=model.columns, index=X_test.index)
+
+# Churn probability = base_value + sum of contributions
+base_value = model.profile['base_value']
+contrib_df['churn_prob'] = (contributions.sum(axis=1) + base_value).clip(0, 1)
+
+# Estimate CLV
+contrib_df['est_orders_per_year'] = np.where(
+    X_test['avg_days_between_orders'] > 0,
+    365 / X_test['avg_days_between_orders'],
+    1
+)
+contrib_df['estimated_clv'] = (X_test['avg_order_value'] * contrib_df['est_orders_per_year']).round(2)
+
+# Define controllable features and find best partition score for each
+controllable_features = [
+    'orders_count', 'unique_products', 'unique_categories',
+    'total_spent', 'total_shipping', 'avg_quantity_per_order',
+    'avg_discount_pct', 'has_used_discount',
+]
+
+profile = model.profile
+best_partition_scores = {}
+for feat in controllable_features:
+    if feat in profile['numeric']:
+        scores = [p['score'] for p in profile['numeric'][feat]
+                  if not (isinstance(p.get('lower', 0), float) and np.isnan(p.get('lower', 0)))]
+        if scores:
+            best_partition_scores[feat] = min(scores)
+
+# Compute lever effect per customer per feature:
+# = current contribution - best achievable contribution
+lever_effects = pd.DataFrame(index=X_test.index)
+for feat in controllable_features:
+    if feat in best_partition_scores and feat in contrib_df.columns:
+        lever_effects[feat] = contrib_df[feat] - best_partition_scores[feat]
+
+# For each customer, identify the feature with the biggest improvement potential
+lever_effects['best_lever'] = lever_effects[controllable_features].idxmax(axis=1)
+lever_effects['lever_effect'] = lever_effects[controllable_features].max(axis=1)
+
+print(f"Base churn rate: {base_value:.1%}")
+print(f"\nBest lever per feature (which feature offers most improvement per customer):")
+print(lever_effects['best_lever'].value_counts().to_string())
+print(f"\nAverage churn reduction by best lever:")
+summary = lever_effects.groupby('best_lever')['lever_effect'].agg(['count', 'mean'])
+summary.columns = ['customers', 'avg_churn_reduction']
+print(summary.sort_values('avg_churn_reduction', ascending=False).round(4).to_string())
+```
+
+### Map Levers to Actions and Costs
+
+Each controllable feature maps to a concrete business action. The **lever effect comes
+from the model** (data-driven), the **cost is a business input** (replace with your
+actual costs).
+
+
+```python
+# Map controllable features to business actions
+# Lever effect = from model partitions (data-driven)
+# Cost = business input (replace with your actual costs)
+lever_actions = {
+    "unique_products":         {"action": "Product recommendation campaign", "cost": 0.50},
+    "orders_count":            {"action": "Repeat purchase incentive",       "cost": 3.00},
+    "total_spent":             {"action": "Personalized discount (10%)",     "cost_pct_aov": 0.10},  # % of AOV
+    "unique_categories":       {"action": "Cross-category recommendation",   "cost": 0.50},
+    "total_shipping":          {"action": "Free shipping offer",             "cost": 8.00},
+    "avg_quantity_per_order":  {"action": "Bundle / multi-buy incentive",    "cost": 3.00},
+    "avg_discount_pct":        {"action": "Targeted discount offer",         "cost_pct_aov": 0.10},
+    "has_used_discount":       {"action": "First-time discount email",       "cost": 0.50},
+}
+
+# Combine lever effects with actions and costs
+optimization = lever_effects[['best_lever', 'lever_effect']].copy()
+optimization['churn_prob'] = contrib_df['churn_prob']
+optimization['estimated_clv'] = contrib_df['estimated_clv']
+optimization['avg_order_value'] = X_test['avg_order_value']
+
+# Assign action and cost
+optimization['action'] = optimization['best_lever'].map(
+    lambda f: lever_actions.get(f, {}).get('action', 'General winback')
+)
+optimization['lever_cost'] = optimization.apply(
+    lambda row: (
+        lever_actions.get(row['best_lever'], {}).get('cost', 1.50)
+        if 'cost' in lever_actions.get(row['best_lever'], {})
+        else row['avg_order_value'] * lever_actions.get(row['best_lever'], {}).get('cost_pct_aov', 0.10)
+    ), axis=1
+).round(2)
+
+print("Action assignment:")
+print(optimization.groupby('action').agg(
+    customers=('action', 'count'),
+    avg_churn_prob=('churn_prob', 'mean'),
+    avg_lever_effect=('lever_effect', 'mean'),
+    avg_cost=('lever_cost', 'mean'),
+).sort_values('customers', ascending=False).round(3).to_string())
+```
+
+### Expected Value Optimization
+
+The net EV now uses the **model-derived lever effect** instead of an assumed prevention
+rate:
+
+$$\text{Net EV} = \text{lever effect} \times \text{CLV} - \text{lever cost}$$
+
+Where `lever_effect` is the counterfactual churn reduction from the model's partition
+profile — the measured difference between the customer's current partition and the best
+achievable partition for that feature.
+
+
+```python
+# Net EV = lever_effect (from model) * CLV - lever_cost (from business)
+optimization['expected_revenue_saved'] = (optimization['lever_effect'] * optimization['estimated_clv']).round(2)
+optimization['net_ev'] = (optimization['expected_revenue_saved'] - optimization['lever_cost']).round(2)
+optimization['roi'] = np.where(
+    optimization['lever_cost'] > 0,
+    (optimization['net_ev'] / optimization['lever_cost']).round(2),
+    0
+)
+
+positive_ev = optimization[optimization['net_ev'] > 0].copy()
+negative_ev = optimization[optimization['net_ev'] <= 0].copy()
+
+print(f"Customers worth intervening on: {len(positive_ev):,} ({len(positive_ev)/len(optimization):.1%})")
+print(f"Customers to skip (negative EV): {len(negative_ev):,} ({len(negative_ev)/len(optimization):.1%})")
+print(f"\n--- Portfolio Summary (positive-EV only) ---")
+print(f"Total intervention cost:      ${positive_ev['lever_cost'].sum():>12,.2f}")
+print(f"Total expected revenue saved: ${positive_ev['expected_revenue_saved'].sum():>12,.2f}")
+print(f"Total net EV:                 ${positive_ev['net_ev'].sum():>12,.2f}")
+if positive_ev['lever_cost'].sum() > 0:
+    print(f"Portfolio ROI:                {positive_ev['net_ev'].sum() / positive_ev['lever_cost'].sum():.1f}x")
+```
+
+```python
+# Breakdown by action
+print("Net EV by action (data-driven lever effects):\n")
+action_summary = positive_ev.groupby('action').agg(
+    customers=('action', 'count'),
+    avg_lever_effect=('lever_effect', 'mean'),
+    total_cost=('lever_cost', 'sum'),
+    total_revenue_saved=('expected_revenue_saved', 'sum'),
+    total_net_ev=('net_ev', 'sum'),
+    avg_roi=('roi', 'mean'),
+).sort_values('total_net_ev', ascending=False).round(2)
+
+action_summary
+```
+
+### Budget-Constrained Allocation
+
+Rank customers by ROI and allocate a fixed monthly retention budget to the
+highest-return interventions first.
+
+
+```python
+# Rank by ROI and apply budget constraints
+portfolio = positive_ev.sort_values('roi', ascending=False).copy()
+portfolio['cumulative_cost'] = portfolio['lever_cost'].cumsum()
+
+budget_levels = [500, 1000, 2500, 5000, 10000, 25000]
+
+budget_analysis = []
+for budget in budget_levels:
+    within = portfolio[portfolio['cumulative_cost'] <= budget]
+    if len(within) > 0:
+        total_cost = within['lever_cost'].sum()
+        budget_analysis.append({
+            'budget': f'${budget:,}',
+            'customers_reached': len(within),
+            'cost_used': round(total_cost, 2),
+            'revenue_saved': round(within['expected_revenue_saved'].sum(), 2),
+            'net_ev': round(within['net_ev'].sum(), 2),
+            'roi': f"{within['net_ev'].sum() / total_cost:.1f}x",
+        })
+
+budget_df = pd.DataFrame(budget_analysis)
+print("Budget Allocation — customers ranked by ROI:\n")
+budget_df
+```
+
+### Diminishing Returns Analysis
+
+Each additional dollar of retention spend yields less marginal return. This helps
+identify the **inflection point** where additional budget stops being worthwhile.
+
+
+```python
+# Marginal ROI at each budget tier
+marginal_analysis = []
+prev_cost, prev_ev = 0, 0
+
+for budget in budget_levels:
+    within = portfolio[portfolio['cumulative_cost'] <= budget]
+    if len(within) > 0:
+        total_cost = within['lever_cost'].sum()
+        total_ev = within['net_ev'].sum()
+        marginal_cost = total_cost - prev_cost
+        marginal_ev = total_ev - prev_ev
+        marginal_roi = marginal_ev / marginal_cost if marginal_cost > 0 else 0
+
+        marginal_analysis.append({
+            'tier': f'${prev_cost:,.0f} → ${total_cost:,.0f}',
+            'marginal_spend': round(marginal_cost, 2),
+            'marginal_ev_gained': round(marginal_ev, 2),
+            'marginal_roi': f'{marginal_roi:.1f}x',
+        })
+        prev_cost, prev_ev = total_cost, total_ev
+
+marginal_df = pd.DataFrame(marginal_analysis)
+print("Diminishing Returns by Budget Tier:\n")
+marginal_df
+```
+
+```python
+# Top 10 highest-value customers
+print("Top 10 highest net-EV customers:\n")
+positive_ev.nlargest(10, 'net_ev')[
+    ['churn_prob', 'estimated_clv', 'best_lever', 'lever_effect',
+     'action', 'lever_cost', 'expected_revenue_saved', 'net_ev']
+].round(2)
+```
+
+### What's Data-Driven vs What's Assumed
+
+This optimization separates model outputs from business inputs:
+
+**From the model (data-driven):**
+
+- Churn probability per customer (base_value + contributions)
+- Per-feature contribution scores explaining *why* each customer is at risk
+- Counterfactual lever effects: how much churn probability changes if a feature moves
+  from its current partition to the best partition
+- CLV estimates (from actual purchase frequency and AOV)
+
+**Business inputs (replace with your actuals):**
+
+- Intervention costs ($0.50 for an email, $3 for loyalty enrollment, etc.)
+- The assumption that moving a feature to a better partition is achievable via the
+  mapped action
+
+The lever effects are the key differentiator. Instead of assuming "a discount reduces
+churn by 12%", the model tells us: "for this customer, their `unique_products`
+contribution is +0.012 (toward churn), and the best partition is -0.086 — so getting
+them to buy more products could reduce their churn score by 9.8pp." That's measured from
+the data, not invented.
+

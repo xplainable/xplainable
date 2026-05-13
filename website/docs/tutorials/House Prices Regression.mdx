@@ -35,8 +35,7 @@ import xplainable as xp
 from xplainable.core.models import XRegressor
 from xplainable.core.optimisation.genetic import XEvolutionaryNetwork
 from xplainable.core.optimisation.layers import Evolve, Tighten
-from xplainable.preprocessing.pipeline import XPipeline
-from xplainable.preprocessing import transformers as xtf
+from xplainable_preprocessing import PipelineSpec, StepSpec, compile_spec
 from sklearn.model_selection import train_test_split
 import requests
 import json
@@ -132,20 +131,54 @@ Handle missing values, encode categorical variables, and engineer features.
 
 
 ```python
-# Simple data preprocessing without complex pipeline
-# Drop columns with too many missing values or non-informative features
-if 'Id' in train_df.columns:
-    df_processed = train_df.drop(columns=['Id'])
-else:
-    df_processed = train_df.copy()
+# Define preprocessing pipeline using PipelineSpec
+steps = []
 
-# Fill missing values with simple pandas operations
-df_processed = df_processed.fillna(df_processed.median(numeric_only=True))
+# Drop non-informative 'Id' column if present
+if 'Id' in train_df.columns:
+    steps.append(StepSpec(
+        transformer="DropColumnsTransformer",
+        params={"columns": ["Id"]}
+    ))
+
+# Fill missing numeric values with median, categorical with mode
+steps.append(StepSpec(
+    transformer="FillMissingTransformer",
+    params={"strategy": "median"}
+))
+
+# Build and compile the pipeline spec
+spec = PipelineSpec(steps=steps)
+pipeline = compile_spec(spec)
+
+# Apply preprocessing
+df_processed = pipeline.fit_transform(train_df)
+
+# Fill any remaining missing categorical values with mode
 df_processed = df_processed.fillna(df_processed.mode().iloc[0])
 
 print(f"Processed dataset shape: {df_processed.shape}")
 print(f"Missing values: {df_processed.isnull().sum().sum()}")
 df_processed.head()
+```
+
+### Preprocessor Persistence
+
+Save the preprocessing pipeline spec to Xplainable Cloud for reproducibility.
+
+
+```python
+# Persist the preprocessor to Xplainable Cloud
+# Uncomment to save preprocessor
+# try:
+#     preprocessor_id = client.preprocessing.create_preprocessor(
+#         spec=spec,
+#         name="House Prices Preprocessor",
+#         description="Drops Id column, fills missing numeric values with median"
+#     )
+#     print(f"Preprocessor created with ID: {preprocessor_id}")
+# except XplainableAPIError as e:
+#     print(f"Error creating preprocessor: {e}")
 ```
 
 ### Create Train/Test Split
