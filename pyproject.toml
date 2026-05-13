@@ -10,7 +10,7 @@ dependencies = {file = ["requirements.txt"]}
 
 [project]
 name = "xplainable"
-version = "1.4.0"
+version = "1.4.1"
 authors = [
   { name="xplainable pty ltd", email="contact@xplainable.io" },
 ]
