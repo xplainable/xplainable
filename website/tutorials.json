@@ -1,4 +1,12 @@
 {
+    "lead_scoring_prediction": {
+        "title": "Lead Scoring Prediction",
+        "sidebar_label": "Lead Scoring Prediction",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Lead_Scoring_Prediction.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Lead_Scoring_Prediction.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Lead_Scoring_Prediction.ipynb"
+    },
     "telco_churn": {
         "title": "Telco Churn",
         "sidebar_label": "Telco Churn",
@@ -7,13 +15,13 @@
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Telco_Churn.ipynb"
     },
-    "power_plant_energy_output": {
-        "title": "Power Plant Energy Output",
-        "sidebar_label": "Power Plant Energy Output",
+    "heloc_credit_risk": {
+        "title": "Heloc Credit Risk",
+        "sidebar_label": "Heloc Credit Risk",
         "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/Power_Plant_Energy_Output.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Power_Plant_Energy_Output.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Power_Plant_Energy_Output.ipynb"
+        "nb_path": "website/docs/tutorials/HELOC_Credit_Risk.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb"
     },
     "concrete_compressive_strength": {
         "title": "Concrete Compressive Strength",
@@ -23,29 +31,13 @@
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Concrete_Compressive_Strength.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Concrete_Compressive_Strength.ipynb"
     },
-    "repurchase_window_prediction": {
-        "title": "Repurchase Window Prediction",
-        "sidebar_label": "Repurchase Window Prediction",
+    "power_plant_energy_output": {
+        "title": "Power Plant Energy Output",
+        "sidebar_label": "Power Plant Energy Output",
         "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/Repurchase_Window_Prediction.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Repurchase_Window_Prediction.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Repurchase_Window_Prediction.ipynb"
-    },
-    "instacart_product_reorder_prediction": {
-        "title": "Instacart Product Reorder Prediction",
-        "sidebar_label": "Instacart Product Reorder Prediction",
-        "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/Instacart_Product_Reorder_Prediction.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Instacart_Product_Reorder_Prediction.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Instacart_Product_Reorder_Prediction.ipynb"
-    },
-    "lead_scoring_prediction": {
-        "title": "Lead Scoring Prediction",
-        "sidebar_label": "Lead Scoring Prediction",
-        "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/Lead_Scoring_Prediction.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Lead_Scoring_Prediction.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Lead_Scoring_Prediction.ipynb"
+        "nb_path": "website/docs/tutorials/Power_Plant_Energy_Output.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Power_Plant_Energy_Output.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Power_Plant_Energy_Output.ipynb"
     },
     "telco_churn_updated_client": {
         "title": "Telco Churn Updated Client",
@@ -63,6 +55,14 @@
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Dozer_Price_Prediction.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Dozer_Price_Prediction.ipynb"
     },
+    "repurchase_window_prediction": {
+        "title": "Repurchase Window Prediction",
+        "sidebar_label": "Repurchase Window Prediction",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Repurchase_Window_Prediction.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Repurchase_Window_Prediction.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Repurchase_Window_Prediction.ipynb"
+    },
     "tool_failure": {
         "title": "Tool Failure",
         "sidebar_label": "Tool Failure",
@@ -71,14 +71,6 @@
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Tool_Failure.ipynb"
     },
-    "heloc_credit_risk": {
-        "title": "Heloc Credit Risk",
-        "sidebar_label": "Heloc Credit Risk",
-        "path": "website/docs/tutorials",
-        "nb_path": "website/docs/tutorials/HELOC_Credit_Risk.ipynb",
-        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb",
-        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Heloc_Credit_Risk.ipynb"
-    },
     "house_prices_regression": {
         "title": "House Prices Regression",
         "sidebar_label": "House Prices Regression",
@@ -86,5 +78,13 @@
         "nb_path": "website/docs/tutorials/House_Prices_Regression.ipynb",
         "github": "https://github.com/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb",
         "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/House_Prices_Regression.ipynb"
+    },
+    "instacart_product_reorder_prediction": {
+        "title": "Instacart Product Reorder Prediction",
+        "sidebar_label": "Instacart Product Reorder Prediction",
+        "path": "website/docs/tutorials",
+        "nb_path": "website/docs/tutorials/Instacart_Product_Reorder_Prediction.ipynb",
+        "github": "https://github.com/xplainable/xplainable/blob/main/examples/Instacart_Product_Reorder_Prediction.ipynb",
+        "colab": "https://colab.research.google.com/github/xplainable/xplainable/blob/main/examples/Instacart_Product_Reorder_Prediction.ipynb"
     }
 }
