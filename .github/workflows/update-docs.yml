@@ -45,6 +45,11 @@ jobs:
         cd docs_repo/website
         python convert_ipynb_to_mdx.py
 
+    - name: Regenerate docs index
+      run: |
+        cd docs_repo/website
+        python scripts/generate_docs_index.py
+
     - name: Commit and Push Changes
       run: |
         cd docs_repo

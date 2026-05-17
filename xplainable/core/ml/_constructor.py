@@ -285,6 +285,8 @@ class XConstructor:
         constructor.base_meta = data["base_meta"]
         constructor.null_meta = data["null_meta"]
 
+        return constructor
+
 
 class XCatConstructor(XConstructor):
 
