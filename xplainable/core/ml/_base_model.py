@@ -344,7 +344,9 @@ class BaseModel:
                 mapping_dict = dict(m._forward)
             else:
                 mapping_dict = dict(m)
-            x.loc[:, f] = x.loc[:, f].map(mapping_dict)
+            # Cast to object first to avoid pandas StringDtype rejecting
+            # integer-encoded values (pandas >=2.1 infers StringDtype)
+            x[f] = x[f].astype(object).map(mapping_dict)
         if y is not None:
             if len(self.target_map) > 0:
                 # Convert TargetMap to regular dict for pandas 2.x compatibility
@@ -362,7 +364,7 @@ class BaseModel:
         x = self._cast_to_pandas(x, column_names=self.columns)
         x = self._coerce_dtypes(x)
         x = self._encode(x)
-        x = self._preprocess(x).to_numpy()
+        x = np.array(self._preprocess(x).to_numpy(), copy=True, dtype=float)
 
         b = []
         for i in range(x.shape[1]):
@@ -383,7 +385,7 @@ class BaseModel:
         x = self._cast_to_pandas(x, column_names=self.columns)
         x = self._coerce_dtypes(x)
         x = self._encode(x)
-        x = self._preprocess(x).to_numpy()
+        x = np.array(self._preprocess(x).to_numpy(), copy=True, dtype=float)
 
         for i in range(x.shape[1]):
             nodes = np.array(self._profile[i])
@@ -391,10 +393,9 @@ class BaseModel:
 
             known = np.where(idx < len(nodes))
             unknown = np.where(idx >= len(nodes))  # flag unknown categories, the addition of nan might change this
-            
+
             x[unknown, i] = 0  # Set new categories to 0 contribution
             x[known, i] = nodes[idx[known], -4]  # get score
-            # print(nodes[idx[known], -4])
 
         return x
 
@@ -432,7 +433,7 @@ class BaseModel:
         x = x.copy()
         
         x = self._encode(x)
-        x = self._preprocess(x).to_numpy()
+        x = np.array(self._preprocess(x).to_numpy(), copy=True, dtype=float)
 
         id_map = self._build_leaf_id_map()
 
@@ -441,7 +442,7 @@ class BaseModel:
             nodes = np.array(self._profile[i])
             if len(nodes) > 1:
                 idx = np.searchsorted(nodes[:, -5], x[:, i])
-                x[:,i] = np.vectorize(lambda x: id_map[i][x])(idx.astype(int))
+                x[:,i] = np.vectorize(lambda val: id_map[i][val])(idx.astype(int))
             else:
                 x[:,i] = 0
 
@@ -534,8 +535,8 @@ class BaseModel:
         self._calculate_category_meta(x, y)
         x, y = self._preprocess(x, y)
 
-        x = x.to_numpy()
-        y = y.to_numpy()
+        x = np.array(x.to_numpy(), copy=True, dtype=float)
+        y = np.array(y.to_numpy(), copy=True, dtype=float)
         self.base_value = np.mean(y)
 
         # Dynamic min_leaf_size
@@ -653,7 +654,7 @@ class BasePartition:
         partition = str(partition)
 
         x = self._encode(x, None, partition)
-        x = self._preprocess(x).to_numpy()
+        x = np.array(self._preprocess(x).to_numpy(), copy=True, dtype=float)
 
         profile = self.partitions[partition]._profile
 
