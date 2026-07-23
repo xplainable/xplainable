@@ -562,7 +562,7 @@ class BaseModel:
     def constructs_from_json(self, data):
         self._constructs = []
         for c in data:
-            self._constructs.append(XConstructor.from_json(c))
+            self._constructs.append(XConstructor.from_json(c, self.params))
 
 
 class BasePartition:
